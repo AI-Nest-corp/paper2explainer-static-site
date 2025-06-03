@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VisualCloze: A Universal Image Generation Framework via Visual In-Context Learning解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">VisualCloze: A Universal Image Generation Framework via Visual In-Context Learning</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-scroll"></i>Abstract - 論文の要旨</h2>
+<div class="content-box">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 16px; padding: 10px; background-color: rgba(74, 111, 165, 0.05); border-radius: 8px; border: 1px dashed var(--color-primary);">
+            この論文の目的は、<span class="keyword">VisualCloze</span> と名付けられた革新的な<span class="highlight">ユニバーサル画像生成フレームワーク</span>を提案することです。このフレームワークは、多種多様な画像生成タスクを単一のモデルで効率的に処理し、訓練データに含まれていない未知のタスクに対しても高い汎化性能を発揮することを目指しています。既存手法が抱える課題を克服するため、<span class="keyword">視覚的コンテキスト学習 (Visual In-Context Learning)</span> の導入、<span class="keyword">Graph200K</span> という新規データセットの構築、そして<span class="keyword">画像修復 (Image Infilling)</span> モデルの潜在能力の活用という、三位一体のアプローチを採っています。
+        </p>
+</div>
+<div class="subsection-title"><i class="fas fa-cogs"></i><i class="fas fa-exclamation-circle" style="margin-left: 5px; color: var(--color-secondary);"></i>背景：拡散モデルの進歩と既存の課題</div>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-brain" style="color: var(--color-accent1);"></i></div>
+<p><span class="keyword">拡散モデル (Diffusion Models)</span> の目覚ましい発展は、近年における様々な<span class="highlight">画像生成タスク</span>の品質と能力を飛躍的に向上させてきました。</p>
+<div class="note-box" style="margin-top: 10px;">
+<p class="note-title"><i class="fas fa-info-circle"></i>拡散モデルとは？</p>
+<p>📝 拡散モデルは、ランダムなノイズ状態から開始し、徐々にノイズを除去していくことで、最終的に高品質な画像を生成する深層学習モデルの一種です。特に、テキストからの画像生成 (Text-to-Image) や画像の超解像などで優れた性能を示し、現在の画像生成分野の主流技術の一つとなっています。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-microchip" style="color: var(--color-secondary);"></i></div>
+<p>しかしながら、現状の主流なアプローチは、特定のタスクに特化した<span class="highlight">タスク特化型モデル (task-specific models)</span> を個別に構築することに重点を置いています。この方式では、多岐にわたるユーザーの要求に応えようとする際に、<span class="highlight">効率性という点で限界</span>が生じます。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary); margin-top:10px;">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-secondary);">📌 <strong>タスク特化型モデルの例:</strong></p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '🎨';">
+<li>顔画像生成専門モデル</li>
+<li>風景画生成専門モデル</li>
+<li>医療画像セグメンテーション専門モデル</li>
+</ul>
+<p>👉 これらは各タスクで高い性能を発揮しますが、新たなタスクが必要になるたびに、新しいモデルの開発や学習が必要となり、時間と計算資源のコストがかさみます。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="subsection-title"><i class="fas fa-globe"></i><i class="fas fa-question-circle" style="margin-left: 5px; color: var(--color-accent2);"></i>ユニバーサルモデルへの挑戦と直面する困難</div>
+<div class="info-grid" style="grid-template-columns: 1fr;"> <!-- 1カラムに変更 -->
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-universal-access" style="color: var(--color-primary);"></i></div>
+<p><span class="keyword">ユニバーサルモデル (Universal Models)</span> は、このようなタスク特化型モデルの限界を克服し、単一のモデルで多様なタスクを扱えるようにすることを目指しています。しかし、その実現にはいくつかの<span class="highlight">重大な課題</span>が存在します。</p>
+<div class="challenge-box" style="margin-top:15px;">
+<p class="challenge-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-exclamation-triangle"></i> ユニバーサルモデルが直面する3つの主要課題:</p>
+<ol class="unstyled-list" style="list-style-type: none; padding-left: 0;">
+<li style="margin-bottom: 10px; display: flex; align-items: center;"><span class="badge red" style="background-color: #e74c3c; margin-right: 10px; font-size: 1.2em;">1</span><div><strong class="keyword">汎用的なタスク指示 (Generalizable Task Instruction):</strong><br/>モデルに対して「何をしてほしいのか」というタスク内容を、曖昧さなく、かつ様々なタスクに適用可能な形で伝える方法。</div></li>
+<li style="margin-bottom: 10px; display: flex; align-items: center;"><span class="badge red" style="background-color: #e74c3c; margin-right: 10px; font-size: 1.2em;">2</span><div><strong class="keyword">適切なタスク分布 (Appropriate Task Distributions):</strong><br/>モデルが多様なタスクを効果的に学習し、タスク間の知識を転移できるようにするための、網羅的かつバランスの取れた学習データの確保。</div></li>
+<li style="display: flex; align-items: center;"><span class="badge red" style="background-color: #e74c3c; margin-right: 10px; font-size: 1.2em;">3</span><div><strong class="keyword">統一されたアーキテクチャ設計 (Unified Architectural Design):</strong><br/>異なる種類の入力や出力を扱う多様なタスクを、単一のモデル構造で柔軟に処理できるような設計。</div></li>
+</ol>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="subsection-title"><i class="fas fa-rocket"></i>提案手法：VisualCloze フレームワーク</div>
+<div class="framework-box">
+<p class="framework-title" style="font-family: 'Yomogi', cursive; text-align: center; font-size: 20px;"><i class="fas fa-microscope"></i>VisualCloze: 課題解決のためのユニバーサル画像生成フレームワーク 💡</p>
+<p>これらの困難な課題に取り組むために、本研究では <span class="keyword">VisualCloze</span> と名付けた新しいユニバーサル画像生成フレームワークを提案します。VisualClozeは以下の顕著な能力を備えています：</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-sitemap" style="color: var(--color-primary);"></i></div>
+<p><span class="badge blue">能力1</span><br/><span class="highlight">広範なドメイン内タスク</span>のサポート<br/>(例：画像編集、スタイル変換、修復など)</p>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-lightbulb" style="color: var(--color-accent2);"></i></div>
+<p><span class="badge purple">能力2</span><br/><span class="highlight">未学習タスクへの汎化</span><br/>(訓練時に見ていない新しいタスクへの対応)</p>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-project-diagram" style="color: var(--color-accent1);"></i></div>
+<p><span class="badge orange">能力3</span><br/><span class="highlight">複数タスクの未学習な統合</span><br/>(複数の学習済みタスクを組み合わせた新しいタスクの実行)</p>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-retweet" style="color: var(--color-accent3);"></i></div>
+<p><span class="badge yellow">能力4</span><br/><span class="highlight">逆生成 (Reverse Generation)</span><br/>(結果画像から入力条件を推測するタスク)</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="subsection-title"><i class="fas fa-wrench"></i><i class="fas fa-check-circle" style="margin-left: 5px; color: var(--color-accent1);"></i>VisualClozeによる課題解決アプローチ</div>
+<div class="pipeline">
+<div class="pipeline-step">
+<h3 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left: 4px solid var(--color-accent1); padding-left: 10px; font-family: 'Kaisei Decol', serif;"><i class="far fa-eye"></i>解決策1：視覚的コンテキスト学習 (Visual In-Context Learning) の活用</h3>
+<div class="two-column">
+<div class="column challenge-box" style="border-left-color: var(--color-secondary); background-color: rgba(255, 126, 95, 0.05);">
+<p class="challenge-title"><i class="fas fa-times-circle"></i>既存手法の限界</p>
+<p>多くの既存手法は<span class="highlight">言語ベースのタスク指示</span>に依存しています。しかし、複雑な視覚タスクを言語だけで正確に記述するのは難しく、<span class="highlight">タスクの曖昧さ (task ambiguity)</span> を招いたり、<span class="highlight">汎化性能の低下 (weak generalization)</span> に繋がったりする傾向があります。</p>
+<p style="text-align:center; margin-top:15px; font-size: 24px;">🗣️ "猫を犬に変えて" ➡️ 🤔 (どんな犬？背景は？)</p>
+</div>
+<div class="column note-box" style="border-left-color: var(--color-accent1); background-color: rgba(92, 184, 92, 0.05);">
+<p class="note-title"><i class="fas fa-check-circle"></i>VisualClozeのアプローチ ✅</p>
+<p>本研究では <span class="keyword">視覚的コンテキスト学習 (Visual In-Context Learning)</span> をフレームワークに統合します。これにより、モデルは少数の<span class="highlight">視覚的なデモンストレーション（お手本となる画像例）</span>を観察することで、実行すべきタスクを直接的に識別できるようになります。</p>
+<p style="text-align:center; margin-top:15px; font-size: 24px;">🖼️ (猫→特定スタイルの犬の例) + ❓(別の猫) ➡️ 🎯 (特定スタイルの犬)</p>
+<div class="definition-box" style="margin-top:15px;">
+<p class="definition-title"><i class="fas fa-book-open"></i>📖 用語解説：視覚的コンテキスト学習</p>
+<p>大規模言語モデル (LLM) における「インコンテキスト学習 (In-Context Learning)」の概念を視覚ドメインに応用したものです。LLMがプロンプト中のいくつかの例題（デモンストレーション）からタスクを理解し、新たな入力に対してそのタスクを実行できるように、視覚モデルも少数の画像ペアの例（例：入力画像と期待される出力画像）を見ることで、暗黙的にタスクのルールを学習し、新しい入力画像に適用します。これにより、明示的なタスク指示や再学習なしに、多様なタスクに適応できます。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="pipeline-step">
+<h3 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left: 4px solid var(--color-accent1); padding-left: 10px; font-family: 'Kaisei Decol', serif;"><i class="fas fa-database"></i>解決策2：Graph200K データセットの導入</h3>
+<div class="two-column">
+<div class="column challenge-box" style="border-left-color: var(--color-secondary); background-color: rgba(255, 126, 95, 0.05);">
+<p class="challenge-title"><i class="fas fa-times-circle"></i>既存手法の限界</p>
+<p>視覚タスクのデータセットは、本質的に<span class="highlight">スパース（疎）な分布</span>をしています。つまり、異なるタスク間で共有できる情報が少なく、各タスクが孤立しがちです。これは、タスク間で<span class="highlight">転移可能な知識 (transferable knowledge)</span> の学習を妨げ、モデルの汎化能力を制限します。</p>
+<p style="text-align:center; margin-top:15px; font-size: 24px;">🕸️ タスクAデータ 🧍 タスクBデータ 🧍 タスクCデータ (関連性希薄)</p>
+</div>
+<div class="column note-box" style="border-left-color: var(--color-accent1); background-color: rgba(92, 184, 92, 0.05);">
+<p class="note-title"><i class="fas fa-check-circle"></i>VisualClozeのアプローチ ✅</p>
+<p>この問題に対処するため、本研究では <span class="keyword">Graph200K</span> という新しい<span class="highlight">グラフ構造データセット</span>を提案・構築します。このデータセットは、様々なタスクが相互に関連付けられるように設計されており、<span class="highlight">タスク密度を高め</span>、モデルがタスク間で知識を転移しやすくします。</p>
+<img alt="Graph200K Dataset Structure" src="graph200k_dataset_annotation_tasks.jpg" style="width: 100%; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px;"/>
+<p style="text-align: center; font-size: 12px; color: var(--color-gray);">図：Graph200Kデータセットの概念図（論文Figure 4より引用）<br/>中心画像に関連する多様なタスク（条件生成、修復、編集、IP保存、スタイル変換）がノードとして接続され、密なタスク空間を形成します。</p>
+<div class="definition-box" style="margin-top:15px;">
+<p class="definition-title"><i class="fas fa-book-open"></i>📖 用語解説：グラフ構造データセット</p>
+<p>データ間の関係性をグラフ（ノードとエッジで構成される構造）として表現したデータセットです。Graph200Kでは、各画像が中心ノードとなり、その画像から派生する様々なタスク（例：セグメンテーションマップ、エッジ画像、編集後の画像など）が関連ノードとしてエッジで結ばれます。これにより、タスク間の関連性が明示され、モデルはこれらの関連性を学習することで、より効率的に知識を共有・転移できます。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="pipeline-step" style="margin-bottom:0;">
+<h3 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left: 4px solid var(--color-accent1); padding-left: 10px; font-family: 'Kaisei Decol', serif;"><i class="fas fa-puzzle-piece"></i>解決策3：画像修復モデルとの目的共有</h3>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-sync-alt" style="color: var(--color-primary);"></i></div>
+<p>さらに、本研究では、我々が提案する<span class="keyword">統一された画像生成の定式化</span>が、実は<span class="highlight">画像修復（Image Infilling、画像の一部が欠損した領域を補完するタスク）の目的と一致する</span>ことを見出しました。</p>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top:15px;">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-primary); text-align:center;">🤔 <strong>どういうこと？</strong></p>
+<p>私たちが提案するVisualClozeのタスク実行は、入力画像（コンテキスト）と、生成したいターゲット画像（一部が空白）を並べて配置し、その空白部分を「埋める」という処理と見なせます。これはまさに画像修復タスクと同じ構造です！</p>
+<p style="text-align:center; margin-top:10px;">
+<span style="border: 2px dashed var(--color-primary); padding: 5px; border-radius: 4px; margin-right:5px;">入力画像群</span> + <span style="border: 2px dashed var(--color-secondary); padding: 5px; border-radius: 4px; background-color: #ffe0b2;">⬜ (空白ターゲット)</span> ➡️ <span style="border: 2px dashed var(--color-primary); padding: 5px; border-radius: 4px; margin-right:5px;">入力画像群</span> + <span style="border: 2px dashed var(--color-accent1); padding: 5px; border-radius: 4px; background-color: #c8e6c9;">🖼️ (生成画像)</span>
+</p>
+</div>
+<p style="margin-top:15px;">この発見により、既存の高性能な<span class="highlight">事前学習済み画像修復モデル</span>の強力な生成能力を、<span class="keyword">アーキテクチャを変更することなく</span>直接活用することが可能になります。これにより、最小限の追加学習コストで高い性能を達成できます。</p>
+</div>
+</div>
+</div>
+<div class="subsection-title" style="margin-top: 30px;"><i class="fas fa-bullseye"></i>まとめ：VisualClozeの貢献</div>
+<div class="glass-card" style="padding: 20px; border: 1px solid var(--color-accent2);">
+<p style="font-family: 'Yomogi', cursive; text-align: center; font-size: 18px; color: var(--color-accent2);">🎉 VisualClozeは、これらの革新的なアプローチを組み合わせることで、画像生成の新たな地平を切り開きます！ 🎉</p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '✨'; font-size: 15px; line-height: 1.6;">
+<li><span class="badge purple">革新的</span> <span class="keyword">視覚的コンテキスト学習</span>により、曖昧さを低減し、未知タスクへの汎化を実現。</li>
+<li><span class="badge blue">独創的</span> <span class="keyword">Graph200Kデータセット</span>により、タスク間の知識転移を促進し、学習効率を向上。</li>
+<li><span class="badge orange">効率的</span> <span class="keyword">画像修復モデルとの目的共有</span>により、既存モデルの能力を最大限に活用し、低コストで高性能を実現。</li>
+</ul>
+<p style="text-align: right; font-style: italic; color: var(--color-gray); margin-top: 15px;">これらの貢献により、VisualClozeは、より汎用的で効率的な次世代画像生成システムへの道を拓きます。</p>
+</div>
+</div>
+<div class="section-card" id="1._Introduction">
+<h2 class="section-title"><i class="fas fa-microscope"></i>1. Introduction</h2>
+<div class="content-box">
+<p>このセクションでは、論文の導入部として、研究の背景、目的、そして本論文が提案する新しい画像生成フレームワーク「VisualCloze」の概要について解説します。近年の画像生成技術の目覚ましい発展と、そこに潜む課題、そしてそれらをどう乗り越えようとしているのか、一緒に見ていきましょう！ 🚀</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> 現在の画像生成技術の進展</h3>
+<p>近年、<span class="keyword">拡散モデル (diffusion models)</span> [15, 33, 88] の登場により、画像生成技術は目覚ましい進歩を遂げています。これにより、以下のような多様な応用が可能になりました。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">🎨 画像編集</span> [69]</li>
+<li><span class="badge purple">🎭 スタイル変換</span> [64, 81]</li>
+<li><span class="badge orange">👚 バーチャル試着</span> [11, 12]</li>
+<li><span class="badge yellow">👤 パーソナライズ生成</span> [38, 54]</li>
+</ul>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-magic fa-2x" style="color: var(--color-accent1);"></i>
+<i class="fas fa-palette fa-2x" style="color: var(--color-accent2);"></i>
+<i class="fas fa-camera-retro fa-2x" style="color: var(--color-accent3);"></i>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title"><i class="fas fa-exclamation-triangle"></i> 既存技術の課題</h3>
+<p>しかし、これらのタスクは多くの場合、<span class="keyword">タスク特化モデル (task-specific models)</span> を必要とします。これは、特定のタスクに最適化されたモデルを個別に用意する必要があるため、<span class="highlight">効率性や実用的なアプリケーションへの拡張性（スケーラビリティ）に限界</span>が生じます。</p>
+<div class="challenge-box" style="margin-top:15px;">
+<div class="challenge-title"><i class="fas fa-puzzle-piece"></i> タスク特化モデルの問題点</div>
+<p>タスクごとに別々のモデルが必要... 🤯</p>
+<ul class="unstyled-list" style="padding-left: 10px;">
+<li><i class="fas fa-cogs" style="color: var(--color-secondary);"></i> 開発・管理コスト増大</li>
+<li><i class="fas fa-exchange-alt" style="color: var(--color-secondary);"></i> 異なるタスク間の連携困難</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<p>そこで近年、<span class="keyword">ユニバーサル生成モデル (universal generative models)</span> [27, 39, 44] への関心が高まっています。これは、多様な画像生成タスク、さらには<span class="highlight">訓練データに含まれていない未知のタスク（unseen tasks）</span>でさえも、単一の統一されたフレームワーク内で処理することを目指すものです。</p>
+<p>しかし、この野心的な目標を実現するには、いくつかの重要な課題が残されています。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fas fa-chalkboard-teacher fa-2x" style="color:var(--color-primary)"></i>
+<h4>課題①</h4>
+<p><span class="keyword">区別可能で汎用的なタスク指示</span><br/>(Distinguishable and generalizable task instruction)</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-tasks fa-2x" style="color:var(--color-primary)"></i>
+<h4>課題②</h4>
+<p><span class="keyword">訓練中の包括的なタスクカバレッジ</span><br/>(Comprehensive task coverage during training)</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-sitemap fa-2x" style="color:var(--color-primary)"></i>
+<h4>課題③</h4>
+<p><span class="keyword">統一されたモデルアーキテクチャ</span><br/>(A unified model architecture)</p>
+</div>
+</div>
+<p>本論文では、これらの課題に取り組む新しいアプローチを提案します。</p>
+</div>
+<div class="bubble-box">
+<h3 class="subsection-title"><i class="fas fa-chalkboard-teacher"></i>課題① タスク指示の難しさ</h3>
+<p>モデルが<span class="highlight">「何をすべきか」を正しく理解するための指示</span>は非常に重要です。</p>
+<div class="two-column">
+<div class="column">
+<div class="note-box" style="background-color: rgba(255,126,95,0.05); border-left-color: var(--color-secondary);">
+<div class="note-title" style="color: var(--color-secondary);"><i class="fas fa-times-circle"></i> 既存手法の問題点</div>
+<p>従来の主な手法は、以下のいずれかに依存しています。</p>
+<ul>
+<li><strong>言語指示</strong> [27, 44]: テキストでタスクを指示。
+                            <ul>
+<li>視覚タスクの複雑さや、視覚と言語モダリティ間のギャップにより、モデルが言語のみのタスク記述を理解するのが難しい。</li>
+<li>結果として、<span class="keyword">タスク混乱 (task confusion)</span> [39] が発生したり、未見タスクへの<span class="highlight">汎化性能が低下</span> [35, 71] したりする。</li>
+</ul>
+</li>
+<li><strong>タスク特化トークン</strong> [39]: 特定のタスクを示す専用トークン。
+                            <ul>
+<li>事前に学習されたタスク特化トークンは、モデルを<span class="highlight">学習済みのタスクにしか対応できないように制約</span>してしまう。</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="column">
+<div class="note-box" style="background-color: rgba(92,184,92,0.05); border-left-color: var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-check-circle"></i> 解決へのヒント：インコンテキスト学習</div>
+<p><span class="keyword">大規模言語モデル (LLMs)</span> は、<span class="keyword">インコンテキスト学習 (in-context learning)</span> [5] の登場により、統一的なマルチタスクモデリングに成功しています。これは、モデルが少数のデモンストレーション（例示）を見るだけで様々なタスクに適応できる能力です。</p>
+<p>📝 <strong>本論文のアイデア:</strong> このインコンテキスト学習の概念を<span class="highlight">純粋な視覚モダリティ</span>で再現することを目指します。つまり、モデルが少数の視覚的な例（タスクのデモンストレーション）から直接タスクを学習するようにします。</p>
+</div>
+</div>
+</div>
+<img alt="図1: 視覚的インコンテキスト学習フレームワーク" src="visual_in_context_learning_framework.jpg"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray);">図1: (左上) 提案する視覚的インコンテキスト学習に基づく汎用画像生成フレームワーク。特定のタスクのクエリが与えられると、生成モデルはデモンストレーションとして提示されたいくつかのインコンテキスト例を観察することでタスクを学習します。各タスクの生成結果は赤い枠で示されています。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-brain"></i> 視覚的インコンテキスト学習の4つの発見 💡</div>
+<p>このアプローチにより、以下の4つの重要な発見がありました。</p>
+<ol class="unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">訓練データに含まれるタスク（in-domain tasks）において、<span class="highlight">タスクの曖昧さを低減</span>し、多様なタスクをサポート (図1参照)。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">訓練データに含まれないタスク（unseen tasks）への<span class="highlight">汎化能力</span>を発揮 (図2, 図8参照)。</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">タスク統合 (task unification) のための未見戦略として、複数のサブタスクを<span class="highlight">一段階に統合</span>し、中間結果も生成可能 (図3参照)。</div>
+</li>
+<li class="process-step">
+<div class="step-number">4</div>
+<div class="step-content"><span class="highlight">逆生成 (reverse generation)</span> を可能にする。つまり、与えられたターゲット画像から一連の条件を推測 (図9参照)。</div>
+</li>
+</ol>
+</div>
+<img alt="図2: 未見タスクへの汎化" src="unseen_tasks_generalizing_in_context_learning.jpg"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray);">図2: 未見タスク ⋅ : インコンテキスト学習による訓練中に見たことのないタスクへの汎化。より多くのインコンテキスト例が、より正確な結果につながります。</p>
+<img alt="図3: 未見タスクの統合" src="unseen_tasks_task_unification.jpg"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray);">図3: 未見タスク ♣ : インコンテキスト学習を活用して、複数の既知タスクを単一ステップの未知タスクに統合。左: [深度から画像へ]と[再照明]タスクを単一の[様々な照明の深度から画像へ]タスクに統合。右: 複数の密な予測タスクを共同予測タスクに統合。視覚的コンテキストなしの結果は付録にあります。</p>
+<p>過去の研究 [1, 3, 4, 43, 66, 71, 82] でも視覚におけるインコンテキスト学習は探求されてきましたが、それらは主に<span class="highlight">特定のドメイン</span>（密な予測やスタイル変換 [67, 87]など）や、<span class="highlight">単純化された生成設定</span>（1つの条件と1つのターゲット画像のみ [43, 60]）に限定されていました。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="bubble-box">
+<h3 class="subsection-title"><i class="fas fa-tasks"></i>課題② タスク分布のスパース性</h3>
+<p>タスク分布の観点から見ると、視覚タスクは自然言語処理 (NLP) のタスクと比較して<span class="keyword">本質的にスパース（疎）</span>です。これは、異なるタスクのためのタスク特化データセット [71, 85] の重複が非常に少ない [19, 32, 79] ためです。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-unlink"></i> スパースなタスク学習の問題点</div>
+<ul class="unstyled-list">
+<li><i class="fas fa-atom" style="color: var(--color-secondary);"></i> 各タスクの知識が孤立し、モデルがタスク間で<span class="highlight">共有される特徴を学習するのが困難</span>になる。</li>
+<li><i class="fas fa-random" style="color: var(--color-secondary);"></i> タスク間の相関が弱いため、<span class="highlight">知識の転移や新しいタスクへの適応が妨げられる</span>。</li>
+</ul>
+</div>
+<p>しかし、マルチタスク学習 [10, 16, 31, 53] の既存研究では、関連するタスク間で知識を重複させることの利点が検証されています。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-project-diagram"></i> 提案：Graph200Kデータセット</div>
+<p>視覚タスクのスパース性を緩和するために、本論文では<span class="keyword">グラフ構造データセット Graph200K</span> を導入します。</p>
+<p>このデータセットでは、各画像が以下の5つの<span class="keyword">メタタスク (metatasks)</span> にまたがるアノテーションと関連付けられています。</p>
+<div class="tag-list">
+<span class="tag">条件付き生成 [80]</span>
+<span class="tag">IP保存 [76]</span>
+<span class="tag">スタイル変換 [81]</span>
+<span class="tag">画像編集 [69]</span>
+<span class="tag">画像修復 [77]</span>
+</div>
+<p>異なる条件を組み合わせることで、相互に重複する多様なタスクでモデルを訓練します。この<span class="highlight">高密度でコンパクトなタスク空間</span>により、データセットはタスク密度を大幅に向上させ、モデルが共有可能で転移可能な知識をより効果的に学習できるようにします。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-share-alt fa-2x" style="color: var(--color-accent2);"></i> <span style="font-size:1.5em; margin:0 10px;">🔗</span> <i class="fas fa-brain fa-2x" style="color: var(--color-accent1);"></i>
+<p style="font-size:0.9em; color:var(--color-gray); margin-top:5px;">タスク間のつながりを強化し、賢いモデルへ！</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="bubble-box">
+<h3 class="subsection-title"><i class="fas fa-sitemap"></i>課題③ 統一されたモデルアーキテクチャ</h3>
+<p>アーキテクチャ設計においては、以下の2点が不可欠です。</p>
+<ol class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">1</div>
+<div class="step-content">柔軟なタスクフォーマット [27, 35, 71] に対応し、<span class="highlight">シームレスなインコンテキスト学習</span>を保証すること。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">2</div>
+<div class="step-content">最先端のモデル (state-of-the-art models) [33, 88] と互換性を持ち、それらの<span class="highlight">強力な生成的プライア（事前知識）</span>を最大限に活用すること。</div>
+</li>
+</ol>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-puzzle-piece"></i> 発見：画像修復との関連性</div>
+<p>本研究では、最先端の<span class="keyword">画像修復 (image infilling) モデル</span> [33] が、我々のインコンテキスト学習に基づく普遍的生成の定式化と<span class="highlight">一貫した目的 (consistent objective)</span> を持つことを見出しました。</p>
+<p>具体的には、全ての入力画像と出力画像を連結し、タスクの目的を<span class="highlight">「出力領域を埋めること」</span>とします。この整合性により、高度な汎用目的の修復モデルを<span class="highlight">追加の変更なしに利用</span>して我々のモデルを構築でき、最小限のデータと訓練コストで強力な普遍的生成能力を達成できます。</p>
+<div style="text-align:center; margin-top:15px;">
+<i class="fas fa-images fa-2x" style="color: var(--color-primary);"></i>
+<i class="fas fa-arrow-right fa-2x" style="color: var(--color-gray); margin:0 10px;"></i>
+<i class="fas fa-paint-brush fa-2x" style="color: var(--color-accent1);"></i>
+<p style="font-size:0.9em; color:var(--color-gray); margin-top:5px;">「穴埋め問題」として様々な画像生成タスクを統一！</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box glass-card">
+<div class="framework-title" style="font-size:20px;"><i class="fas fa-star"></i> 提案フレームワーク: VisualCloze</div>
+<p>本研究では、<span class="keyword">VisualCloze</span> というユニバーサル画像生成フレームワークを提案します。これは、<span class="keyword">FLUX.1-Filldev</span> [33] という画像修復モデルを、我々が構築したデータセット <span class="keyword">Graph200K</span> からサンプリングされた相互に関連するタスクでファインチューニングすることにより、転移可能な知識を学習し、視覚的インコンテキスト学習をサポートします。</p>
+<p>インコンテキスト例の数を増やすにつれて、<span class="highlight">性能が向上し、タスクの混乱が減少する</span>ことが観察されました。これにより、モデルは以下のような広範囲なドメイン内タスクをサポートできます。</p>
+<ul class="unstyled-list" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top:10px;">
+<li><span class="badge blue">条件付き生成</span></li>
+<li><span class="badge purple">画像修復</span></li>
+<li><span class="badge orange">編集</span></li>
+<li><span class="badge yellow">スタイル変換</span></li>
+<li><span class="badge green">IP保存</span></li>
+<li><span class="badge gray">及びこれらの組み合わせ</span></li>
+</ul>
+<p>さらに、未見タスクに対しても、モデルはある程度の<span class="highlight">汎化能力</span>を示します（図2参照）。</p>
+</div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-medal"></i> 主な貢献</h3>
+<p>本研究の主な貢献は以下の通りです。</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">1</div>
+<div class="step-content">広範なドメイン内タスクをサポートし、未見タスクへの汎化を示す、<span class="highlight">インコンテキスト学習に基づいたユニバーサル画像生成フレームワーク</span>を提案しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">2</div>
+<div class="step-content">コンパクトなタスク空間を構築し、柔軟なオンラインタスクサンプリングを可能にし、モデルがタスク間で共有可能かつ転移可能な知識を学習することを促進する、<span class="highlight">グラフ構造データセット Graph200K</span> を設計しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">3</div>
+<div class="step-content">我々の統一された画像生成の定式化が、最先端の画像修復モデルと一貫した目的を共有することを示し、構造を変更することなく最小限のチューニングで<span class="highlight">卓越した性能</span>を実現しました。</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="section-card" id="2._Related_Work">
+<h2 class="section-title"><i class="fas fa-stream"></i> 2. Related Work</h2>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; text-align: center; margin-bottom: 25px;">
+        このセクションでは、本論文で提案する汎用画像生成フレームワーク <span class="keyword">VisualCloze</span> を理解するための背景となる主要な研究分野について解説します。<br/>
+        具体的には、<span class="highlight">画像生成技術の進展</span>と、<span class="highlight">視覚的文脈学習</span>という2つの大きな柱に焦点を当て、既存研究の成果と課題、そして本研究の位置づけを明らかにしていきます。
+    </p>
+<h3 class="section-title"><i class="fas fa-palette"></i> 2.1. Image Generation</h3>
+<p>ここでは、近年の画像生成技術の目覚ましい発展と、それに関連する様々な応用、そして本研究が取り組む「ユニバーサルモデル」における課題とアプローチについて解説します。</p>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-rocket"></i> 近年の画像生成技術の進展</p>
+<p>テキストから画像を生成する技術は近年目覚ましい性能向上を遂げています。これは主に以下の2つのモデル系統の発展によるものです。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card glass-card">
+<p class="definition-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-layer-group"></i> 自己回帰モデル (Autoregressive Models) <span class="reference">[41, 58, 78]</span></p>
+<p>画像をピクセルのシーケンスとして捉え、一つ前の要素に基づいて次の要素を順番に予測していくことで画像を生成します。文章生成で有名なGPTシリーズと考え方は似ています。<br/>
+<span style="font-size: 30px; display: block; text-align: center; margin-top:10px;">🧩➡️🧩➡️🖼️</span>
+</p>
+</div>
+<div class="info-card glass-card">
+<p class="definition-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-magic"></i> 拡散モデル (Diffusion Models) <span class="reference">[2, 13, 15, 18, 24, 40, 42, 48, 51]</span></p>
+<p>元画像に徐々にノイズを加え、その逆過程（ノイズから画像を復元する過程）を学習することで、ノイズから新しい画像を生成します。非常に高品質な画像を生成できることで注目されています。<br/>
+<span style="font-size: 30px; display: block; text-align: center; margin-top:10px;">🖼️➡️🌫️➡️✨➡️🖼️</span>
+</p>
+</div>
+</div>
+<p style="margin-top:15px;">これらのモデルの中でも、特に <span class="keyword">Rectified Flow Transformers</span> <span class="reference">[15, 17, 33, 88]</span> は、学習効率と全体的な性能の高さで優れており、本研究の基盤モデルもこれに該当します。 <span style="font-size: 20px;">⚡️🚆</span></p>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-cogs"></i> 多様な応用アプリケーション</p>
+<p>これらの基盤モデルを元に、様々な応用技術が登場しています。</p>
+<ul class="unstyled-list" style="padding-left: 20px;">
+<li>🎨 <span class="keyword">条件付き生成 (Conditional Generation)</span> <span class="reference">[80]</span>: テキスト記述や参照画像など、特定の条件に基づいて画像を生成します。(例: 「夕焼け空を飛ぶ赤いドラゴン」)</li>
+<li>🎭 <span class="keyword">スタイル変換 (Style Transfer)</span> <span class="reference">[64]</span>: ある画像のコンテンツ（内容）と、別の画像のスタイル（画風）を融合させます。(例: 写真をゴッホ風の絵画に)</li>
+<li>👤 <span class="keyword">個人化生成 (Personalized Generation)</span> <span class="reference">[38]</span>: 特定の人物や物体の特徴を学習し、それらを含む新しい画像を生成します。(例: 自分のペットを様々なシチュエーションで描く)</li>
+</ul>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-globe-americas"></i> ユニバーサルモデルへの挑戦</p>
+<p>近年では、単一のモデルで多様なタスクに対応できる <span class="keyword">ユニバーサルモデル (Universal Models)</span> <span class="reference">[35, 44, 83]</span> の研究が進んでいます。</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr;">
+<div class="info-card">
+<p style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: var(--color-accent1);"><i class="fas fa-brain"></i> OmniGen <span class="reference">[71]</span></p>
+<p>大規模視覚言語モデル (Large Vision Language Models) を活用し、複数のタスクを単一のフレームワークに統合しようとするアプローチです。</p>
+</div>
+<div class="info-card">
+<p style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: var(--color-accent2);"><i class="fas fa-film"></i> UniReal <span class="reference">[9]</span></p>
+<p>様々な画像生成タスクを、不連続な動画生成タスクとして統一的に扱おうとするアプローチです。</p>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 20px;">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 既存ユニバーサルモデルの課題</p>
+<p>しかし、これらのモデルは依然としていくつかの課題に直面しています。</p>
+<ul style="list-style-type: '📌'; padding-left: 20px;">
+<li><span class="highlight">言語指示への過度な依存</span>: テキストによる指示だけでは、複雑な視覚タスクの意図を正確に伝えきれず、曖昧さが残ることがあります。</li>
+<li><span class="highlight">視覚タスクの分離性と疎性 (Isolation and Sparsity)</span>: 個々の視覚タスクは独立性が高く、タスク間で共通する知識が少ないため、学習した知識を他のタスクに応用するのが難しいという問題があります。</li>
+<li><span class="highlight">柔軟なタスクフォーマットに対応するアーキテクチャ設計</span>: 様々な種類の入力（例: 画像、マスク、テキスト）や出力形式に柔軟に対応できる統一的なモデル構造の設計が求められます。</li>
+</ul>
+</div>
+</div>
+<div class="note-box" style="margin-top: 20px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-lightbulb"></i> 本研究のアプローチと貢献</p>
+<p>これらの課題に対処するため、本論文では以下の戦略に基づいた<span class="keyword">ユニバーサル画像生成フレームワーク (VisualCloze)</span> を提案します。</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">全ての画像生成タスクを<span class="keyword">画像インフィル（穴埋め）</span>として統一的に扱います。これにより、多様なタスクを単一の枠組みで処理できます。</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content"><span class="keyword">視覚的文脈学習 (Visual In-context Learning)</span> を導入し、言語指示だけでなく、視覚的な例示からタスクを理解できるようにします。</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">新しく構築した <span class="keyword">Graph200K データセット</span> を用いて、タスク間の関連性を高め、より<span class="highlight">密なタスク空間</span>を形成します。これにより、モデルがタスク間で転移可能な知識を効率的に学習できるようになります。</div>
+</div>
+<p>このアプローチにより、タスク指示の曖昧さを軽減し、訓練データに含まれる多様なタスク（イン ドメインタスク）を高い精度でこなし、さらには訓練時には学習していない未知のタスク（アウトオブドメインタスク）へも対応できる汎用性を目指します。</p>
+</div>
+<h3 class="section-title" style="margin-top: 40px;"><i class="fas fa-microscope"></i> 2.2. Visual In-context Learning</h3>
+<p>本研究の重要な構成要素である「視覚的文脈学習 (Visual In-context Learning; V-ICL)」について、その背景、既存の研究、そして本研究における独自性と貢献を解説します。</p>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-book-reader"></i> 文脈学習 (In-context Learning; ICL) とは？</p>
+<div class="definition-box">
+<p class="definition-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-chalkboard-teacher"></i> 文脈学習 (In-context Learning)</p>
+<p>大規模言語モデル (LLMs) の分野で、GPT-3 <span class="reference">[5]</span> のようなモデルの登場と共に注目されるようになった学習パラダイムです <span class="reference">[14]</span>。モデルにいくつかの<span class="highlight">デモンストレーション（具体的な入出力の例）</span>を提示するだけで、その文脈からタスクの意図を理解させ、新しい入力に対しても同様のタスクを実行させる能力を指します。ファインチューニングなしに新しいタスクに適応できる点が特徴です。<br/>
+<span style="font-size: 30px; display: block; text-align: center; margin-top:10px;">📖 (例1, 例2, ...) ➡️ 🧠 (タスク理解!) ➡️ ✨ (実行!)</span>
+</p>
+</div>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-eye"></i> 視覚分野での文脈学習の展開</p>
+<p>この強力な文脈学習の考え方は、視覚分野にも取り入れられています。</p>
+<ul class="unstyled-list" style="padding-left: 20px;">
+<li><span class="badge yellow">初期の研究</span>: <span class="keyword">画像アナロジー (Image Analogies)</span> <span class="reference">[21, 22]</span> では、入力画像ペアの変換規則を学習し、新しい画像に類似の変換を適用することで、例から画像フィルタを自動生成する試みがありました。</li>
+<li><span class="badge blue">近年の発展</span>: 近年では、より高度なモデルを活用した<span class="keyword">視覚的文脈学習 (Visual In-context Learning; V-ICL)</span> が提案されています。
+                <ul style="list-style-type: '➡️'; padding-left: 20px; margin-top: 5px;">
+<li><span class="highlight">活用される技術</span>: <span class="keyword">インペインティングモデル</span> (画像の一部を修復・生成) <span class="reference">[3, 4, 82]</span>、<span class="keyword">マスク画像モデリング (MIM)</span> (画像の一部を隠して予測) <span class="reference">[43, 66, 67]</span>、<span class="keyword">視覚言語モデル (VLM)</span> <span class="reference">[1, 86]</span> など。</li>
+<li><span class="highlight">主な対象タスク</span>:
+                        <ul>
+<li><span class="keyword">密な予測 (Dense Prediction)</span> <span class="reference">[55, 59, 87]</span>: 画像の各ピクセルに対してラベルを予測するタスク (例: セグメンテーション、深度推定)。</li>
+<li><span class="keyword">視覚理解 (Visual Understanding)</span> <span class="reference">[63]</span>: 画像の内容を理解するタスク (例: 画像キャプション生成、物体認識)。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="challenge-box" style="margin-top: 20px;">
+<p class="challenge-title"><i class="fas fa-puzzle-piece"></i> 既存の視覚的文脈学習の限界</p>
+<p>これまでのV-ICL研究にはいくつかの限界がありました。</p>
+<ul style="list-style-type: '🧩'; padding-left: 20px;">
+<li><span class="highlight">タスク範囲の限定</span>: 主に密な予測や視覚理解タスクに焦点が当てられており、画像生成タスクへの応用は限定的でした。</li>
+<li><span class="keyword">OmniGen <span class="reference">[71]</span> の例</span>: OmniGenは文脈学習を利用して未知のドメインへの汎化（例：訓練時にセグメンテーションタスクを学習していれば、未知の概念のセグメンテーションが可能になる）を試みていますが、これも主に単純な密な予測タスクに限定され、訓練ドメインと未知ドメイン間のギャップも依然として大きいです。</li>
+<li><span class="highlight">画像生成への拡張の試みと限界</span> <span class="reference">[34, 43, 60, 68]</span>: いくつかの研究でV-ICLを画像生成に応用する試みがありますが、条件付き生成や密な予測といった単純なタスクに留まっています。</li>
+<li><span class="highlight">視覚タスクの疎性問題</span>: 視覚タスクは本質的に疎（タスク間の関連性が低い）であるため、モデルがタスク間で<span class="keyword">転移可能 (transferable)</span>で<span class="keyword">重複する (overlapping)</span>知識を学習することが難しく、これが文脈学習による生成能力を制限していました。
+                <div style="text-align:center; margin-top:10px;">
+<span style="font-size:12px; color: var(--color-gray); display:block;">タスクA 🧩 ... タスクB 🧩 ... タスクC 🧩 (関連性が低い)</span>
+</div>
+</li>
+</ul>
+</div>
+<div class="note-box glass-card" style="margin-top: 20px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-project-diagram"></i> 本研究の独自性と貢献：Graph200Kデータセット</p>
+<p>この「視覚タスクの疎性」という課題に対処するため、本研究では<span class="keyword">グラフ構造化データセット Graph200K</span> を導入します。</p>
+<div style="text-align: center; margin: 15px 0;">
+<span style="font-size: 30px; color: var(--color-primary);">📊</span> <span style="font-family: 'Kaisei Decol', serif; font-size: 18px; color: var(--color-accent2);">Graph200K</span>
+</div>
+<p>このデータセットは、相互に関連するタスクをサポートすることで、より<span class="highlight">密なタスク空間</span>を構築します。これにより、モデルは以下の能力を獲得することを目指します。</p>
+<ul style="list-style-type: '✔️'; padding-left: 20px;">
+<li><span class="keyword">共有知識の学習</span>: 異なるタスク間で共通する特徴や知識を効率的に学習します。</li>
+<li><span class="keyword">転移可能な知識の獲得</span>: あるタスクで学習した知識を、別の新しいタスクに応用する能力を高めます。</li>
+<li><span class="keyword">適応性の向上</span>: 未知のタスクや新しい状況への適応能力を向上させます。</li>
+</ul>
+<p>つまり、タスク間の橋渡しをすることで、文脈学習のポテンシャルを最大限に引き出すことを狙います。</p>
+</div>
+<img alt="Figure 4. Graph200K dataset illustration" class="figure-image" src="graph200k_dataset_annotation_tasks.jpg"/>
+<p class="caption" style="text-align: center; font-family: 'Yomogi', cursive; font-size: 13px; color: var(--color-gray); margin-top: 5px;">
+<span class="badge blue">図4</span> 提案する <span class="keyword">Graph200Kデータセット</span> の図解。各画像は5つの<span class="highlight">メタタスク</span>（条件付き生成、画像修復、画像編集、IP保存、スタイル変換）についてアノテーションされています。これらのタスクを組み合わせることで、図の下部にあるような、より複雑で多様なタスクを構築できます。
+    </p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 15px;">
+<div class="info-card glass-card">
+<p class="definition-title"><i class="fas fa-pencil-ruler"></i> メタタスクの解説</p>
+<ul class="unstyled-list">
+<li><span class="badge orange">条件付き生成</span>: 例: テキスト「猫」→ 猫の画像</li>
+<li><span class="badge purple">画像修復</span>: 例: ノイズのある画像 → クリーンな画像</li>
+<li><span class="badge green">画像編集</span>: 例: 画像中のリンゴをオレンジに変更</li>
+<li><span class="badge yellow">IP保存</span>: 例: 特定のキャラクターを維持したままポーズを変更</li>
+<li><span class="badge blue">スタイル変換</span>: 例: 写真をアニメ風のイラストに変換</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<p class="definition-title"><i class="fas fa-link"></i> タスクの組み合わせ</p>
+<p>これらのメタタスクを組み合わせることで、より複雑なタスクを生成できます。例えば...</p>
+<p style="margin-top:10px; font-family: 'Yomogi', cursive; text-align: center;">
+<span class="highlight">「特定のスタイルで(スタイル変換)、特定のキャラクターを(IP保存)、指定したオブジェクトを追加する(画像編集)」</span>
+</p>
+<p>といった、複合的な指示に対応できるようになることを目指しています。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="3._Dataset">
+<h2 class="section-title"><i class="fas fa-database"></i>3. Dataset</h2>
+<div class="content-box">
+<p>近年の研究 [26, 44, 71] で、画像を統一的に生成する技術は大きく進歩しましたが、<span class="keyword">学習データに含まれていない未知のタスクへの対応能力（汎化能力）</span>には、まだ大きな課題があります。この論文では、この問題の一因を<strong class="highlight">視覚タスクのまばらさ（スパース性）と孤立性</strong>にあると考えています。これらの性質が、モデルが複数のタスク間で共通の特徴を学習したり、未知のタスクに対応したりすることを難しくしているのです。</p>
+<p>さらに、タスク間の関連性が弱いと、知識の移転が妨げられ、モデルの適応性が制限されてしまいます。そこで、<strong class="highlight">タスクの密度を高める</strong>か、<strong class="highlight">タスク間の相互関係を強化する</strong>ことで、よりコンパクトなタスク分布を通じてモデルの汎化能力を向上させることを目指します。</p>
+<p>この目的を達成するために、本論文では <span class="keyword">Subject200K [61]</span> データセットを出発点として、<strong class="highlight">Graph200K</strong> という新しいデータセットを構築しました。Graph200Kでは、各画像に対して、<span class="badge blue">5つのメタタスク</span>にまたがる<span class="badge purple">49種類のアノテーション</span>を付与しています。この豊富なアノテーション空間により、異なるメタタスクのアノテーションを任意にサンプリングし組み合わせることで、多種多様な関連タスクを柔軟に構築できます。この様子を図4に示します。</p>
+</div>
+<img alt="Graph200K Dataset Illustration" src="graph200k_dataset_annotation_tasks.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>図4の読み解き方</p>
+<p>この図は、Graph200Kデータセットの構造を示しています。中央の「Image」（元画像）ノードが中心となり、周囲に5つの主要なタスクカテゴリ（メタタスク）が配置されています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-cogs"></i> <span class="keyword">Condition (条件生成)</span>: エッジ、セグメンテーションマスク、深度マップなど、特定の条件に基づいた画像生成。</li>
+<li><i class="fas fa-sync-alt"></i> <span class="keyword">Restoration (修復)</span>: ノイズ除去やブレ補正など、劣化した画像を修復。</li>
+<li><i class="fas fa-edit"></i> <span class="keyword">Editing (編集)</span>: オブジェクトの追加・削除、背景変更など、画像内容を編集。</li>
+<li><i class="fas fa-id-badge"></i> <span class="keyword">Reference (IP保存)</span>: 特定の被写体や物体（IP: Intellectual Property）の特徴を保持した画像生成。</li>
+<li><i class="fas fa-paint-brush"></i> <span class="keyword">Style Transfer (スタイル変換)</span>: ある画像のスタイルを別の画像に適用。</li>
+</ul>
+<p>これらのメタタスク内の具体的なアノテーション（例：Cannyエッジ、ぼかし画像、編集後の画像、参照画像、特定スタイルの画像）が元画像と関連付けられています。さらに、図の下部では、これらのアノテーションを組み合わせることで、「subject（被写体）」＋「layout（構図）」＋「style（スタイル）」＝「stylization（スタイル化）」のような、より複雑で多様なタスクを生成できることを示しています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i>3.1. Graph-Structured Multi-Task Dataset (グラフ構造化マルチタスクデータセット)</h3>
+<div class="content-box">
+<p>自然言語処理（NLP）の分野では、タスク間で多くの重複が見られるため、タスク横断的な学習能力（クロスラーニング）が強力です。一方、<span class="keyword">視覚タスク</span>は本質的に互いに異なる性質を持つため、視覚モデルが教示チューニング（instruction tuning）を通じてNLPモデルと同等の汎化能力を獲得するのは困難です。</p>
+<p>この課題を軽減するために、本論文では<strong class="highlight">グラフ構造化マルチタスクデータセット (Graph-Structured Multi-Task Dataset)</strong> を導入します。これは、図4(a)（上記図4全体を指します）に示すように、テキストから画像を生成するデータセットにおいて、各画像をグラフの<span class="keyword">中心ノード</span>として扱います。その周囲には、以下のような多様なタスクアノテーションが構築されます。</p>
+<div class="feature-card-grid">
+<div class="feature-item"><i class="fas fa-draw-polygon"></i>様々な空間的条件 (Cannyエッジ、深度マップなど)</div>
+<div class="feature-item"><i class="fas fa-wind"></i>画像の劣化 (ノイズ、ぼかしなど)</div>
+<div class="feature-item"><i class="fas fa-magic"></i>画像編集結果</div>
+<div class="feature-item"><i class="fas fa-image"></i>IP保存のための参照画像</div>
+<div class="feature-item"><i class="fas fa-palette"></i>様々な参照スタイルを用いたスタイル変換</div>
+</div>
+<p>各タスクペアの構築プロセスの詳細は、次のセクション3.2で説明します。</p>
+</div>
+<div class="bubble-box">
+<p>図4が示すように、各タスクアノテーションは中心画像と<strong class="highlight">双方向のエッジ</strong>で結ばれています。これにより、グラフ全体が<span class="keyword">強連結</span>になります。強連結とは、グラフ内の任意の2つのノード間に、必ず双方向の経路が存在することを意味します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説：強連結 (Strongly Connected)</p>
+<p>有向グラフにおいて、グラフ内の任意の異なる2つのノードuとvについて、uからvへのパスと、vからuへのパスが両方存在する場合、そのグラフは強連結であると言います。つまり、どのノードから出発しても、他の全てのノードに到達可能で、かつ出発点に戻ってくることも可能です。</p>
+</div>
+<p>このグラフ構造において、画像生成タスクはグラフ内の<strong class="highlight">パス</strong>として定式化できます。パス上のノード（終点ノードを除く）は<span class="keyword">条件画像</span>として機能し、これは教示ファインチューニングにおける「質問」に類似します。一方、パスの<span class="keyword">終点ノードであるターゲット画像</span>は「回答」の役割を果たします。</p>
+</div>
+<div class="content-box">
+<p>具体的には、私たちのGraph200Kデータセットには<span class="badge purple">49種類のノードタイプ</span>が存在し、これらを組み合わせて最大<span class="badge orange">134の非常に重複度の高いタスク</span>をサンプリングします。これにより、モデルはタスク間でより<strong class="highlight">コンパクトで共有された表現</strong>を学習することができます。さらに、これは私たちの教示ファインチューニング用データの<span class="keyword">多様性と柔軟性</span>を豊かにします。</p>
+<p>例えば、図4の下部に示されているように、 <code class="highlight">reference (参照画像) <i class="fas fa-arrow-right"></i> editing (編集情報) <i class="fas fa-arrow-right"></i> image (生成画像)</code> というパスは、参照画像を用いた画像編集タスクに対応します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tools"></i>3.2. Dataset Construction (データセット構築)</h3>
+<div class="content-box">
+<p>利便性のため、被写体駆動データは <span class="keyword">Subjects200K [61]</span> データセットから継承しています。加えて、画像修復データを取得するために、<span class="badge blue">32種類の異なる劣化</span>をオンラインで画像に適用しています。このセクションでは、残りの3つの主要タスク（条件付き生成、スタイル変換、画像編集）のデータ構築方法をまとめます。</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-cogs"></i> 条件付き生成 (Conditional generation)</p>
+<p>各画像は、専門モデルによって生成された<span class="badge purple">12種類</span>の異なる条件とペアになります。これらは <span class="keyword">ControlNet [80]</span> の手法に倣っており、以下のものが含まれます：</p>
+<ul class="unstyled-list tag-list">
+<li class="tag"><i class="fas fa-border-style"></i> Cannyエッジ [6]</li>
+<li class="tag"><i class="fas fa-signature"></i> HEDエッジ [72]</li>
+<li class="tag"><i class="fas fa-ruler-horizontal"></i> Hough線 [20]</li>
+<li class="tag"><i class="fas fa-map-marked-alt"></i> セマンティックセグメンテーションマップ [37]</li>
+<li class="tag"><i class="fas fa-layer-group"></i> 深度マップ [74]</li>
+<li class="tag"><i class="fas fa-shapes"></i> 形状法線マップ [73]</li>
+<li class="tag"><i class="fas fa-male"></i> 人物キーポイント [7]</li>
+</ul>
+<p>本研究ではこれらの条件を拡張し、以下を組み込んでいます：</p>
+<ul class="unstyled-list tag-list">
+<li class="tag"><i class="fas fa-object-ungroup"></i> SAM2 [50] マスク</li>
+<li class="tag"><i class="fas fa-crop-alt"></i> 前景セグメンテーション</li>
+<li class="tag"><i class="fas fa-search-plus"></i> オープンワールドのボックスとマスク</li>
+</ul>
+<p><span class="keyword">前景セグメンテーション</span>は RMBG [84] から派生し、インペインティングや前景抽出などのタスクをサポートします。<span class="keyword">オープンワールドのバウンディングボックス</span>は、Qwen2-VL [65] のグラウンディングキャプション機能を通じて生成され、SAM2 [50] を用いて対応するマスクが作られます。</p>
+</div>
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-paint-brush"></i> スタイル変換 (Style transfer)</p>
+<p>参照画像に従って、<span class="keyword">セマンティックバリアント（意味内容が変化する）</span>と<span class="keyword">セマンティックインバリアント（意味内容を保持する）</span>の両方の設定で画像のスタイルを変換します。</p>
+<div class="two-column">
+<div class="column">
+<p><strong class="highlight">セマンティックインバリアント転送:</strong></p>
+<p><span class="keyword">InstantStyle [64]</span> を採用し、元の画像の意味内容を保持します。</p>
+</div>
+<div class="column">
+<p><strong class="highlight">セマンティックバリアント転送:</strong></p>
+<p><span class="keyword">FLUX.1-Redux-dev [33]</span> に依存し、スタイル埋め込みと深度を条件として使用します。</p>
+</div>
+</div>
+<p>各画像に対して、ランダムに<span class="badge orange">5つのスタイル化バージョン</span>を生成します。これら2つのタスク（バリアントとインバリアント）を混合することで、モデルが曖昧さを避け、文脈内の例により良く従うように促します。</p>
+</div>
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-edit"></i> 画像編集 (Image editing)</p>
+<p>2種類の編集タスクを設計しました：<span class="keyword">背景バリアント編集</span>と<span class="keyword">背景インバリアント編集</span>です。</p>
+<p><strong class="highlight">背景インバリアント編集:</strong></p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">まず、画像中の被写体を特定します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">次に、大規模視覚言語モデル <span class="keyword">Qwen2-VL [65]</span> を利用して、元の被写体を置き換える新しいオブジェクトで画像キャプションを修正します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">被写体部分がマスクされた画像は、<span class="keyword">FLUX.1-Fill-dev [33]</span> インペインティングモデルによって処理され、新しいオブジェクトがマスク領域に統合されます。</div>
+</div>
+<div class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">データセットを充実させるため、上記操作を<span class="badge orange">5回</span>繰り返します。</div>
+</div>
+<p><strong class="highlight">背景バリアント編集:</strong></p>
+<p>背景インバリアント編集との違いは最後のステップにあります。背景バリアント編集では、深度を条件とし、修正されたキャプションをテキストプロンプトとして <span class="keyword">FLUX.1-Redux-dev [33]</span> を利用します。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-plus-circle"></i>3.3. Other Data (その他のデータ)</h3>
+<div class="content-box">
+<p>タスクの範囲をさらに拡大し、モデルの汎化能力を強化するために、トレーニング中にいくつかの<span class="keyword">オープンソースデータセット</span>を組み込んでいます。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-tshirt fa-2x" style="color: var(--color-accent1);"></i>
+<p><span class="keyword">VITON-HD [11]</span></p>
+<p class="reference">バーチャルトライオン用</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-palette fa-2x" style="color: var(--color-accent2);"></i>
+<p><span class="keyword">PhotoDoodle [28]</span></p>
+<p class="reference">芸術的な画像編集用</p>
+</div>
+</div>
+<p>画像編集タスクについては、<span class="keyword">OmniEdit [69]</span> データセットも用いて拡張しています。具体的には、以下の2つのサブタスクをトレーニングに使用します：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-plus-square" style="color: var(--color-primary);"></i> オブジェクト追加</li>
+<li><i class="fas fa-minus-square" style="color: var(--color-secondary);"></i> オブジェクト削除</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-flask"></i> 未見タスクによる汎化能力評価</p>
+<p>OmniEditの他の編集タスク、例えば<strong class="highlight">属性変更</strong>や<strong class="highlight">環境変更</strong>などは、<span class="badge yellow">未見タスク</span>として扱い、訓練済みモデルの汎化能力を評価するために使用されます。</p>
+</div>
+<p>さらに、高品質な<span class="keyword">内部データ</span>の一部も活用しており、これには以下のタスクが含まれます：</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-pencil-ruler fa-2x" style="color: var(--color-accent3);"></i>
+<p>描画プロセス [62]</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-cubes fa-2x" style="color: var(--color-primary);"></i>
+<p>マルチビュー生成 [29]</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="4._Method">
+<h2 class="section-title"><i class="fas fa-cogs"></i>4. Method (本研究の手法)</h2>
+<div class="content-box">
+<p>この論文では、<span class="keyword">ユニバーサル画像生成モデル</span>（<i class="fas fa-globe-americas"></i> 様々なタスクをこなせる万能型モデル）を構築する上での核心的な課題に取り組んでいます。具体的には、以下の3つの大きな壁がありました。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-tasks"></i></div>
+<p><span class="highlight">明確で汎用的なタスクの定式化</span>：モデルに「何をしてほしいか」をどう伝えるか。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-puzzle-piece"></i></div>
+<p><span class="highlight">視覚タスクのスパース性</span>：画像関連のタスクは種類が多く、それぞれデータがバラバラで学習しにくい。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-project-diagram"></i></div>
+<p><span class="highlight">マルチタスク学習のための統一フレームワークの欠如</span>：複数のタスクを効率よく学習する仕組みがない。</p>
+</div>
+</div>
+<p>前のセクション(3. Dataset)では、2つ目の課題である<span class="keyword">視覚タスクのスパース性</span>に対処するため、コンパクトなデータセット <span class="badge blue">Graph200K</span> を構築しました。このセクションでは、残りの課題解決に向けた具体的な手法を解説します。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge orange">4.1節</span> <i class="fas fa-eye"></i> <span class="keyword">視覚的文脈内学習 (Visual In-context Learning)</span> を導入し、普遍的なタスクの定式化を目指します。これは、モデルに「お手本」を見せてタスクを理解させるアプローチです。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple">4.2節</span> <i class="fas fa-wrench"></i> <span class="keyword">画像修復モデル (Image Infilling Model)</span> を<span class="keyword">統一的マルチタスクフレームワーク</span>と捉え、最小限のコストで強力な汎化能力（未知のタスクへの対応力）を実現する方法を提案します。
+            </div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chalkboard-teacher"></i>4.1. Visual In-context Learning (視覚的文脈内学習)</h3>
+<div class="content-box">
+<p>多くの視覚生成タスクを単一の生成モデルで扱うために、従来は<span class="keyword">言語指示 (language instructions)</span>、つまりテキストでタスク内容をモデルに伝える方法が一般的でした。しかし、これには限界があります。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 既存手法の課題</div>
+<p><span class="highlight">視覚と言語のギャップ</span>：画像の内容や操作を言葉だけで完全に伝えるのは難しいです。そのため、画像生成モデルのテキスト理解能力には限界があります。</p>
+<p>この問題は、既存のユニバーサル生成モデルにおいて以下の2つの弱点を引き起こしていました：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-random"></i> <span class="keyword">タスクの混同 (task confusion)</span> [39]：モデルが指示されたタスクを誤解してしまう。</li>
+<li><i class="fas fa-chart-line"></i> <span class="keyword">未学習タスクへの汎化能力の低下</span>：学習データに含まれていない新しいタスクへの対応が苦手。</li>
+</ul>
+</div>
+<p><i class="fas fa-lightbulb"></i> そこで、本研究では<span class="keyword">大規模言語モデル (LLMs)</span> [5]における<span class="keyword">Few-shot学習</span>（非常に少数の例から学習する能力）の成功に着想を得ました。LLMsは、いくつかのデモンストレーション（文脈内事例）を見るだけで新しいタスクをこなせるようになります。</p>
+<p>これを視覚タスクに応用し、<span class="keyword">視覚的文脈 (visual context)</span>、つまりお手本となる画像例をタスク指示として使うことを考えます。画像生成モデルは元々、視覚情報を理解する能力に長けているため、テキスト指示よりもフレンドリーな指示方法となり得ます。</p>
+<div class="bubble-box">
+<p>💡 <strong>再提案: 視覚的文脈内学習 (Visual In-context Learning)</strong></p>
+<p>この論文では、<span class="keyword">視覚的文脈内学習</span>を改めて提案し、普遍的で汎化能力の高い画像生成システムを構築します。モデルに「こういう入力に対しては、こういう画像を作ってね」という具体例をいくつか見せることで、タスクを理解させます。</p>
+</div>
+<p>説明のために、まず基本的な設定を定義しましょう。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語定義: クエリ (Query)</div>
+<p>任意の条件付き画像生成タスク（例: 「エッジ画像から写真を作る」）の入出力を<span class="keyword">クエリ \(X\)</span> と呼びます。これは、\(L-1\) 枚の<span class="keyword">条件画像</span>（入力画像）と、モデルが生成すべき1つの<span class="keyword">空白ターゲット \(\varnothing\)</span>（出力画像）を連結したものです。</p>
+<div class="formula">
+<p><i class="fas fa-equals"></i> クエリの構成:</p>
+<p>\(X = \operatorname{concat}(\{x_1, x_2, \dots, x_{L-1}, \emptyset\})\)</p>
+<ul>
+<li>\(x_1, \dots, x_{L-1}\): 条件画像（例: エッジ画像、深度マップなど）</li>
+<li>\(\emptyset\): モデルが生成するターゲット画像（最初は空白）</li>
+<li>\(\operatorname{concat}(\cdot)\): 画像を連結する操作</li>
+<li>\(L\): 1つのタスク例に関わる画像の総数（条件画像 \(L-1\) 枚 + ターゲット画像 1枚）</li>
+</ul>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-info-circle"></i> 補足</div>
+<p>後のセクション5.1で詳しく述べられますが、この手法はクエリの最後に単一の画像を生成するだけでなく、より一般的に、<span class="highlight">任意の位置に任意の数の画像を生成する</span>シナリオにも拡張可能です。</p>
+</div>
+</div>
+<p>学習時には、モデルにタスクの「お手本」を見せます。</p>
+<div class="process-step">
+<div class="step-number">📝</div>
+<div class="step-content">
+<p><span class="keyword">文脈内事例 (In-context Examples) の提供</span>:</p>
+<p>学習中、モデルには最大で \(C\) 個の<span class="keyword">文脈内事例</span>をランダムに与えます。各文脈内事例は、クエリと同様に \(L\) 枚の画像（\(L-1\) 枚の条件画像と1枚の完成したターゲット画像）から構成されます。これらは「お手本」として機能します。</p>
+<p>この戦略により、モデルは様々な数の文脈内事例（お手本の数）に対して汎化能力（適応力）を獲得できます。</p>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-chart-bar"></i> 期待される効果</div>
+<p>タスクのデモンストレーションとして文脈内事例を提供することには、以下のような利点があります：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle"></i> <span class="highlight">タスク混同の軽減</span>: モデルがタスクを正しく理解しやすくなります。</li>
+<li><i class="fas fa-arrow-up"></i> <span class="highlight">ドメイン内タスクの性能向上</span>: 学習で見たことのある種類のタスクに対する精度が上がります。</li>
+<li><i class="fas fa-globe"></i> <span class="highlight">未学習タスクへの汎化能力向上</span>: 見たことのない新しいタスクにも対応しやすくなります。</li>
+</ul>
+</div>
+<img alt="Figure 5: 位置埋め込みを適用する際の画像の連結方法" class="figure-image" src="visual_in_context_learning_concatenation.jpg"/>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-image"></i> 図5の解説: 位置埋め込みを適用する際の画像の連結方法</div>
+<p>この図は、異なるアスペクト比を持つ画像を扱う際に、どのように画像を連結して位置情報を付与するかを示しています。</p>
+<ul class="unstyled-list">
+<li><span class="badge yellow">ステップ1</span>: まず、\(C\)個の文脈内事例とクエリ内の各\(L\)枚の画像（合計 \((C+1) \times L\) 枚の画像）を、それぞれ<span class="keyword">水平方向に連結 (horizontally concatenated)</span>します。これにより、\(C+1\)個の横長の画像行ができます。
+                <br/>例：ある文脈内事例で \(L=3\) の場合（条件画像2枚、ターゲット画像1枚）、この3枚を横に並べます。これを全ての文脈内事例とクエリで行います。
+            </li>
+<li><span class="badge yellow">ステップ2</span>: 次に、これらの<span class="keyword">連結された行を時間的に (temporally) 連結</span>します。これは、実質的には垂直方向に積み重ねるような操作ですが、「時間的」という言葉は、異なる行（文脈内事例やクエリ）をシーケンスの異なるステップとして扱うことを示唆しています。これにより、アスペクト比が異なる画像も統一的に扱えるようになります。</li>
+</ul>
+<p>この方法で、多様な画像をグリッド状に配置し、モデルがそれらの相対的な位置関係を理解できるようにします。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i>4.2. Unified Multi-task Framework (統一的マルチタスクフレームワーク)</h3>
+<div class="content-box">
+<p>従来の視覚的文脈内学習の研究 [43, 60] は、主に<span class="keyword">単一の画像条件</span>と<span class="keyword">単一の文脈</span>を持つシナリオに焦点を当てていました（例: 1枚の入力画像と1セットのお手本）。</p>
+<p>しかし、本研究では、より野心的な目標を掲げています。</p>
+<div class="bubble-box">
+<p>🎯 <strong>本研究の目標</strong></p>
+<p><span class="highlight">多様な数の条件画像と文脈内事例を扱える統一フレームワーク</span>を構築し、様々なタスクに柔軟に適応できるようにすることです。</p>
+</div>
+<p>まずは単純化のため、モデルが処理する全ての画像が同じサイズ \(W \times H\)（幅 \(W\) ピクセル、高さ \(H\) ピクセル）であると仮定します。アスペクト比が異なる場合の扱いは、このセクションの最後で説明します。</p>
+<p>この仮定のもと、\(C\) 個の文脈内事例と1つのクエリがあり、それぞれが \(L\) 枚の画像を含む場合、全ての画像（合計 \((C+1) \times L\) 枚）を連結して、<span class="keyword">一つの大きなグリッド状の画像</span>を形成できます。このグリッド画像のサイズは \((L \times W, (C+1) \times H)\) となります。</p>
+<div class="info-grid">
+<div class="info-card">
+<p><strong><i class="fas fa-th"></i> グリッド画像のイメージ</strong></p>
+<p>横に \(L\) 枚の画像が並び、それが縦に \((C+1)\) 行あるようなイメージです。</p>
+<p>例: \(L=3\)（条件画像2枚、ターゲット1枚）、\(C=1\)（文脈内事例1セット）の場合</p>
+<ul class="unstyled-list">
+<li>行1 (文脈内事例): [条件1] [条件2] [ターゲット(完成済)]</li>
+<li>行2 (クエリ): [条件1] [条件2] [ターゲット(空白 \(\emptyset\))]</li>
+</ul>
+<p>このグリッド全体のサイズは \((3 \times W, 2 \times H)\) となります。</p>
+</div>
+</div>
+<p>このグリッド構造において、タスクを完了するということは、<span class="keyword">ターゲットとなるグリッド（空白の箇所）を周囲の文脈に基づいて埋める</span>ことと同じです。これは 마치 <span class="keyword">視覚的な穴埋め問題 (visual cloze puzzles)</span> を解くようなものです。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-feather-alt"></i> VisualCloze フレームワーク</div>
+<p>この考え方に基づき、本研究では <span class="keyword">VisualCloze</span> という統一フレームワークを提案します。これは、複数の解像度を扱える汎用的な<span class="keyword">画像修復 (image infilling) アーキテクチャ</span>をベースにしています。</p>
+</div>
+<p>一般的な拡散モデルベースの画像修復モデルの設計と一致するように、我々のモデルは次のように定式化できます。</p>
+<div class="formula">
+<p><i class="fas fa-cogs"></i> モデルの定式化 (式1):</p>
+<p>$$ { \hat { X } } = f ( X \mid T , M ) $$</p>
+<ul>
+<li>\(X\): 連結されたグリッド画像。最後のグリッド（ターゲット部分）は空白になっています。</li>
+<li>\(T\): <span class="keyword">言語指示 (language instruction)</span>。タスクの種類や生成内容を補足します。</li>
+<li>\(M\): <span class="keyword">マスク条件 (mask condition)</span>。どの部分を生成（修復）すべきかを示すバイナリ行列です。</li>
+<li>\(f(\cdot)\): 画像修復モデル。</li>
+<li>\(\hat{X}\): モデルによって修復（生成）された結果のグリッド画像。</li>
+</ul>
+</div>
+<p>マスク \(M\) は、グリッド画像と同じピクセル数のバイナリ行列で、サイズは \((H \times (C+1), W \times L)\) です。</p>
+<div class="formula">
+<p><i class="fas -border-all"></i> マスクの定義 (式2):</p>
+            $$
+            \begin{array} { r } { M ( i , j ) = \left\{ \begin{array} { l l } { 1 } &amp; { \mathrm { i f } \ i \in [ H \times C , H \times ( C + 1 ) ) } \\ &amp; { \mathrm { a n d } \ j \in [ W \times ( L - 1 ) , W \times L ) , } \\ { 0 } &amp; { \mathrm { o t h e r w i s e } , } \end{array} \right. } \end{array}
+            $$
+            <ul>
+<li>\(M(i,j)=1\): ピクセル \((i,j)\) がマスクされ、修復モデルによって生成されることを示します。</li>
+<li>\(M(i,j)=0\): ピクセル \((i,j)\) は既知であり、変更されません。</li>
+<li><span class="highlight">この式は、グリッド画像の最も右下のセル（クエリのターゲット画像に対応する領域）をマスクすることを示しています。</span>
+<br/>具体的には、行インデックス \(i\) が最後の行 \([H \times C, H \times (C+1))\) の範囲にあり、かつ列インデックス \(j\) が最後の列 \([W \times (L-1), W \times L))\) の範囲にあるピクセルをマスクします。（論文中の式ではC-1とCになっていますが、(C+1)行存在し、0からCまでインデックスが振られると仮定すると、最後の行は C から C+1-1 となり、インデックスは C です。そのため、 \(i \in [H \times C, H \times (C+1))\) となります。論文の記述 \(i \in [H \times (C-1), H \times C)\) は、おそらく \(C\) が0-indexed で全 \(C+1\) 行のうち、最後の行のインデックスが \(C\) であることを意図していると考えられます。ここでは論文の記述に従いますが、概念的には「最後の行、最後の列」です。）
+                </li>
+</ul>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-random"></i> 学習時の工夫: 逆生成の促進</div>
+<p>学習時には、上記のターゲット領域をマスクするのに加えて、<span class="highlight">最初の \(L-1\) 個のグリッド（条件画像部分）のいずれか1つを確率0.5でランダムにマスク</span>します。これにより、モデルはターゲット画像から条件画像を推測する<span class="keyword">逆生成 (reverse generation)</span>の能力も学習でき、よりロバストになります（詳細はセクション5.1で説明）。</p>
+</div>
+<p>推論時（実際に画像生成を行う際）には、生成されたグリッド画像 \(\hat{X}\) からターゲット画像部分を切り取ることで、目的の画像を簡単に得られます。</p>
+<div class="glass-card">
+<h4><i class="fas fa-bullseye"></i> 整列した最適化目的 (Aligned optimization objective)</h4>
+<p>この設計の重要な利点は、我々の <span class="keyword">VisualCloze</span> の定式化が、一般的な画像修復モデルと<span class="highlight">非常に一貫性のある最適化目的を共有</span>している点です。しかも、アーキテクチャの変更や明示的な入力条件の追加は不要です。</p>
+<p>この一貫性により、既存の高度な画像修復モデルを、我々が構築した新しいデータセット (Graph200K) を使って直接ファインチューニングできます。そして、基盤モデル（元々高性能なモデル）が持つ<span class="keyword">事前知識を最大限に活用</span>できます。</p>
+<p>対照的に、既存のタスク特化型モデルでは、しばしば追加の学習可能なモジュールを導入したり[38, 69]、追加の条件入力に適応させたり[61]する必要があり、これがモデル本来の能力を損なう可能性がありました。</p>
+</div>
+<div class="content-box">
+<h4><i class="fas fa-language"></i> 言語指示 (Language instructions)</h4>
+<p>VisualClozeにおいて、<span class="keyword">言語指示</span>も依然として重要です。その役割は以下の通りです：</p>
+<ol>
+<li><span class="badge blue">レイアウト指示</span>: グリッド画像の \((C+1) \times L\) のレイアウトを記述します。（論文中では \((C+1) \times W\) と記載されていますが、文脈から各行が \(L\) 枚の画像からなるため \((C+1) \times L\) が適切と思われます。）</li>
+<li><span class="badge green">タスク指示</span>: 実行するタスクの種類を指定します（例: 「エッジから画像を生成」）。</li>
+<li><span class="badge orange">コンテンツ指示</span>: 生成すべきターゲット画像の内容を記述します（例: 「赤いリンゴ」）。これは、特に文脈内事例が利用できない場合に重要になります。</li>
+</ol>
+<p>これらの指示の具体的な例は、付録Aで示されています。</p>
+<p>上記の3つの要素 \(X\) (連結画像)、\(T\) (言語指示)、\(M\) (マスク) を再構成することで、一般的な画像修復のパラダイムを用いつつ、視覚的文脈内学習をサポートする、画像生成のための統一的マルチタスクフレームワークを実現します。</p>
+</div>
+<div class="content-box">
+<h4><i class="fas fa-map-marker-alt"></i> 位置埋め込み (Positional embedding)</h4>
+<p>前述の通り、全ての画像はグリッド状に連結され、この大きな画像に対して<span class="keyword">位置埋め込み (positional embedding)</span>（例: RoPE [57]）を適用できます。これにより、モデルは各部分画像がグリッド全体のどの位置にあるかを認識できます。</p>
+<p>しかし、<span class="highlight">アスペクト比が異なる文脈内事例からグリッド画像を構成する</span>際に潜在的な制約があります。単純に連結すると、歪みが生じたり、位置情報がうまく伝わらなかったりする可能性があります。</p>
+<p>この問題に対処するため、本研究では <span class="keyword">Flux.1-Fill-dev</span> モデルで採用されている <span class="keyword">3D-RoPE</span> を活用します。具体的には、図5で示したように、クエリと文脈内事例を<span class="keyword">時間的次元 (temporal dimension)</span> に沿って連結します。これは、異なる行（各行は文脈内事例またはクエリに対応）をシーケンスの異なる「タイムステップ」として扱うようなものです。これにより、性能を著しく低下させることなく、アスペクト比の不一致問題を効果的に克服できます。</p>
+</div>
+<img alt="Figure 5: 位置埋め込みを適用する際の画像の連結方法" class="figure-image" src="visual_in_context_learning_concatenation.jpg"/>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-image"></i> 再掲: 図5の解説</div>
+<p>図5は、アスペクト比の異なる画像を扱うための連結戦略を示しています。</p>
+<ul class="unstyled-list">
+<li><strong>水平連結</strong>: 各文脈内事例（\(C\)個）とクエリ内の画像（各々\(L\)枚）を、まずそれぞれ横方向に繋げます。</li>
+<li><strong>時間的連結</strong>: 次に、こうしてできた横長の画像列たちを、時間軸に沿って（実質的には縦方向に）連結します。これにより、各画像列がシーケンス内の異なる要素として扱われ、アスペクト比の不一致に対応します。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tools"></i>4.3. Implementation Details (実装詳細)</h3>
+<div class="content-box">
+<p>本研究では、基盤モデルとして <span class="keyword">FLUX.1-Fill-dev [33]</span> を使用します。これは、オープンソースの画像修復モデルの中で際立って優れた性能を持つためです。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4><i class="fas fa-layer-group"></i> ファインチューニング手法: LoRA</h4>
+<p>モデル全体をファインチューニングするのではなく、<span class="keyword">LoRA (Low-Rank Adaptation) [25]</span> を採用しました。これには以下の利点があります：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-dollar-sign"></i> <span class="highlight">訓練コストの削減</span></li>
+<li><i class="fas fa-brain"></i> <span class="highlight">基盤モデルの能力の維持</span></li>
+<li><i class="fas fa-plug"></i> 生成されたLoRAは、コミュニティの他のLoRAと融合可能で、より広範な応用が期待できる。</li>
+</ul>
+<p>具体的には、LoRAのランクを <span class="badge yellow">256</span> に設定しました。</p>
+</div>
+<div class="info-card glass-card">
+<h4><i class="fas fa-microchip"></i> 学習設定</h4>
+<ul class="unstyled-list">
+<li><span class="keyword">反復回数</span>: 20,000イテレーション</li>
+<li><span class="keyword">バッチサイズ</span>: 累積バッチサイズ 64</li>
+<li><span class="keyword">GPU</span>: 8 × A100 GPU</li>
+<li><span class="keyword">オプティマイザ</span>: AdamW</li>
+<li><span class="keyword">学習率</span>: \(1 \times 10^{-4}\)</li>
+</ul>
+<p>FLUX.1-Fill-dev に倣い、<span class="keyword">lognormノイズ戦略</span>と<span class="keyword">動的時間シフト</span>を組み込んでいます。</p>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-images"></i> 学習時のパラメータ</div>
+<ul class="unstyled-list">
+<li><strong>文脈内事例の数 (\(C\))</strong>: 学習時には最大で <span class="badge blue">2</span> つまで設定します（セクション4.2で定義）。</li>
+<li><strong>1タスクあたりの画像数 (\(L\))</strong>: Graph200Kデータセットでは、\(L\) は <span class="badge green">2から4</span> の間で変動します。</li>
+<li><strong>推論時の文脈内事例</strong>: 推論時には、文脈内事例の数をより多く一般化できます（学習時より多くてもOK）。</li>
+<li><strong>画像サイズ</strong>: 計算効率のバランスを取るため、各画像はグリッドレイアウトに連結する前に、面積が \(384 \times 384\) または \(512 \times 512\) になるようにリサイズされます。</li>
+<li><strong>高解像度出力</strong>: 実用的なアプリケーションでは、単純な<span class="keyword">後処理アップスケーリング技術 [45]</span> を用いることで高解像度の出力を得ることができます。</li>
+</ul>
+<img alt="Reverse generation via in-context learning" class="figure-image" src="reverse_generation_in_context_learning.jpg"/>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-undo"></i> 参考図: 逆生成 (Reverse Generation) の例</div>
+<p>この図 (論文中ではFig.9) は、文脈内学習によって、ターゲット画像から条件画像を推測する「逆生成」が可能であることを示しています。例えば、スタイル化された画像から元の画像とスタイル参照画像を分離したり（左）、エッジ画像から元の画像、深度マップ、法線マップを同時に推測したり（右）できます。このような能力は、セクション4.2で述べた学習時のランダムマスキング戦略によって促進されます。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="5._Experiments">
+<h2 class="section-title"><i class="fas fa-flask"></i>5. Experiments</h2>
+<div class="content-box">
+<p>このセクションでは、提案手法である<span class="keyword">VisualCloze</span>の有効性を実験的に検証し、特に<span class="keyword">In-context Learning (ICL)</span>の役割と性能を明らかにします。主な目的は以下の通りです：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> In-context Learningが様々な画像生成タスク（特に訓練時に見ていない未知のタスク）に対してどのように機能するかを定性的に分析する。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> VisualClozeの性能を、既存の普遍的生成モデルや特化型モデルと定量的に比較評価する。</li>
+</ul>
+<p>このセクションを通じて、In-context Learningが<span class="highlight">タスクの曖昧性解消</span>、<span class="highlight">未知タスクへの般化</span>、<span class="highlight">複数タスクの統合</span>、そして<span class="highlight">双方向の生成</span>（条件からの生成とターゲットからの条件推測）を可能にし、VisualClozeフレームワーク全体として高い画像生成能力を発揮することを具体的に示していきます。✏️🔍📊</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i>5.1. Qualitative Analysis of In-context Learning</h3>
+<div class="content-box">
+<p>このサブセクションでは、<span class="keyword">In-context Learning (ICL)</span>が様々なタスク、特に<span class="highlight">訓練中に遭遇しなかったタスク (unseen tasks)</span> において、どれほど効果的であるかを一連の実験を通して具体的に示します。広範な実験に基づき、ICLの役割を浮き彫りにする<span class="badge badge-purple">5つの主要な発見 (key findings)</span>をまとめました。これらの発見は、ICLが単なるタスク実行支援に留まらず、モデルの適応性や汎用性を大きく向上させることを示唆しています。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-lightbulb"></i>In-Context Learning Findings 1</h4>
+<div class="content-box">
+<p class="bubble-box">💡 <strong>発見1: In-context learningは<span class="keyword">既知タスク (seen tasks)</span> における<span class="keyword">タスク曖昧性 (task confusion)</span> を軽減できる。</strong></p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：タスク曖昧性 (Task Ambiguity)</p>
+<p>モデルが実行すべきタスクの意図を正確に解釈できず、不適切な結果を生成してしまう現象を指します。特に、画像の各ピクセルに対して予測を行う<span class="keyword">密な予測タスク (dense prediction tasks)</span>、例えばセグメンテーションや深度推定などで顕著に見られることがあります。</p>
+</div>
+<p>訓練データに含まれるタスクであっても、モデルが時折タスクの意図を誤解し、<span class="highlight">タスク曖昧性</span>を引き起こすことがあります。In-context learningは、タスク固有のデモンストレーション（お手本となる入出力例）を提供することで、この問題を効果的に軽減します。</p>
+<img alt="Figure 6. In-context learning mitigates the task ambiguity in seen tasks." class="figure-image" src="in_context_learning_seen_tasks.jpg"/>
+<p class="reference">Figure 6. In-context learningが既知タスクにおけるタスク曖昧性を軽減する例。各タスクで3つの異なる初期ノイズからの生成結果を示しています。</p>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-street-view" style="color: var(--color-accent1);"></i> (a) ポーズ推定 &amp; (c) エッジ検出</h5>
+<p>Figure 6 (a) および (c) に示すように、ポーズ推定やエッジ検出タスクでは、In-context examplesがない場合、モデルはノイズの多い結果を生成することがあります。しかし、<span class="highlight">In-context examplesの数を増やす</span>と、パフォーマンスと安定性が向上します。これは、モデルがタスクの具体的な内容をより正確に理解できるようになるためです。</p>
+<div style="text-align: center; margin-top:10px;">
+<span class="badge">ICLなし: 😥 ノイズ多い</span> <i class="fas fa-arrow-right" style="color: var(--color-primary); margin: 0 10px;"></i> <span class="badge badge-green">ICLあり: 😄 クリアな結果</span>
+</div>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-ruler-combined" style="color: var(--color-accent2);"></i> (b) 深度推定</h5>
+<p>Figure 6 (b) の深度推定タスクでは、モデルが元々不正確な推定をしていた場合（特に遠方の領域）、In-context examplesを提供することで<span class="highlight">精度が向上</span>します。お手本を見ることで、より正確な奥行き情報を捉えられるようになります。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-magic" style="color: var(--color-accent3);"></i> (d) 条件付き生成</h5>
+<p>Figure 6 (d) のような一部のタスク（例：条件付き生成）では、In-context examplesがなくてもモデルが満足のいく結果を安定して生成できる場合があります。しかし、後述するTable 1の定量的比較が示すように、<span class="highlight">In-context learningを使用することでタスク完了の精度をさらに向上</span>させることができます。</p>
+</div>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-lightbulb"></i>In-Context Learning Findings 2</h4>
+<div class="content-box">
+<p class="bubble-box">💡 <strong>発見2: In-context learningは<span class="keyword">未知タスク (unseen tasks)</span> への<span class="keyword">般化 (generalization)</span> をサポートし、より多くのIn-context examplesを提供することで、より正確な生成につながる可能性がある。</strong></p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：般化 (Generalization)</p>
+<p>モデルが訓練データセットに含まれていなかった新しい、未知のデータやタスクに対しても、学習した知識を応用して適切に処理できる能力のことです。</p>
+</div>
+<p>In-context learningは、単に既知タスクの曖昧性を軽減するだけでなく、モデルが<span class="highlight">訓練中に学習していないタスクにも対応できる</span>ようにする重要な役割を果たします。Figure 2（論文の序盤で提示）では、横顔の画像から正面顔を生成したり、編集指示 [8] を転移させたりといった、訓練時には遭遇しなかったタスクをICLによって成功させています。</p>
+<p>ここでは、未知タスクの追加例を示します。</p>
+<img alt="Figure 7. Unseen Tasks" class="figure-image" src="unseen_tasks_image_editing_in_context_learning.jpg"/>
+<p class="reference">Figure 7. 未知タスクの例。モデルが学習したのは物体の追加と削除のみに関する画像編集タスクですが、ICLを通じて環境変更（左）や属性変換（右）など、他の種類の編集タスクにも般化できています。他の未知タスクはFigure 2も参照。</p>
+<div class="two-column">
+<div class="column">
+<p>例えば、Figure 7に示すように、モデルは<span class="keyword">物体の追加や削除</span>に関する画像編集タスクのみで訓練されていますが、それでもICLを用いることで、<span class="highlight">環境の変更</span>（例：冬の風景に変える）や<span class="highlight">属性の修正</span>（例：サングラスの色を緑に変える）といった他の種類の編集タスクに般化することができます。</p>
+</div>
+<div class="column">
+<img alt="Figure 8. Unseen Tasks" class="figure-image" src="multi_subject_generation_in_context_learning.jpg" style="max-width: 100%; margin-top: 10px;"/>
+<p class="reference" style="text-align: center;">Figure 8. 未知タスクの例。VisualClozeは、訓練時には単一被写体駆動型の生成タスクしか学習していないにもかかわらず、複数被写体のアイデンティティを保持した生成 [70] を行うことができます。（拡大してご覧ください）</p>
+</div>
+</div>
+<p>さらに、Figure 8で示されるように、<span class="keyword">単一被写体の生成</span>のみで訓練されたモデルが、<span class="highlight">複数の被写体のアイデンティティを保持した画像を生成</span>することが可能です。これらの結果は、In-context learningが効果的なガイダンスメカニズムであり、<span class="highlight">再訓練なしで新しいタスクに適応</span>することを可能にすることを示しています。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-lightbulb"></i>In-Context Learning Findings 3</h4>
+<div class="content-box">
+<p class="bubble-box">💡 <strong>発見3: In-context learningは<span class="keyword">タスク統合 (task unification)</span> を可能にする。これは、複数のサブタスクを単一ステップに統合し、中間結果を生成するという、訓練時には見られなかった戦略である。</strong></p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：タスク統合 (Task Unification)</p>
+<p>複数の異なるタスクや処理ステップを、あたかも一つのタスクであるかのようにまとめて実行することです。これにより、効率化やより複雑な処理の実現が期待できます。</p>
+</div>
+<p>ICLを通じて、複数のタスクを<span class="highlight">単一の実行ステップに統合</span>できることがわかりました。これは、ある種の未知タスクと見なすことができます。Figure 3（論文の序盤で提示）では、その例として、1) 条件付き生成と再照明タスクのマージ（左図）、2) 深度推定、表面法線推定、エッジ検出の同時実行（右図）を示しました。</p>
+<img alt="Figure 3. Unseen Tasks - Task Unification" class="figure-image" src="unseen_tasks_task_unification.jpg"/>
+<p class="reference">Figure 3. 未知タスク：タスク統合の例。ICLを活用して、複数の既知タスクを単一ステップの未知タスクに統合します。左：[深度から画像へ]と[再照明]タスクを単一の[様々な照明を持つ深度からの画像生成]タスクへ。右：複数の密な予測タスクを共同予測タスクへ。</p>
+<img alt="Figure 11. Unseen combinations of multiple tasks." class="figure-image" src="conditional_generation_pose_canny_in_context.jpg"/>
+<p class="reference">Figure 11. 未知タスク：複数タスクの未知の組み合わせの例。条件付き生成において、複数の条件を統合してより精密な制御を実現します。他の例はFigure 3を参照。</p>
+<p>同様に、Figure 11は、条件付き生成において複数の条件を組み合わせることで、より精密な制御を達成する方法を示しています。例えば、キーポイントに基づいてポートレートを生成する場合、位置や体のポーズに関する大まかな情報しか提供されません。このような場合、<span class="highlight">輪郭条件 (contour conditions) を使用して他の視覚要素の属性を制御</span>することができます。これは、異なる種類の情報を組み合わせて一つの望ましい結果を得る、タスク統合の一例です。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-sitemap"></i> タスク統合の考え方</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">個別のタスクA（例：ポーズ推定）</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">個別のタスクB（例：エッジ検出）</div>
+</div>
+<div style="text-align: center; font-size: 24px; color: var(--color-primary); margin: 10px 0;">↓ <span style="font-family: 'Yomogi';">ICLによる統合</span> ↓</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">3</div>
+<div class="step-content">統合タスク（例：ポーズとエッジを同時に推定）</div>
+</div>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-lightbulb"></i>In-Context Learning Findings 4</h4>
+<div class="content-box">
+<p class="bubble-box">💡 <strong>発見4: 異なるIn-context learning examplesは<span class="keyword">異なる効果</span>をもたらし、<span class="highlight">タスクの意図をより良く伝えることができるexample</span>は、より良く安定した生成を達成できる。</strong></p>
+<p>プロンプト選択に関する先行研究 [46, 52] に倣い、我々もまた、異なるIn-context examplesが生成品質に影響を与えることを見出しました。具体的には、In-context examplesが<span class="highlight">タスクの意図について正確かつ強力なガイダンスを提供する</span>ことが重要です。</p>
+<img alt="Figure 10. Illustration of the impact of different in-context examples" class="figure-image" src="in_context_learning_face_frontalization.jpg"/>
+<p class="reference">Figure 10. 異なるIn-context examplesがIn-context learningに与える影響の図解。左の2番目の例では、左右の顔が正面に偏りすぎているため、タスク意図の核心的な目標を示していません。</p>
+<p>例えば、Figure 10（左）で示されるように、横顔がFigure 10（右）よりも正面に近い場合、<span class="highlight">正面顔を正しく生成する成功率が劇的に低下</span>しました。これは、左側の例では「横顔から正面顔を生成する」というタスクの本質的な目的が、提示された例（横顔が既に正面に近い）によって曖昧になってしまったためと考えられます。良いお手本は、タスクの「何をすべきか」を明確に示す必要があります。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i>注意点</p>
+<p>In-context exampleの選び方が重要！タスクの核心を捉えた、明確な例を選ぶことで、モデルはより正確にタスクを理解し、高品質な画像を生成できます。</p>
+<p>例：顔の正面化タスク</p>
+<ul class="unstyled-list">
+<li><span style="color: green;">適切な例 <i class="fas fa-check"></i>:</span> 明確に横を向いた顔 → 正面を向いた顔</li>
+<li><span style="color: red;">不適切な例 <i class="fas fa-times"></i>:</span> 少し斜めを向いた顔（ほぼ正面） → 正面を向いた顔 （これでは「正面化」の意図が伝わりにくい）</li>
+</ul>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-lightbulb"></i>In-Context Learning Findings 5</h4>
+<div class="content-box">
+<p class="bubble-box">💡 <strong>発見5: In-context learningは<span class="keyword">双方向生成 (bilateral generation)</span> をガイドでき、訓練時には見られなかった<span class="highlight">逆プロセス</span>に対しても有効である。</strong></p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：双方向生成 (Bilateral Generation)</p>
+<p>通常の「条件 → ターゲット画像」という方向の生成だけでなく、その逆方向の「ターゲット画像 → 条件」という推論も可能であることを指します。例えば、画像からその画像のスタイルやレイアウト情報を抽出するようなタスクがこれに該当します。</p>
+</div>
+<p>与えられた一連の条件からターゲットを生成することに加えて、我々のモデルは<span class="keyword">逆生成 (reverse generation)</span>、つまりターゲットからその根底にある条件を推測する能力も示します。訓練時（Sec. 4.2で説明）には、条件画像の一つをランダムにターゲットとして扱っていましたが、推論時には、より挑戦的で訓練時には見られなかった設定、すなわち<span class="highlight">ターゲット画像のみから全ての条件画像を推測する</span>という設定にも般化できます。</p>
+<img alt="Figure 9. Unseen Tasks - Reverse Generation" class="figure-image" src="reverse_generation_in_context_learning.jpg"/>
+<p class="reference">Figure 9. 未知タスク：双方向生成の例。ICLを通じて、ターゲットから条件への逆生成を実行できます。例えば、(a) スタイル化された画像からレイアウトとスタイルを分解する、(b) エッジマップから画像、深度、表面法線を同時に推測する（これはFigure 3左の逆タスク）。</p>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-palette" style="color: var(--color-accent1);"></i> (a) コンテンツとスタイルの分離</h5>
+<p>Figure 9 (左) に示すように、モデルはスタイル化された画像が与えられた場合に、元の画像とスタイル参照画像の両方を<span class="highlight">リバースエンジニアリング</span>（逆解析）することができます。これは、コンテンツ表現とスタイル表現を分離する能力を示しています。</p>
+<p>入力：スタイル化された画像 <i class="fas fa-arrow-right" style="color: var(--color-primary); margin: 0 5px;"></i> 出力：元の画像 + スタイル参照画像</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-cogs" style="color: var(--color-accent2);"></i> (b) エッジからの多情報推測</h5>
+<p>同様に、Figure 9 (右) に示すように、モデルはエッジ画像から対応する実画像、深度推定、表面法線推定を生成できます。これは、Figure 3 (左) で示されたタスク（深度などから画像を生成）の<span class="highlight">逆タスク</span>に相当します。</p>
+<p>入力：エッジ画像 <i class="fas fa-arrow-right" style="color: var(--color-primary); margin: 0 5px;"></i> 出力：実画像 + 深度マップ + 表面法線マップ</p>
+</div>
+</div>
+<p>このような逆タスクを実行する能力は、異なる種類の画像表現間の複雑な関係を理解する上での<span class="highlight">柔軟性と堅牢性</span>を強調しています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-bar"></i>5.2. Main Results</h3>
+<div class="content-box">
+<p>このサブセクションでは、我々の提案手法<span class="keyword">VisualCloze</span>を、既存の<span class="badge badge-blue">普遍的生成モデル (universal generative models)</span>（OmniGen [71], OneDiffusion [35]など）や<span class="badge badge-orange">特化型モデル (specialized models)</span>（ControlNet [80], OminiControl [61]など）と比較評価します。評価指標の詳細は付録Cに記載されています。</p>
+<p>さらに、比較のためにFLUX.1-dev [33]をFLUX.1-Fill-devと同じ設定でファインチューニングし、これらの調整済みモデルをそれぞれ<span class="keyword">$\mathrm { Ours } _ { \mathrm { dev } }$</span>および<span class="keyword">$\mathrm { Ours } _ { \mathrm { fill } }$</span>と呼びます。$\mathrm { Ours } _ { \mathrm { dev } }$の詳細は付録Bに示されています。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-balance-scale"></i>評価のポイント</p>
+<p>VisualClozeが、様々なタスクをこなせる汎用性と、個々のタスクにおける高品質な生成能力を、どの程度両立できているかを検証します。</p>
+</div>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-tasks"></i>条件付き生成と画像修復 (Conditional Generation and Image Restoration)</h4>
+<p>OminiControl [61] の評価アプローチに従い、モデルを<span class="highlight">制御性 (controllability)</span>、<span class="highlight">視覚的品質 (visual quality)</span>、<span class="highlight">テキスト整合性 (text consistency)</span> の3つの基準で評価します。</p>
+<img alt="Table 1. Quantitative comparison on conditioning generation and image restoration." class="figure-image" src="table1.png" style="width: 100%; max-width: 800px;"/>
+<p class="reference">Table 1. 条件付き生成と画像修復に関する定量的比較。各タスクに特化したモデルは灰色でマークされています。それ以外のモデルの中で、最良のものは太字、次善のものは下線で示されています。</p>
+<p>Table 1が示すように、我々のフレームワークは、既存の普遍的メソッドと同等の制御性を示しつつ、<span class="highlight">より優れた視覚的品質とテキスト整合性を達成</span>しています。特化型メソッドと比較しても、我々のモデルは最良の結果に匹敵し、特に<span class="keyword">深度から画像への生成 (depth-to-image)</span> タスクではそれらを上回ることさえあります。</p>
+<img alt="Figure 12. Comparison between Flux.1-dev and Flux.1-Fill-dev" class="figure-image" src="depth_to_image_deblurring_comparison.jpg"/>
+<p class="reference">Figure 12. Flux.1-dev ($\mathrm { Ours } _ { \mathrm { dev } }$) と Flux.1-Fill-dev ($\mathrm { Ours } _ { \mathrm { fill } }$) の比較。</p>
+<p>Figure 12は視覚的な比較を示しており、$\mathrm { Ours } _ { \mathrm { fill } }$は$\mathrm { Ours } _ { \mathrm { dev } }$に対して明らかな利点を示しています。特に、深度から画像への生成において、$\mathrm { Ours } _ { \mathrm { dev } }$によって生成された画像は頻繁に<span class="highlight">対角線状の筋状アーティファクト</span>を示し、これが視覚的忠実度を著しく低下させます。性能、視覚的品質、およびアーキテクチャ効率の利点を考慮すると、$\mathrm { Ours } _ { \mathrm { fill } }$が優れたモデルとして際立っています。</p>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-palette"></i>スタイル転移 (Style Transfer)</h4>
+<p>スタイル転移タスクでは、CLIP [49] モデルを使用して<span class="highlight">テキスト整合性</span>と<span class="highlight">スタイル整合性 (style alignment)</span> を測定します。</p>
+<img alt="Table 3. Quantitative comparison for style transfer." class="figure-image" src="table3.png" style="width: 100%; max-width: 800px;"/>
+<p class="reference">Table 3. スタイル転移の定量的比較。特化型モデルは灰色で示されています。その他の中で、最も性能の高いものは太字で、2番目に優れたものは下線で示されています。</p>
+<p>Table 3に報告されているように、我々の手法はOmniGen [71] をテキスト整合性で<span class="highlight">$2 \%$</span>、スタイル整合性で<span class="highlight">$3 \%$</span>上回っています。特化型モデルであるInstantStyle-Plus [81] と比較しても、テキスト整合性で<span class="highlight">$2 \%$の改善</span>を達成し、スタイル整合性はわずかに低下するのみでした。</p>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-dark);"><i class="fas fa-user-astronaut"></i>被写体駆動型画像生成 (Subject-driven Image Generation)</h4>
+<p>被写体駆動型画像生成についてモデルを評価し、DINOv2 [47]、CLIP-I [49]、CLIP-T [49] スコアを用いて<span class="highlight">意味的整合性 (semantic alignment)</span> を報告します。</p>
+<img alt="Table 2. Quantitative comparison for subject-driven image generation." class="figure-image" src="table2.png" style="width: 100%; max-width: 800px;"/>
+<p class="reference">Table 2. 被写体駆動型画像生成の定量的比較。テキスト整合性とスタイル一貫性に関するCLIPスコアを報告します。特化型モデルは灰色で網掛けされています。残りの手法の中で、最良のものは太字で強調され、2番目に優れたものは下線が引かれています。</p>
+<p>Table 2に示すように、これら全ての指標において、我々の手法は一貫して改善を示しています。例えば、特化型モデルOminiControl [61] と比較して、これら3つのスコアでそれぞれ<span class="highlight">$7.15 \%$、$1.66 \%$、$1.48 \%$の改善</span>を達成しています。</p>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-primary);"><i class="fas fa-puzzle-piece"></i>インフィリングモデルの利点 (Advantages of the infilling model)</h4>
+<p>我々の手法 ($\mathrm { Ours } _ { \mathrm { fill } }$) は、FLUX.1-Fill-dev [33] に基づいて構築されており、これは我々の統一画像生成フレームワークと同じ目的を共有しています。その有効性を検証するために、同一設定でFill.1-dev [33] ($\mathrm { Ours } _ { \mathrm { dev } }$) もファインチューニングしました。$\mathrm { Ours } _ { \mathrm { fill } }$が変更を必要としないのに対し、$\mathrm { Ours } _ { \mathrm { dev } }$は普遍的画像生成のためにモデルの適応が必要となります（詳細は付録B参照）。その単純さにもかかわらず、$\mathrm { Ours } _ { \mathrm { fill } }$は複数のタスクで優れた性能を達成しています。</p>
+<div class="info-grid">
+<div class="info-card">
+<p>Table 1に示すように、$\mathrm { Ours } _ { \mathrm { dev } }$はcanny-to-image生成において$\mathrm { Ours } _ { \mathrm { fill } }$よりも高いF1スコアを達成しています。しかし、他のタスクでは$\mathrm { Ours } _ { \mathrm { fill } }$が大きな利点を示しています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-drafting-compass" style="color: var(--color-accent1);"></i> <strong>Depth-to-image:</strong> $\mathrm { Ours } _ { \mathrm { fill } }$はRMSEを25.06から<span class="highlight">10.31に削減</span>。</li>
+<li><i class="fas fa-wind" style="color: var(--color-accent2);"></i> <strong>Deblurring:</strong> $\mathrm { Ours } _ { \mathrm { fill } }$はRMSEを低減しつつ高いSSIMを維持し、<span class="highlight">優れた品質</span>を達成。</li>
+</ul>
+</div>
+<div class="info-card">
+<p>Table 2は、被写体駆動型画像生成において$\mathrm { Ours } _ { \mathrm { fill } }$が一貫して$\mathrm { Ours } _ { \mathrm { dev } }$を上回ることを示しています。さらに、Table 3に示すように、意味不変なスタイル転移において、$\mathrm { Ours } _ { \mathrm { fill } }$は$\mathrm { Ours } _ { \mathrm { dev } }$と同等の性能を発揮します。</p>
+<p>これらの結果は、<span class="keyword">VisualClozeの「画像インフィリングとして定式化する」というアプローチ</span>が、既存の高性能なインフィリングモデルの能力を最大限に活用し、多様なタスクで高い性能を引き出す上で有効であることを示唆しています。</p>
+</div>
+</div>
+</div>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-dark); margin-top: 25px;"><i class="fas fa-search-plus"></i>In-context Learningに関する定量的比較 (Quantitative comparison on in-context learning)</h4>
+<p>ここでは、<span class="keyword">既知タスク (seen tasks)</span> におけるIn-context learningの影響をさらに分析します。Table 1は、さまざまな画像生成タスクにおけるICLの影響を示しています。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-pencil-ruler"></i></div>
+<h5>Canny条件</h5>
+<p>In-context examplesなしの場合、FIDは30.60でしたが、2つのIn-context examplesを用いると<span class="highlight">31.15に向上</span>しました（FIDは低い方が良い指標ですが、この論文では改善と表現。おそらく他の指標との兼ね合いや、特定条件下での挙動を指している可能性。通常FIDは低いほど良い）。</p>
+<span class="badge badge-yellow">ICLなし: FID 30.60</span> <i class="fas fa-long-arrow-alt-right"></i> <span class="badge badge-yellow">ICLあり(2例): FID 31.15</span>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-layer-group"></i></div>
+<h5>Depth条件</h5>
+<p>In-context examplesの数が増加するにつれて、RMSEは10.31から<span class="highlight">9.68に減少</span>し、構造的一貫性の向上が示されました。</p>
+<span class="badge badge-blue">ICLなし: RMSE 10.31</span> <i class="fas fa-long-arrow-alt-right"></i> <span class="badge badge-blue">ICLあり: RMSE 9.68</span>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-eraser"></i></div>
+<h5>Deblurringタスク</h5>
+<p>RMSEは26.53から<span class="highlight">25.57に減少し</span>、元のコンテンツへの忠実度の向上を反映しています。</p>
+<span class="badge badge-purple">ICLなし: RMSE 26.53</span> <i class="fas fa-long-arrow-alt-right"></i> <span class="badge badge-purple">ICLあり: RMSE 25.57</span>
+</div>
+</div>
+<p>これらの結果は、In-context learningが効果的なガイダンスメカニズムであり、モデルがタスクの意図により良く整合することを可能にすることを示しています。</p>
+</div>
+</div>
+<div class="section-card" id="6._Limitations">
+<h2 class="section-title"><i class="fas fa-triangle-exclamation"></i>6. Limitations</h2>
+<div class="glass-card" style="margin-bottom: 20px;">
+<p style="font-family: 'Yomogi'; font-size: 16px; text-align: center;">
+<i class="fas fa-search-minus"></i> <strong>このセクションの目的</strong> <i class="fas fa-search-minus"></i>
+</p>
+<p>このセクションでは、提案されている画像生成フレームワーク <span class="keyword">VisualCloze</span> が抱えるいくつかの限界や課題について解説します。完璧なモデルというものは存在せず、どのような優れた研究にも改善の余地があるものです。ここでは、VisualClozeがどのような点でまだ発展途上なのかを正直に見ていきましょう。✏️</p>
+</div>
+<div class="content-box">
+<p>私たちのモデル（VisualCloze）は、学習データに含まれるタスク（<span class="keyword">ドメイン内タスク</span>）のほとんどにおいては、<span class="highlight">非常に安定した性能</span>を発揮します。しかし、いくつかの特定のタスク、例えば<span class="badge orange">オブジェクト除去 (object removal)</span>のようなタスクでは、まだ<span class="highlight">不安定さ</span>が見られることがあります。この事実は、モデルの性能が<span class="keyword">特定のタスクの特性に敏感である</span>ことを示唆しています。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 20px; margin-bottom:20px;">
+<div class="info-card">
+<div class="icon-item" style="text-align: center;">
+<i class="fas fa-tasks" style="font-size: 30px; color: var(--color-primary);"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol'; text-align: center; color: var(--color-primary);"><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 安定したドメイン内タスク</h4>
+<p style="font-size: 13px; text-align: center;">多くの条件付き生成やスタイル変換など。</p>
+<div style="text-align:center; margin-top:10px;">
+<img alt="安定したタスク" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80' viewBox='0 0 120 80'%3E%3Crect width='120' height='80' rx='8' ry='8' fill='%23e6f7ff'/%3E%3Cpath d='M30 45 L50 60 L90 25' stroke='%2352c41a' stroke-width='5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ctext x='60' y='70' font-family='Yomogi' font-size='10' text-anchor='middle' fill='%23333'%3Eおおむね良好！%3C/text%3E%3Cstyle%3E%40import url('https://fonts.googleapis.com/css2?family=Yomogi%26display=swap');%3C/style%3E%3C/svg%3E" style="width: 60%; border: none;"/>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item" style="text-align: center;">
+<i class="fas fa-bug" style="font-size: 30px; color: var(--color-secondary);"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol'; text-align: center; color: var(--color-secondary);"><i class="fas fa-exclamation-circle" style="color: var(--color-secondary);"></i> 不安定さが見られるタスク</h4>
+<p style="font-size: 13px; text-align: center;">例: オブジェクト除去</p>
+<div style="text-align:center; margin-top:10px;">
+<img alt="不安定なタスク" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80' viewBox='0 0 120 80'%3E%3Crect width='120' height='80' rx='8' ry='8' fill='%23fff0f0'/%3E%3Ccircle cx='60' cy='35' r='15' fill='%23ff7875'/%3E%3Cpath d='M50 25 L70 45 M70 25 L50 45' stroke='%23fff' stroke-width='3'/%3E%3Ctext x='60' y='70' font-family='Yomogi' font-size='10' text-anchor='middle' fill='%23333'%3E時々うまくいかない...%3C/text%3E%3Cstyle%3E%40import url('https://fonts.googleapis.com/css2?family=Yomogi%26display=swap');%3C/style%3E%3C/svg%3E" style="width: 60%; border: none;"/>
+</div>
+</div>
+</div>
+<p>さらに、モデルが学習時に見たことのないタスク（<span class="keyword">未知のタスク, unseen tasks</span>）に対する安定性も、<span class="highlight">まだ不十分</span>です。</p>
+</div>
+<div class="bubble-box" style="margin-top: 20px; margin-bottom: 25px;">
+<p style="font-family: 'Yomogi'; font-size:15px;"><i class="fas fa-brain"></i> なぜ不安定になるの？ <i class="fas fa-question"></i></p>
+<p>このような不安定さは、いくつかの要因によって引き起こされると考えられます。</p>
+<ul class="unstyled-list" style="margin-top: 10px; padding-left: 10px;">
+<li style="margin-bottom: 8px;"><span class="badge purple">要因1</span> <strong class="keyword">タスクの難易度</strong>: そもそもタスク自体が非常に難しい場合。</li>
+<li style="margin-bottom: 8px;"><span class="badge blue">要因2</span> <strong class="keyword">既知タスクとの違い</strong>: 学習したタスクと、実行したい未知のタスクが大きく異なる場合。</li>
+<li style="margin-bottom: 8px;"><span class="badge yellow">要因3</span> <strong class="keyword">曖昧なインコンテキスト例</strong>: モデルにタスクのやり方を示す「お手本」（インコンテキスト例）が曖昧であったり、誤解を招くようなものである場合。これについては、論文の <span class="highlight">Sec. 5.1</span> で詳しく議論されています。</li>
+</ul>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-book-open"></i> セクション5.1からの補足：曖昧なインコンテキスト例の影響</p>
+<p>論文のセクション5.1では、インコンテキスト学習に用いる「お手本」の質が、生成結果の安定性に大きく影響することが述べられています。特に、<span class="keyword">Fig. 10</span> (この論文の図10) で示されているように、顔の正面化タスクにおいて、</p>
+<ul style="list-style-type: '👉'; padding-left: 20px;">
+<li>お手本として提示する左右の顔の画像が、タスクの意図（横顔から正面顔を生成する）を正確に伝えていない場合（例えば、お手本の横顔が既に正面に近い向きになっている場合）、</li>
+</ul>
+<p>モデルはタスクを正しく理解できず、<span class="highlight">正面顔を正確に生成する成功率が著しく低下する</span>ことが示唆されています。</p>
+<p style="font-family: 'Yomogi'; margin-top:15px; text-align:center;">視覚的なイメージ：</p>
+<div style="display: flex; justify-content: space-around; align-items: flex-start; margin-top: 15px; padding:10px; background-color: rgba(255,255,255,0.5); border-radius: 8px; border: 1px dashed var(--color-accent2);">
+<div style="text-align: center; width: 45%;">
+<p style="font-family: 'Kaisei Decol'; font-size: 13px; color: var(--color-accent1);">適切なインコンテキスト例 <i class="fas fa-thumbs-up"></i></p>
+<img alt="適切な例" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='100' viewBox='0 0 150 100'%3E%3Crect x='5' y='15' width='30' height='40' rx='3' ry='3' fill='%23b7eb8f'/%3E%3Ctext x='20' y='38' font-family='sans-serif' font-size='10' text-anchor='middle'%3E横顔1%3C/text%3E%3Crect x='40' y='15' width='30' height='40' rx='3' ry='3' fill='%23b7eb8f'/%3E%3Ctext x='55' y='38' font-family='sans-serif' font-size='10' text-anchor='middle'%3E横顔2%3C/text%3E%3Cpath d='M75 35 L85 35' stroke='%23555' stroke-width='2' marker-end='url(%23arrowhead)'/%3E%3Crect x='90' y='15' width='30' height='40' rx='3' ry='3' fill='%2391d5ff'/%3E%3Ctext x='105' y='38' font-family='sans-serif' font-size='10' text-anchor='middle'%3E正面顔%3C/text%3E%3Ctext x='75' y='80' font-family='Yomogi' font-size='12' text-anchor='middle' fill='%23389e0d'%3E明確な指示！%3C/text%3E%3Cdefs%3E%3Cmarker id='arrowhead' markerWidth='5' markerHeight='4' refX='0' refY='2' orient='auto'%3E%3Cpolygon points='0 0, 5 2, 0 4' fill='%23555'/%3E%3C/marker%3E%3C/defs%3E%3Cstyle%3E%40import url('https://fonts.googleapis.com/css2?family=Yomogi%26display=swap');%3C/style%3E%3C/svg%3E" style="width: 80%; border: none;"/>
+</div>
+<div style="text-align: center; width: 45%;">
+<p style="font-family: 'Kaisei Decol'; font-size: 13px; color: var(--color-secondary);">曖昧なインコンテキスト例 <i class="fas fa-thumbs-down"></i></p>
+<img alt="曖昧な例" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='100' viewBox='0 0 150 100'%3E%3Crect x='5' y='15' width='30' height='40' rx='3' ry='3' fill='%23ffd6e7'/%3E%3Ctext x='20' y='38' font-family='sans-serif' font-size='8' text-anchor='middle'%3Eやや正面%3C/text%3E%3Crect x='40' y='15' width='30' height='40' rx='3' ry='3' fill='%23ffd6e7'/%3E%3Ctext x='55' y='38' font-family='sans-serif' font-size='8' text-anchor='middle'%3Eやや正面%3C/text%3E%3Cpath d='M75 35 L85 35' stroke='%23555' stroke-width='2' marker-end='url(%23arrowhead)'/%3E%3Crect x='90' y='15' width='30' height='40' rx='3' ry='3' fill='%23ffccc7'/%3E%3Ctext x='105' y='38' font-family='sans-serif' font-size='10' text-anchor='middle'%3E? ? ?%3C/text%3E%3Ctext x='75' y='80' font-family='Yomogi' font-size='12' text-anchor='middle' fill='%23cf1322'%3E混乱しやすい...%3C/text%3E%3Cdefs%3E%3Cmarker id='arrowhead' markerWidth='5' markerHeight='4' refX='0' refY='2' orient='auto'%3E%3Cpolygon points='0 0, 5 2, 0 4' fill='%23555'/%3E%3C/marker%3E%3C/defs%3E%3Cstyle%3E%40import url('https://fonts.googleapis.com/css2?family=Yomogi%26display=swap');%3C/style%3E%3C/svg%3E" style="width: 80%; border: none;"/>
+</div>
+</div>
+<p style="margin-top: 10px;">このことから、インコンテキスト例の<span class="keyword">選び方</span>や<span class="keyword">質</span>が、特に未知のタスクにおいて安定した結果を得るためには非常に重要であると理解できます。</p>
+</div>
+<div class="challenge-box" style="margin-top:25px;">
+<p class="challenge-title"><i class="fas fa-lightbulb"></i> まとめと今後の展望</p>
+<p>VisualClozeは多くのタスクで優れた性能を示しますが、</p>
+<ul style="list-style-type: '📌'; padding-left: 20px;">
+<li>一部のドメイン内タスク（例：オブジェクト除去）での<span class="highlight">不安定性</span></li>
+<li>未知タスクに対する<span class="highlight">安定性の不足</span></li>
+</ul>
+<p>といった課題が残っています。これらの課題は、タスク自体の特性や、インコンテキスト学習で用いられるお手本例の質に起因する可能性があります。</p>
+<p>今後の研究では、これらの限界を克服するために、よりロバストな学習手法の開発や、インコンテキスト例の選択・設計方法の改善などが期待されます。📊</p>
+</div>
+</div>
+<div class="section-card" id="7._Conclusion">
+<h2 class="section-title"><i class="fas fa-trophy"></i>7. Conclusion</h2>
+<div class="bubble-box">
+<p>このセクションでは、本論文で提案された革新的な画像生成フレームワーク <span class="keyword">VisualCloze</span> について、その主な結論と、既存技術の課題に対する貢献をまとめています。VisualClozeがどのようにして画像生成の新たな可能性を切り開くのか、その核心に迫りましょう！ ✏️</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-bullseye"></i> 本研究の核心：VisualClozeの提案</h3>
+<p>本研究では、<strong class="highlight">VisualCloze</strong> という、<span class="keyword">普遍的な画像生成フレームワーク</span>を提案しました。このフレームワークは、現在の画像生成手法が直面しているいくつかの重要な課題、特に以下の3点に対処することを目的として設計されています。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="info-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-puzzle-piece fa-2x" style="color: var(--color-accent1);"></i></div>
+<h4 style="text-align: center; color: var(--color-accent1); font-family: 'Yomogi', cursive;">課題1: 一般化可能な命令設計</h4>
+<p style="font-size: 14px;">多くの既存モデルは、特定のタスク向けの専用の命令や、言語ベースの指示に大きく依存しています。これにより、学習時に見たことのない新しいタスク（未知タスク）への対応（汎化）が難しくなるという問題がありました。📌</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-sitemap fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4 style="text-align: center; color: var(--color-accent2); font-family: 'Yomogi', cursive;">課題2: 適切なタスク分布</h4>
+<p style="font-size: 14px;">画像生成に関連する多様な視覚タスクのデータは、それぞれが独立していることが多く、データがまばら（スパース）な状態です。この「タスク分布のスパース性」は、異なるタスク間で共通して利用できる知識（転移可能な知識）の学習を妨げる一因となっていました。📊</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-cogs fa-2x" style="color: var(--color-accent3);"></i></div>
+<h4 style="text-align: center; color: var(--color-accent3); font-family: 'Yomogi', cursive;">課題3: 統一されたアーキテクチャ設計</h4>
+<p style="font-size: 14px;">多種多様な画像生成タスクを、単一のモデル構造（アーキテクチャ）で効率的に処理するための、統一的かつ柔軟な設計が求められていました。⚙️</p>
+</div>
+</div>
+<div class="arrow-connector" style="height: 20px; margin: 15px 0;"></div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-lightbulb"></i> VisualClozeによる画期的な解決策</div>
+<p>VisualClozeは、これらの根深い課題を克服するために、以下に説明するような複数の革新的なアプローチを組み合わせています。これにより、より汎用的で高性能な画像生成が実現されます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chalkboard-teacher"></i> 解決策1: 視覚的文脈内学習 (Visual In-Context Learning) の活用</h3>
+<div class="content-box">
+<p>タスクの意図を伝えるために言語ベースの指示のみに依存する従来の手法とは異なり、VisualClozeでは <span class="keyword">視覚的文脈内学習 (Visual In-Context Learning)</span> というアプローチを再提案しています。これは、モデルが<strong class="highlight">いくつかの視覚的なデモンストレーション（お手本となる具体例）を観察する</strong>ことで、実行すべきタスクの内容や目的を学習するという考え方です。人間が例題を見て解き方を学ぶのに似ていますね！</p>
+<div class="glass-card" style="padding: 20px; margin-top:15px;">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 18px; margin-bottom:15px;">
+<i class="fas fa-camera-retro" style="color: var(--color-primary);"></i> <strong>お手本を見て学ぶ！</strong> <i class="fas fa-long-arrow-alt-right" style="color: var(--color-gray); margin: 0 5px;"></i> <i class="fas fa-brain" style="color: var(--color-secondary);"></i> <strong>タスクのコツを掴む！</strong> <i class="fas fa-long-arrow-alt-right" style="color: var(--color-gray); margin: 0 5px;"></i> <i class="fas fa-magic" style="color: var(--color-accent1);"></i> <strong>新しい画像を生成！</strong>
+</p>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around; align-items: center; margin-top: 10px; font-family: 'Zen Kurenaido', sans-serif; text-align:center;">
+<div style="margin:5px;">
+<span style="font-size: 40px;">🖼️</span><p style="font-size:13px; margin-top:0;">お手本例1<br/>(入力A→出力B)</p>
+</div>
+<div style="font-size: 24px; color: var(--color-primary); margin:5px;">+</div>
+<div style="margin:5px;">
+<span style="font-size: 40px;">🖼️</span><p style="font-size:13px; margin-top:0;">お手本例2<br/>(入力C→出力D)</p>
+</div>
+<div style="font-size: 30px; color: var(--color-gray); margin: 0 10px;">➡️</div>
+<div style="margin:5px;">
+<span style="font-size: 40px;">💡</span><p style="font-size:13px; margin-top:0;">モデルが<br/>タスクルールを学習</p>
+</div>
+<div style="font-size: 30px; color: var(--color-gray); margin: 0 10px;">➡️</div>
+<div style="margin:5px;">
+<span style="font-size: 40px;">❓</span><p style="font-size:13px; margin-top:0;">新しい入力X<br/>　</p>
+</div>
+<div style="font-size: 30px; color: var(--color-gray); margin: 0 10px;">➡️</div>
+<div style="margin:5px;">
+<span style="font-size: 40px;">✨</span><p style="font-size:13px; margin-top:0;">予測される出力Y<br/>　</p>
+</div>
+</div>
+<p style="font-size:12px; color: var(--color-gray); text-align:center; margin-top:10px;"><em>上図: 視覚的文脈内学習のコンセプト。モデルは提示された例から暗黙的なルールを学び、新しい入力に対して適切な出力を生成します。</em></p>
+</div>
+<div class="note-box" style="margin-top: 20px;">
+<div class="note-title"><i class="fas fa-check-circle"></i> このアプローチの強力な利点</div>
+<ul class="unstyled-list" style="padding-left: 10px;">
+<li><span class="badge blue">🚀 未知タスクへの汎化能力向上</span>: モデルが具体的な例から学習するため、訓練データに含まれていない新しいタスクに対しても、より柔軟かつ効果的に対応できるようになります。</li>
+<li><span class="badge purple">🎯 タスクの曖昧さ削減</span>: 言語による指示は時に多義的で解釈が難しいことがありますが、視覚的なデモンストレーションはタスクの意図をより直接的かつ明確に伝えるため、モデルの混乱を減らすことができます。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i> 解決策2: Graph200Kデータセットの構築によるタスク密度の向上</h3>
+<div class="content-box">
+<p>前述の通り、従来の視覚タスクのデータセットは、タスク間の関連性が希薄で「スパース」な状態でした。これは、モデルがタスク横断的な知識、つまり<span class="keyword">転移可能な知識</span>を効率的に学習することを難しくしていました。この課題に対処するため、本研究では <strong class="highlight">Graph200K</strong> という名称の新しいデータセットを構築しました。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-database"></i> Graph200K とは何か？</div>
+<p>Graph200Kは、その名の通り<span class="keyword">グラフ構造を持つデータセット</span>です。このデータセット内では、様々な画像生成タスクがノードとして表現され、それらのタスク間の意味的な関連性がエッジ（辺）によって結び付けられています。これにより、個々のタスクが孤立するのではなく、相互に関連し合う<span class="keyword">コンパクトな（密な）タスク空間</span>が形成されます。</p>
+<div style="text-align: center; margin-top:15px;">
+<svg height="120" style="font-family: 'Yomogi', cursive;" viewbox="0 0 250 120" width="250">
+<!-- Nodes -->
+<g>
+<circle cx="50" cy="60" fill="#AED6F1" r="20" stroke="#3498DB" stroke-width="2.5"></circle>
+<text font-size="11px" text-anchor="middle" x="50" y="65">タスクA</text>
+<text fill="#3498DB" font-size="10px" text-anchor="middle" x="50" y="35">(例:輪郭線→画像)</text>
+</g>
+<g>
+<circle cx="125" cy="25" fill="#F5B7B1" r="20" stroke="#E74C3C" stroke-width="2.5"></circle>
+<text font-size="11px" text-anchor="middle" x="125" y="30">タスクB</text>
+<text fill="#E74C3C" font-size="10px" text-anchor="middle" x="125" y="5">(例:深度マップ→画像)</text>
+</g>
+<g>
+<circle cx="125" cy="95" fill="#A9DFBF" r="20" stroke="#2ECC71" stroke-width="2.5"></circle>
+<text font-size="11px" text-anchor="middle" x="125" y="100">タスクC</text>
+<text fill="#2ECC71" font-size="10px" text-anchor="middle" x="125" y="120">(例:スタイル変換)</text>
+</g>
+<g>
+<circle cx="200" cy="60" fill="#FAD7A0" r="20" stroke="#F39C12" stroke-width="2.5"></circle>
+<text font-size="11px" text-anchor="middle" x="200" y="65">タスクD</text>
+<text fill="#F39C12" font-size="10px" text-anchor="middle" x="200" y="35">(例:画像修復)</text>
+</g>
+<!-- Edges -->
+<line stroke="#7F8C8D" stroke-dasharray="4 2" stroke-width="1.5" x1="68" x2="107" y1="50" y2="35"></line>
+<line stroke="#7F8C8D" stroke-dasharray="4 2" stroke-width="1.5" x1="68" x2="107" y1="70" y2="85"></line>
+<line stroke="#7F8C8D" stroke-dasharray="4 2" stroke-width="1.5" x1="143" x2="182" y1="35" y2="50"></line>
+<line stroke="#7F8C8D" stroke-dasharray="4 2" stroke-width="1.5" x1="143" x2="182" y1="85" y2="70"></line>
+<line stroke="#7F8C8D" stroke-dasharray="4 2" stroke-width="1.5" x1="125" x2="125" y1="45" y2="75"></line>
+<!-- Center Text -->
+<text fill="#5D6D7E" font-size="10px" text-anchor="middle" x="125" y="65">相互関連</text>
+</svg>
+<p style="font-size:12px; color: var(--color-gray); text-align:center; margin-top:0px;"><em>図: Graph200Kの概念図。各タスク（円）が他のタスクと関連付けられ、密なタスク空間を形成します。</em></p>
+</div>
+</div>
+<p>このような密なタスク空間でモデルを学習させることで、以下のような効果が期待できます：</p>
+<ul style="padding-left: 20px;">
+<li><i class="fas fa-share-alt" style="color:var(--color-accent1)"></i> <span class="keyword">転移可能な表現 (Transferable Representations) の学習促進</span>: 関連するタスク間で共通する特徴やパターンをモデルが捉えやすくなり、あるタスクで学習した知識が他のタスクにも応用しやすくなります。</li>
+<li><i class="fas fa-universal-access" style="color:var(--color-accent2)"></i> <span class="keyword">適応性の向上 (Improved Adaptability)</span>: 新しいタスクや未知の状況に対しても、学習済みの転移可能な表現を活用することで、より柔軟に対応できるようになります。</li>
+</ul>
+</div>
+<h3 class="subsection-title"><i class="fas fa-link"></i> 解決策3: 画像修復モデルとの目的の一致性発見による統一的アーキテクチャ</h3>
+<div class="content-box">
+<p>本研究では、もう一つ重要な発見をしました。それは、我々が提案する<span class="keyword">普遍的な画像生成の定式化</span>（つまり、視覚的文脈内学習を用いたタスク解決方法）と、一般的な<span class="keyword">画像修復（Image Infilling）</span>タスクの目的が、実は<strong class="highlight">非常に一致している</strong>ということです。</p>
+<div class="challenge-box" style="margin-top:15px;">
+<div class="challenge-title"><i class="fas fa-fill-drip"></i> 画像修復とは？</div>
+<p>画像修復（Image Infilling または Image Completion とも呼ばれる）とは、画像の一部分が欠けている（マスクされている）場合に、その欠損領域を周囲の文脈情報に基づいて自然な形で埋めるタスクです。例えば、写真から不要な物体を消去した後の空白を埋めたり、破損した画像を復元したりする際に利用されます。</p>
+<div style="text-align:center; margin-top:10px;">
+<span style="font-size: 40px;">🖼️</span><span style="font-size: 30px; color: var(--color-gray); margin: 0 5px;">(一部欠損)</span>
+<i class="fas fa-long-arrow-alt-right fa-2x" style="color: var(--color-secondary); margin: 0 10px; vertical-align: middle;"></i>
+<span style="font-size: 40px;">✨</span><span style="font-size: 30px; color: var(--color-gray); margin: 0 5px;">(修復完了！)</span>
+</div>
+</div>
+<p style="margin-top: 15px;">VisualClozeでは、入力画像（条件画像）と出力画像（生成すべきターゲット画像）を並べて一枚の大きな画像として扱い、ターゲット画像の部分を「空白」とみなします。この空白を埋めるという処理が、まさに画像修復タスクと同じであると捉えることができます。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-puzzle-piece"></i> この発見の意義</div>
+<ul class="unstyled-list" style="padding-left: 10px;">
+<li><span class="badge orange">🧩 既存モデルの活用</span>: この目的の一致性により、高性能な<span class="keyword">汎用画像修復モデル</span>を、アーキテクチャを大きく変更することなく、VisualClozeのフレームワークにシームレスに適用することが可能になります。これにより、既存の強力な事前学習済みモデルが持つ生成能力を最大限に活用できます。</li>
+<li><span class="badge yellow" style="color:var(--color-dark);">🔧 アーキテクチャ変更の最小化</span>: 新たなタスクに対応するためにモデル構造を大幅に改変する必要がないため、開発コストや計算資源を節約できます。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> 実験結果と意義</h3>
+<div class="content-box">
+<p>実験結果は、提案手法 VisualCloze の有効性を示しています。具体的には、以下の点が明らかになりました。</p>
+<div class="two-column" style="align-items: flex-start;">
+<div class="column">
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.1); padding:15px;">
+<div class="icon-item"><i class="fas fa-tasks fa-2x" style="color: var(--color-accent1);"></i></div>
+<h4 style="color: var(--color-accent1); font-family: 'Yomogi', cursive;">多様なドメイン内タスクへの対応</h4>
+<p style="font-size: 14px;">VisualClozeは、視覚的文脈内学習を用いることで、訓練データに含まれる多種多様なタスク（<span class="keyword">ドメイン内タスク</span>）を高い精度で実行できることを示しました。これには、条件付き画像生成、画像修復、スタイル変換などが含まれます。📝</p>
+</div>
+</div>
+<div class="column">
+<div class="feature-item" style="background-color: rgba(149, 117, 205, 0.1); padding:15px;">
+<div class="icon-item"><i class="fas fa-globe-americas fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4 style="color: var(--color-accent2); font-family: 'Yomogi', cursive;">未知タスクへの高い汎化能力</h4>
+<p style="font-size: 14px;">さらに重要な点として、VisualClozeは、訓練時には経験していない<span class="keyword">未知タスク</span>に対しても、強力な汎化能力を発揮することを示しました。これは、視覚的文脈内学習とGraph200Kによる転移可能な知識の学習が効果的に機能している証拠です。🔍</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="margin-top:30px; border-color: var(--color-secondary);">
+<p style="font-family: 'Kaisei Decol', serif; font-size:16px; text-align:center;">🎉 <strong>結論として、VisualCloze は、タスクの指示方法、学習データの構造、そしてモデルアーキテクチャという画像生成における根源的な課題に革新的な解決策を提示し、より汎用的で高性能な画像生成への道を切り開くフレームワークであると言えます。</strong> 🎉</p>
+</div>
+</div>
+<div class="section-card" id="Appendix_A._Instruction_Format">
+<h2 class="section-title"><i class="fas fa-cogs"></i> Appendix A. Instruction Format</h2>
+<div class="glass-card">
+<p>このセクションでは、論文で提案されている統合画像生成フレームワーク <span class="keyword">VisualCloze</span> における「指示（Instruction）」の具体的な形式について詳しく解説します。この「指示」は、モデルがどのような画像を生成すべきかを理解し、タスクを実行するための羅針盤となる非常に重要な情報です。✏️</p>
+<p>論文の中心的なアイデアの一つとして、この指示は以下の<span class="highlight">3つの主要な要素</span>から構成されている点が挙げられます。これにより、複雑な画像生成タスクに対しても、柔軟かつ的確な指示を与えることが可能になります。</p>
+<div class="feature-card-grid">
+<div class="feature-item icon-item">
+<i class="fas fa-th-large"></i>
+<h4>レイアウト指示 (Layout Instruction)</h4>
+<p>入力画像や出力画像の配置方法を定義</p>
+</div>
+<div class="feature-item icon-item">
+<i class="fas fa-tasks"></i>
+<h4>タスク指示 (Task Instruction)</h4>
+<p>実行すべき具体的なタスクの種類を指定</p>
+</div>
+<div class="feature-item icon-item">
+<i class="fas fa-palette"></i>
+<h4>コンテンツ指示 (Content Instruction)</h4>
+<p>生成したい画像の具体的な内容を記述</p>
+</div>
+</div>
+<p>これらの指示を巧みに組み合わせることで、研究チームは多種多様な画像生成タスクを一つの統一されたフレームワーク内で扱えるようにすることを目指しています。それでは、それぞれの指示が持つ役割と、それらがどのように連携して機能するのか、具体的な例を交えながら詳しく見ていきましょう！🔍</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-puzzle-piece"></i> 指示の3つの構成要素</h3>
+<p>VisualClozeフレームワークで用いられる「指示」は、モデルに対してより明確で曖昧さのない命令を与えるために、以下の3つのパートに分かれています。各パートが連携することで、高度な画像生成タスクの実行を支援します。</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="content-box">
+<h4 class="definition-title"><i class="fas fa-ruler-combined"></i> 1. レイアウト指示 (Layout Instruction)</h4>
+<p>📌 この指示は、入力として与えられる複数の画像（例えば、コンテキスト例や条件画像など）と、モデルが生成すべきターゲット画像が、<span class="highlight">全体としてどのようなグリッド状に配置されるか</span>を記述します。</p>
+<p>例えば、「入力画像群と出力画像を合わせて3行4列のグリッドを構成し、右下のセルが出力ターゲットです」といった具体的な配置情報が含まれます。これにより、モデルは多数の画像がどのように関連付けられ、どこに出力すべきかを正確に理解することができます。</p>
+<div class="bubble-box">
+<p>📐 <span class="keyword">グリッドレイアウト</span>の明確化は、特に複数の参照画像やコンテキスト例を同時に利用する <span class="keyword">Visual In-Context Learning</span>（文脈内学習）において極めて重要です。これにより、どの画像が「お手本」で、どの画像が「条件」で、どこが「生成すべき場所」なのかという、入力情報と出力ターゲット間の空間的な関係性をモデルが正しく解釈するための基盤となります。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<div class="content-box">
+<h4 class="definition-title"><i class="fas fa-bullseye"></i> 2. タスク指示 (Task Instruction)</h4>
+<p>📝 この指示は、モデルが実行すべき<span class="highlight">具体的なタスクの種類や目的</span>を特定するためのものです。</p>
+<p>例えば、「画像編集タスクを実行せよ」「スタイル転送を行いなさい」「与えられた条件に基づいて新しい被写体を生成しなさい」といった、実行したい操作の種類を自然言語で記述します。このタスク指示があることで、同じ入力画像の組み合わせに対しても、目的の異なる多様な操作を指示することが可能になります。</p>
+<div class="bubble-box">
+<p>🎯 タスク指示は、モデルが事前に学習してきた多彩な画像生成能力の中から、<span class="keyword">今どの能力を発揮すべきか</span>を指し示す、いわば「司令塔」のような役割を果たします。文脈によっては、入力画像間の関係性（例：[IMAGE1]は輪郭線、[IMAGE2]は参照するスタイル画像、など）もここで定義され、タスクの意図をより明確に伝えます。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<div class="content-box">
+<h4 class="definition-title"><i class="fas fa-image"></i> 3. コンテンツ指示 (Content Instruction)</h4>
+<p>🎨 この指示は、生成対象となるターゲット画像の<span class="highlight">具体的な内容、見た目、雰囲気、含まれるべき要素などの詳細な特徴</span>を記述します。</p>
+<p>例えば、「鮮やかな赤いリンゴが描かれた油絵風の画像」「夕焼け空を背景に微笑んでいる若い女性のポートレート写真」といった、生成してほしい画像の具体的なイメージを言語で伝えます。これにより、ユーザーは生成結果をより細かく、意図通りにコントロールすることができます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> 重要な注意点</p>
+<p>しかしながら、このコンテンツ指示は<span class="keyword">全てのタスクで必須というわけではありません</span>。論文で指摘されているように、例えば<span class="keyword">スタイル転送 (style transfer)</span> のようなタスクの場合、入力される条件画像（元のコンテンツ画像と適用したいスタイル画像）自体が、生成すべき画像の視覚的特徴を強く示唆しています。このようなケースでは、コンテンツ指示は<span class="highlight">省略される</span>ことがあります。この柔軟性が、フレームワークの汎用性を高める一因となっています。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-camera-retro"></i> 具体例：図13による指示の図解</h3>
+<p>論文に掲載されている図13は、ここで説明した3種類の指示が実際の画像生成タスクにおいてどのように組み合わされて使用されるかを示す貴重な具体例です。この図を詳細に見ることで、各指示要素がどのように連携し、モデルの動作を導くのか、より深く具体的に理解することができます。</p>
+<img alt="図13: さまざまなタスクにおける言語指示の具体例。上段はコンセプト融合、下段は参照画像を用いた画像編集の指示を示している。" src="concept_fusion_image_editing_instructions.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-binoculars"></i> 図13の読み解き方</p>
+<p>図13は、2つの異なるタスク例（上段と下段）について、それぞれ以下を示しています：</p>
+<ul>
+<li><strong>左側 (a) 連結された画像 (Concatenated images):</strong> モデルに実際に入力される画像群の配置を示します。これには、タスクを理解するための「In-context examples（文脈内学習例）」、生成の基となる「Conditions（条件画像）」、そしてモデルが生成すべき「Target（ターゲット領域）」が含まれます。</li>
+<li><strong>右側 (b) 言語指示 (Language instructions):</strong> 左側の画像配置とタスクに対応する、3種類の指示（レイアウト指示、タスク指示、コンテンツ指示）の具体的なテキスト内容を示します。</li>
+</ul>
+<p>この左右の対応関係を見ることで、視覚的な入力とそれを解釈するための言語指示がどのように連携するかが分かります。</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<div class="content-box framework-box">
+<h4 class="framework-title"><i class="fas fa-lightbulb"></i> 図13 上段：コンセプト融合タスク (Concept fusion of style, subject, and layout)</h4>
+<p>この例では、スタイル、被写体、レイアウトといった複数の異なるコンセプト（要素）を賢く融合させて、一つの新しい画像を生成するという高度なタスクが示されています。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">レイアウト指示</span>: <i class="fas fa-th"></i> 「12枚の画像を3行4列のグリッドに均等に配置する」と明確に指定されています。これにより、入力となる複数の画像（コンテキスト例、条件）と最終的なターゲット画像（この例では右下）の位置関係が一意に定まります。</li>
+<li><span class="badge orange">タスク指示</span>: <i class="fas fa-cogs"></i> 「各行は、[IMAGE1]の白い線画（キャニーエッジ検出結果）から始まり、[IMAGE2]のアーティスティックなテーマを持つ写真、[IMAGE3]の主要被写体を捉えた参照画像を経て、最終的に[IMAGE4]の独特な芸術的タッチを持つ高品質な画像を生成するプロセスを記述する」という、かなり詳細なタスクフローが指示されています。</li>
+<li><span class="badge purple">コンテンツ指示</span>: <i class="fas fa-ban"></i> 注目すべきは、この例のコンテンツ指示が <span class="keyword">∅（空集合の記号）</span> となっている点です。これは、コンテンツ指示が<span class="highlight">省略されている</span>ことを意味します。その理由として、入力されるコンテキスト例や条件画像群（特にIMAGE2やIMAGE3）から、生成すべき画像の内容やスタイルが十分に視覚的に示唆されているため、追加の言語的記述が不要であると判断されたと考えられます。</li>
+</ul>
+</div>
+</div>
+<div class="info-card">
+<div class="content-box framework-box">
+<h4 class="framework-title"><i class="fas fa-edit"></i> 図13 下段：参照画像を用いた画像編集タスク (Image editing with reference)</h4>
+<p>こちらの例では、お手本となる参照画像（コンテキスト例）のスタイルや編集方法を学習し、それを条件画像に適用してターゲット画像を生成するという、参照ベースの画像編集タスクが示されています。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">レイアウト指示</span>: <i class="fas fa-border-all"></i> 「9枚の画像を含む3x3グリッドで、クリーンで構造化されたレイアウトに配置する」と指定されています。ここでも、画像の配置ルールが明確に定義されています。</li>
+<li><span class="badge orange">タスク指示</span>: <i class="fas fa-directions"></i> 「各行は、[IMAGE1]の主要被写体を含む参照画像と、[IMAGE2]の申し分のない明瞭さを持つ画像を基に、[IMAGE3]の高品質な画像を生成するための段階的なガイドを提供する」と記述されており、参照情報に基づいた編集プロセスが指示されています。</li>
+<li><span class="badge purple">コンテンツ指示</span>: <i class="fas fa-paint-brush"></i> 上段の例とは対照的に、こちらの例では<span class="highlight">具体的なコンテンツ指示が詳細に記述されています</span>。「右下の画像は、光沢のあるジェルネイルポリッシュのボトルを提示する。賑やかな都市公園の端で、このアイテムは鮮やかな緑の草の上に置かれ、ジョギングする人やペットが背景を移動する際の微妙なボケ効果で捉えられている」といった非常に具体的なシーン描写が含まれており、生成画像の詳細な内容が指定されています。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="bubble-box">
+<p>🎨 図13の2つの例を比較することで、<span class="keyword">タスクの性質</span>や<span class="keyword">提供される視覚情報の手がかりの強さ</span>に応じて、特に<span class="keyword">コンテンツ指示</span>の有無やその詳細度が柔軟に変化することが明確に見て取れます。VisualClozeフレームワークは、このような適応的で柔軟な指示形式を採用することにより、非常に広範な画像生成のニーズに対して統一的かつ効果的に対応することを目指しているのです。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-eye-slash"></i> コンテンツ指示の省略が可能なケースについて</h3>
+<p>前述の通り、そして図13の上段の例でも示されたように、コンテンツ指示はタスクによっては省略されることがあります。論文では、その代表的な例として<span class="keyword">スタイル転送 (style transfer)</span> のようなタスクが挙げられています。</p>
+<div class="definition-box">
+<h4 class="definition-title"><i class="fas fa-magic"></i> スタイル転送タスクにおける指示</h4>
+<p>スタイル転送タスクでは、通常、モデルには以下の2種類の主要な画像が入力として与えられます：</p>
+<ul class="unstyled-list" style="list-style-type: none; padding-left: 20px;">
+<li><i class="fas fa-file-image" style="color: var(--color-primary); margin-right: 8px;"></i> <strong>コンテンツ画像 (Content Image):</strong> 生成される画像の基本的な構造、構図、主要な被写体などを決定します。「何を描くか」のベースとなります。</li>
+<li><i class="fas fa-palette" style="color: var(--color-secondary); margin-right: 8px;"></i> <strong>スタイル画像 (Style Image):</strong> 生成される画像の色彩感覚、筆致、テクスチャ、全体的な画風などを決定します。「どのように描くか」の美的特徴を提供します。</li>
+</ul>
+<p>これらの入力画像（コンテンツ画像とスタイル画像）自体が、「どのような内容の画像を、どのようなスタイルで生成すべきか」という情報、つまり<span class="highlight">生成ターゲットに関する非常に強い視覚的な手がかり</span>を豊富に提供しています。そのため、多くの場合、追加の言語による詳細なコンテンツ指示は不要となり、省略することが合理的です。</p>
+<div class="bubble-box">
+<p>💡 このように、タスクの種類や入力条件の特性に応じて、指示の各要素（特にコンテンツ指示）を柔軟に調整できることが、VisualClozeフレームワークの強みの一つと言えるでしょう。これにより、モデルは必要な情報を効率的に利用し、余計な情報に惑わされることなく、タスクの意図を正確に捉えることができるようになります。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-project-diagram"></i> まとめ：指示フォーマットの重要性</p>
+<p>このAppendix Aで解説された指示フォーマットは、VisualClozeフレームワークが多様な画像生成タスクを統一的に扱うための根幹をなす設計です。<span class="keyword">レイアウト指示</span>、<span class="keyword">タスク指示</span>、そして<span class="keyword">コンテンツ指示（必要に応じて）</span>という3つの要素を組み合わせることで、モデルに対して明確かつ柔軟な指示を与えることを可能にしています。</p>
+<p>この指示フォーマットを通じて、VisualClozeは言語による指示と視覚的なコンテキスト（お手本となる画像例）を効果的に統合し、まるで人間が新しいタスクを学ぶかのように、モデルが様々な画像生成タスクを「見て学ぶ」ことを目指しています。これは、汎用的な画像生成モデルを実現する上で非常に重要なステップと言えるでしょう。</p>
+</div>
+</div>
+<div class="section-card" id="Appendix_B._Fine-tuning_FLUX.1-dev_Model">
+<h2 class="section-title"><i class="fas fa-cogs"></i> Appendix B. Fine-tuning FLUX.1-dev Model</h2>
+<div class="content-box">
+<p>このセクションでは、論文で提案されている画像生成フレームワーク <span class="keyword">VisualCloze</span> を、<span class="highlight">FLUX.1-Fill-dev</span> というインフィリング（穴埋め）モデルだけでなく、より一般的なテキストから画像を生成するモデルである <span class="keyword">FLUX.1-dev</span> [33] にも適用するための調整（ファインチューニング）方法について詳しく解説します。</p>
+<p>主なポイントは、<span class="highlight">FLUX.1-dev</span> はインフィリングモデルとは特性が異なるため、VisualCloze の枠組みでうまく機能させるためには、いくつかの<span class="keyword">カスタマイズされた変更</span>が必要になるという点です。特に、クリーンな（ノイズのない）条件画像と、ノイズが含まれるターゲット画像をどのように処理するかが鍵となります。</p>
+</div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> FLUX.1-dev の特性と課題</h3>
+<p>論文では、VisualClozeの手法を主に <span class="keyword">FLUX.1-Fill-dev</span> (インフィリングモデル) を用いて開発しています。このモデルは、画像の一部分を埋めるというタスクの性質上、VisualClozeが目指す「文脈から画像を生成する」という<span class="highlight">普遍的な画像生成の目的と一貫性があります</span>。</p>
+<p>しかし、<span class="keyword">FLUX.1-dev</span> は、テキストプロンプトに基づいて画像をゼロから生成する、いわゆる<span class="highlight">一般的なテキスト画像生成モデル</span>です。そのため、VisualClozeの枠組みで条件画像とターゲット画像を扱う際には、以下のような特有の課題に対応するための工夫が必要になります。</p>
+<ul class="unstyled-list">
+<li>✏️ <span class="highlight">クリーンな条件画像</span>（例：エッジ画像、深度マップなど、ノイズがない状態の入力）の情報を維持する方法。</li>
+<li>✏️ <span class="highlight">ノイズのあるターゲット画像</span>（生成過程の途中の、ノイズが乗った状態の出力）を適切に扱う方法。</li>
+</ul>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-tools"></i> FLUX.1-dev ファインチューニング戦略</h3>
+<p>FLUX.1-dev を VisualCloze に適応させるための具体的な変更点は以下の通りです。</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<h4>🖼️ 画像の連結と条件領域の潜在表現維持</h4>
+<p>まず、インフィリングモデルと同様に、入力となる複数の画像（条件画像や文脈例）を<span class="keyword">グリッドレイアウト</span>で連結します。ここまでは FLUX.1-Fill-dev と同様のアプローチです。</p>
+<div style="text-align: center; margin: 15px 0;">
+<div style="border: 2px dashed var(--color-primary); padding: 10px; display: inline-block; border-radius: 8px; background-color: rgba(74, 111, 165, 0.05);">
+<span style="font-family: 'Yomogi', cursive; font-size: 16px;">条件画像1</span> + <span style="font-family: 'Yomogi', cursive; font-size: 16px;">条件画像2</span> + ... + <span style="font-family: 'Yomogi', cursive; font-size: 16px;">ターゲット領域</span> <br/>
+<span style="font-size: 24px; color: var(--color-secondary);">⇩</span> (グリッド状に配置) <br/>
+<span style="font-family: 'Yomogi', cursive; font-size: 16px;">連結画像</span>
+</div>
+</div>
+<p>重要な違いは、サンプリングプロセス（画像を徐々に生成していく過程）全体を通して、<span class="highlight">条件に対応する領域の潜在埋め込み (latent embeddings)</span> を常に<span class="keyword">クリーンな（ノイズがない）状態</span>で保持する点です。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-brain"></i> 潜在埋め込み (Latent Embeddings) とは？</p>
+<p>画像を直接ピクセルデータで扱うのではなく、より低次元で意味的な情報を捉えた表現に変換したものです。拡散モデルなどでは、この潜在空間でノイズを除去したり、情報を付加したりして画像を生成します。</p>
+</div>
+<p>この戦略は、画像サンプリング処理の変更を必要とします。なぜなら、ベースとなる <span class="keyword">FLUX.1-Fill-dev</span> は入力として<span class="highlight">ノイズのある潜在埋め込み</span>を期待するのに対し、FLUX.1-dev では条件部分はクリーンに保つ必要があるためです。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<h4>📊 adaLN-Zero ブロックにおける平均・シフトパラメータの分離計算</h4>
+<p>次に、モデルの構成要素である <span class="keyword">adaLN-Zero ブロック</span> [48] の扱いです。これは、適応的レイヤー正規化（Adaptive Layer Normalization）の一種で、条件情報をネットワークに注入する役割を果たします。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-puzzle-piece"></i> adaLN-Zero ブロックとは？</p>
+<p>adaLN-Zero は、Transformerベースのモデル（FLUXモデルもこれに該当）でよく用いられる部品です。タイムステップ \(t\) や条件付けテキストなどの外部情報を元に、各層の正規化処理を適応的に調整するためのスケール（\(\gamma\)）とシフト（\(\beta\)）パラメータを生成します。これにより、モデルは生成プロセスの各段階や入力条件に応じて柔軟に動作を変えることができます。"Zero" と付いているのは、初期状態では残差接続を介して情報をそのまま流すように初期化されるため、学習を安定させる効果が期待されるからです。</p>
+</div>
+<p>この adaLN-Zero ブロックにおいて、<span class="highlight">クリーンな条件領域</span>と<span class="highlight">ノイズのあるターゲット領域</span>に対して、それぞれ<span class="keyword">個別の平均 (mean) とシフト (shift) パラメータ</span>を計算することが極めて重要です。</p>
+<p>具体的には、以下のようにパラメータを計算します：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-leaf" style="color: var(--color-accent1);"></i> クリーン条件領域</p>
+<p>タイムステップ \(T = 0\) を adaLN-Zero に入力して計算します。<br/>
+<span class="formula">\( \text{mean}_{\text{cond}}, \text{shift}_{\text{cond}} = \text{adaLN-Zero}(T=0) \)</span>
+</p>
+<p class="reference">💡 \(T=0\) はノイズがない状態を意味します。</p>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-wave-square" style="color: var(--color-accent2);"></i> ノイズターゲット領域</p>
+<p>現在のサンプリングステップにおけるタイムステップ \(T = t\) を adaLN-Zero に入力して計算します。<br/>
+<span class="formula">\( \text{mean}_{\text{target}}, \text{shift}_{\text{target}} = \text{adaLN-Zero}(T=t) \)</span>
+</p>
+<p class="reference">💡 \(t\) はサンプリングプロセスが進むにつれて 0 から 1 へと徐々に増加し、ノイズレベルの減少に対応します。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><span class="keyword">タイムステップ \(t\)</span> とは、拡散モデルにおける生成プロセスの「時間」のようなものです。初期状態 (\(t \approx 1\)) では画像はほぼ完全なノイズですが、\(t\) が 0 に近づくにつれて徐々にノイズが取り除かれ、最終的な画像が現れます。</p>
+</div>
+<p>この戦略は、<span class="keyword">FLUX.1-dev</span> の<span class="highlight">事前学習ドメイン (pre-training domain)</span> との整合性を保つために重要です。事前学習では、異なるノイズレベル（異なる \(t\) の値）が、それぞれ異なる平均とシフトのパラメータに対応するように学習されているため、この性質を利用するのです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-images"></i> 図14の解説: 分離戦略による視覚的忠実度の向上</h3>
+<p>この「平均とシフトの分離計算」戦略が、生成される画像の<span class="keyword">視覚的な忠実度 (visual fidelity)</span> を保証することを示しているのが、論文中の図14です。</p>
+<img alt="FLUX.1-devにおける平均とシフトの分離効果の比較" src="flux1dev_mean_shift_comparison.jpg"/>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-search-plus"></i> 図14の見方</p>
+<p>この図は、2つの異なる画像生成タスク（上の段は深度マップからの画像生成、下の段はセグメンテーションマップからの画像生成）において、「平均とシフトの分離戦略」を使った場合と使わなかった場合の結果を比較しています。</p>
+<div class="two-column">
+<div class="column">
+<div class="note-box" style="border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-check-circle"></i> (a) separate mean and shift (提案戦略)</p>
+<p>条件領域 (Condition) とターゲット領域 (Target) に対して、それぞれ適切なタイムステップ（条件は \(T=0\)、ターゲットは \(T=t\)）を用いて adaLN-Zero のパラメータを計算した場合です。</p>
+<p><strong>結果:</strong> 生成されたターゲット画像は<span class="highlight">鮮明で高品質</span>です。条件画像の構造や詳細がよく反映されています。</p>
+</div>
+</div>
+<div class="column">
+<div class="note-box" style="border-left-color: var(--color-secondary);">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-times-circle"></i> (b) unified mean and shift (比較対象)</p>
+<p>条件領域とターゲット領域で平均とシフトのパラメータを分離せず、統一的に扱った（例えば、両方とも \(T=t\) を使うなど）場合です。</p>
+<p><strong>結果:</strong> 生成されたターゲット画像は<span class="highlight">ぼやけていたり、不自然なアーティファクトが見られたり</span>と、品質が著しく低下しています。</p>
+</div>
+</div>
+</div>
+<p>📌 <strong>結論:</strong> 図14は、条件領域とターゲット領域で adaLN-Zero のパラメータ計算を分離する戦略が、FLUX.1-dev で高品質な条件付き画像生成を行う上で不可欠であることを視覚的に示しています。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-star"></i> このセクションのまとめ</p>
+<p>FLUX.1-dev のような一般的なテキスト画像生成モデルを VisualCloze の枠組みでファインチューニングする際には、インフィリングモデルとは異なるアプローチが必要です。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">戦略1</span> 条件領域の潜在表現をクリーンに保つ。</li>
+<li><span class="badge purple">戦略2</span> adaLN-Zero ブロックで、条件領域 (\(T=0\)) とターゲット領域 (\(T=t\)) の平均・シフトパラメータを分離して計算する。</li>
+</ul>
+<p>これらの工夫により、FLUX.1-dev の強力な生成能力を活かしつつ、VisualCloze の多様なタスクに対応できるようになります。</p>
+</div>
+</div>
+<div class="section-card" id="Appendix_C._Evaluation_Metrics">
+<h2 class="section-title"><i class="fas fa-ruler-combined"></i> Appendix C. Evaluation Metrics</h2>
+<div class="content-box">
+<p>このセクションでは、本論文で提案された画像生成モデルや比較対象のモデルの性能を評価するために用いられた様々な<span class="keyword">評価指標 (Evaluation Metrics)</span> について詳しく解説します。画像生成タスクは多岐にわたるため、それぞれのタスク特性に応じた適切な評価指標が用いられています。大きく分けて、<span class="badge blue">条件付き画像生成</span>、<span class="badge orange">被写体駆動型画像生成</span>、<span class="badge purple">スタイル変換</span>の3つのカテゴリで評価が行われます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> このセクションの目的</p>
+<p>論文で提案された手法の有効性を客観的に示すために、どのような基準で「良い」生成結果と判断したのか、その具体的なものさし（評価指標）を明らかにすることです。これにより、他の研究との比較も可能になります。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> C.1. Conditioning Generation (条件付き画像生成)</h3>
+<div class="content-box">
+<p>条件付き画像生成タスク（例：Cannyエッジ画像から写真生成、深度マップから写真生成など）や画像修復タスク（例：画像のボケ除去）における生成画像の品質を評価します。評価の観点は主に以下の3つです。</p>
+<ul class="unstyled-list">
+<li><span class="badge yellow">🕹️ Controllability (制御性)</span></li>
+<li><span class="badge yellow">🖼️ Generation quality (生成品質)</span></li>
+<li><span class="badge yellow">📝 Text consistency (テキスト整合性)</span></li>
+</ul>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4>🕹️ Controllability (制御性)</h4>
+<p>入力された条件（例：エッジ、深度情報）と、生成された画像から抽出される条件がどれだけ一致しているかを測定します。つまり、モデルが与えられた条件をどれだけ忠実に守って画像を生成できたかを示します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-check-circle"></i> 具体的な指標</p>
+<ul>
+<li><strong>Canny-to-image (エッジからの画像生成):</strong>
+<p><span class="keyword">F1 Score</span> <i class="fas fa-percentage"></i> を計算します。</p>
+<div class="formula">
+<p>F1 Score は、適合率 (Precision) と再現率 (Recall) の調和平均です。値が高いほど、入力されたエッジ情報を正確に再現できていることを意味します。</p>
+<p>\( F_1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} \)</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px;">[入力エッジ] <i class="fas fa-arrows-alt-h"></i> [生成画像から抽出したエッジ]</span>
+</div>
+</div>
+</li>
+<li><strong>Depth-to-image (深度からの画像生成):</strong>
+<p><span class="keyword">RMSE (Root Mean Square Error)</span> <i class="fas fa-calculator"></i> を計算します。</p>
+<div class="formula">
+<p>RMSE は、入力された深度マップと生成画像から推定された深度マップの間のピクセルごとの誤差の平均です。値が低いほど、深度情報を正確に再現できていることを意味します。</p>
+<p>\( \text{RMSE} = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2} \)</p>
+<p style="font-size:12px;">ここで、\(y_i\) は真の深度値、\(\hat{y}_i\) は予測された深度値です。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px;">[入力深度マップ] <i class="fas fa-arrows-alt-h"></i> [生成画像から推定した深度マップ]</span>
+</div>
+</div>
+</li>
+<li><strong>Deblurring (ボケ除去):</strong>
+<p><span class="keyword">RMSE</span> を元画像と復元画像の間の差で測定します。</p>
+<div class="formula">
+<p>値が低いほど、ボケ除去が効果的で元画像に近いクリアな画像が復元されたことを示します。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px;">[元画像] <i class="fas fa-arrows-alt-h"></i> [ボケ除去後の画像]</span>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4>🖼️ Generation quality (生成品質)</h4>
+<p>生成された画像自体の視覚的な品質を評価します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-star"></i> 具体的な指標</p>
+<ul>
+<li>
+<p><span class="keyword">FID (Fréchet Inception Distance)</span> [23] <i class="fas fa-images"></i></p>
+<p>生成された画像の集合と実際の画像の集合の特徴量分布間の距離を測ります。低いほど、生成画像が実画像に近いとされます。</p>
+<div style="text-align:center; margin-top: 5px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px; color: var(--color-primary);">実画像群の分布</span> <i class="fas fa-arrows-alt-h"></i> <span style="font-family: 'Yomogi', cursive; font-size:12px; color: var(--color-secondary);">生成画像群の分布</span>
+</div>
+</li>
+<li>
+<p><span class="keyword">SSIM (Structural Similarity Index)</span> <i class="fas fa-search-plus"></i></p>
+<p>2つの画像の構造的な類似性を評価する指標です。輝度、コントラスト、構造の3つの要素を比較し、-1から1の間の値を取ります。1に近いほど、知覚的に類似しているとされます。</p>
+</li>
+<li>
+<p><span class="keyword">MANIQA (Multi-dimension Attention Network for No-Reference Image Quality Assessment)</span> [75] と <span class="keyword">MUSIQ (Multi-Scale Image Quality Transformer)</span> [30] <i class="fas fa-robot"></i></p>
+<p>これらは参照画像なしで画質を評価する深層学習ベースの手法です。人間の知覚に近い画質スコアを予測します。（論文ではMAN-IQA [75]とMANIQA [75]の言及ですが、関連手法としてMUSIQ [30]も挙げられています。）</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4>📝 Text consistency (テキスト整合性)</h4>
+<p>生成された画像が、入力されたテキストプロンプト（指示文）の内容とどれだけ意味的に一致しているかを評価します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-link"></i> 具体的な指標</p>
+<ul>
+<li>
+<p><span class="keyword">CLIP (Contrastive Language-Image Pre-training)</span> [49] を用いた評価 <i class="fas fa-comments"></i></p>
+<p>CLIPモデルは、画像とその説明文を同じ特徴空間に写像することができます。この性質を利用し、生成画像から抽出した画像特徴と、テキストプロンプトから抽出したテキスト特徴の間の<span class="highlight">類似度（通常はコサイン類似度）</span>を計算します。高いほど、画像とテキストが意味的に整合していることを示します。</p>
+<div style="text-align:center; margin-top: 10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px; color: var(--color-primary);">テキストプロンプト</span> <i class="fas fa-sync-alt"></i> <span style="font-family: 'Yomogi', cursive; font-size:12px; color: var(--color-secondary);">生成画像</span>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-user-check"></i> C.2. Subject Driven Generation (被写体駆動型画像生成)</h3>
+<div class="content-box">
+<p>特定の被写体（例：人物、物体）のアイデンティティを保ったまま新しい画像を生成するタスクの性能を評価します。この評価は、<span class="keyword">DreamBooth [54]</span> や <span class="keyword">BLIP-Diffusion [36]</span> といった先行研究の手法に倣っています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas-fa-bullseye"></i> 評価のポイント</p>
+<p>「参照する被写体の特徴をどれだけ忠実に再現できているか」と「テキスト指示にどれだけ従っているか」の2点が重要になります。</p>
+</div>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-id-card"></i></div>
+<h5><span class="keyword">DINOv2 [47] スコア</span></h5>
+<p>参照被写体の画像と生成された画像の間の<span class="highlight">整合性</span>を測定します。具体的には、自己教師あり学習モデルであるDINOv2を用いて各画像から特徴ベクトルを抽出し、それらの間の<span class="keyword">コサイン類似度</span>を計算します。高いほど、被写体の特徴が維持されていることを示します。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px;">[参照被写体画像] <i class="fas fa-arrows-alt-h"></i> [生成画像]</span>
+<p style="font-family: 'Yomogi', cursive; font-size:12px;">(DINOv2特徴の類似度)</p>
+</div>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-image"></i></div>
+<h5><span class="keyword">CLIP-I (CLIP Image similarity) [49] スコア</span></h5>
+<p>こちらも参照被写体の画像と生成された画像の間の<span class="highlight">整合性</span>を測定しますが、CLIPモデルの画像エンコーダを用います。両画像から抽出されたCLIP画像埋め込み間の<span class="keyword">CLIPスコア（コサイン類似度）</span>を計算します。高いほど、視覚的な特徴が似ていることを示します。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px;">[参照被写体画像] <i class="fas fa-arrows-alt-h"></i> [生成画像]</span>
+<p style="font-family: 'Yomogi', cursive; font-size:12px;">(CLIP画像埋め込みの類似度)</p>
+</div>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-file-alt"></i></div>
+<h5><span class="keyword">CLIP-T (CLIP Text similarity) [49] スコア</span></h5>
+<p>生成された画像と、その生成に使用された<span class="highlight">テキストプロンプト</span>との間の整合性を測定します。CLIPモデルを用いて、生成画像の画像埋め込みとテキストプロンプトのテキスト埋め込み間の<span class="keyword">CLIPスコア（コサイン類似度）</span>を計算します。高いほど、画像がテキスト指示に合致していることを示します。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px;">[テキストプロンプト] <i class="fas fa-arrows-alt-h"></i> [生成画像]</span>
+<p style="font-family: 'Yomogi', cursive; font-size:12px;">(CLIPテキスト・画像埋め込みの類似度)</p>
+</div>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-palette"></i> C.3. Style Transfer (スタイル変換)</h3>
+<div class="content-box">
+<p>ある画像（コンテンツ画像）の内容を保ちつつ、別の画像（スタイル参照画像）の画風やスタイルを適用するタスクの性能を評価します。この評価は、<span class="keyword">StyleDrop [56]</span> という先行研究の手法に倣っています。</p>
+<div class="two-column">
+<div class="column">
+<div class="info-card glass-card">
+<h4><i class="fas fa-align-left"></i> Text consistency (テキスト整合性)</h4>
+<p>生成された画像が、与えられた<span class="highlight">テキストプロンプト</span>（通常はコンテンツの内容を指定）と意味的にどれだけ一致しているかを評価します。</p>
+<div class="definition-box">
+<p class="definition-title">測定方法</p>
+<p>CLIP [49]モデルを使用して、生成画像の画像埋め込みとテキストプロンプトのテキスト埋め込みを抽出します。これらの埋め込み間の<span class="keyword">コサイン類似度</span>を計算します。高いほど、テキスト指示に忠実であることを示します。</p>
+<div style="text-align: center; margin-top:10px; font-family: 'Yomogi', cursive; font-size:12px;">
+<span>[テキストプロンプトのCLIP埋め込み]</span><br/>
+<i class="fas fa-arrows-alt-v" style="margin: 5px 0;"></i><br/>
+<span>[生成画像のCLIP埋め込み]</span><br/>
+<span style="font-size:16px; color:var(--color-primary); display:block; margin-top:5px;">コサイン類似度</span>
+</div>
+</div>
+</div>
+</div>
+<div class="column">
+<div class="info-card glass-card">
+<h4><i class="fas fa-paint-brush"></i> Style alignment (スタイル整合性) / Style consistency (スタイル一貫性)</h4>
+<p>生成された画像が、<span class="highlight">スタイル参照画像</span>の画風やスタイルをどれだけ忠実に再現できているかを評価します。（論文中では "style alignment" と "style consistency" の両方の用語が使われていますが、ここでは同じ意味で捉えられます。）</p>
+<div class="definition-box">
+<p class="definition-title">測定方法</p>
+<p>CLIP [49]モデルを使用して、生成画像の画像埋め込みとスタイル参照画像の画像埋め込みを抽出します。これらの埋め込み間の<span class="keyword">コサイン類似度</span>を計算します。高いほど、スタイルがよく再現されていることを示します。</p>
+<div style="text-align: center; margin-top:10px; font-family: 'Yomogi', cursive; font-size:12px;">
+<span>[スタイル参照画像のCLIP埋め込み]</span><br/>
+<i class="fas fa-arrows-alt-v" style="margin: 5px 0;"></i><br/>
+<span>[生成画像のCLIP埋め込み]</span><br/>
+<span style="font-size:16px; color:var(--color-secondary); display:block; margin-top:5px;">コサイン類似度</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 注意点：両指標のバランス</p>
+<p><span class="keyword">テキスト整合性</span>と<span class="keyword">スタイル整合性</span>は同時に考慮する必要があります。なぜなら、モデルが「崩壊 (collapse)」してしまうと、スタイル整合性のスコアが1.0（最大値）に達してしまうことがあるからです。</p>
+<p><strong>モデルの崩壊とは？</strong> 🤔<br/>
+            モデルがテキストの指示を完全に無視し、スタイル参照画像をそのままコピーして合成画像として出力してしまう状態を指します。この場合、生成画像とスタイル参照画像は完全に一致するため、スタイル整合性は1.0になりますが、テキストの内容は反映されていないため、望ましい結果ではありません。</p>
+<div style="text-align: center; margin-top:15px;">
+<div style="display: inline-block; padding: 10px; border: 1px dashed var(--color-gray); border-radius: 8px; margin: 5px; background-color: #f9f9f9;">
+<span style="font-family: 'Yomogi', cursive; font-size:14px;">テキスト指示: 「赤いリンゴ」</span>
+</div>
+<i class="fas fa-plus" style="margin: 0 10px;"></i>
+<div style="display: inline-block; padding: 10px; border: 1px dashed var(--color-gray); border-radius: 8px; margin: 5px; background-color: #f9f9f9;">
+<span style="font-family: 'Yomogi', cursive; font-size:14px;">スタイル参照: 「青い背景の絵画風」</span>
+</div>
+<br/>
+<i class="fas fa-arrow-down" style="font-size: 20px; color: var(--color-primary); margin: 10px 0;"></i>
+<br/>
+<div style="display: inline-block; padding: 10px; border: 2px solid var(--color-secondary); border-radius: 8px; margin: 5px; background-color: #fff0f0;">
+<span style="font-family: 'Yomogi', cursive; font-size:14px;">崩壊した生成結果: 「青い背景の絵画風」(リンゴなし)</span>
+<p style="font-size:12px; margin-top:5px;"> (スタイル整合性 = 1.0, テキスト整合性 = 低い)</p>
+</div>
+</div>
+<p style="margin-top:10px;">したがって、両方の指標が高い値を示すことが理想的です。</p>
+</div>
+</div>
+<img alt="Figure 13. Examples of language instructions" src="concept_fusion_image_editing_instructions.jpg"/>
+<p class="caption" style="text-align: center; font-size: 12px; color: var(--color-gray);">図13. 連結画像のレイアウト、タスクの意図、ターゲット画像のコンテンツに関するプロンプトを含む言語指示の例。(a) 連結画像 (b) 言語指示</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-image"></i> 図13の解説</p>
+<p>この図は、VisualClozeフレームワークで用いられる言語指示の例を示しています。これらの指示は、複数の画像をどのように配置するか (layout of the concatenated image)、どのようなタスクを実行するか (task intent)、そして生成すべき目標画像の具体的な内容 (content of the target image) をモデルに伝えます。</p>
+<ul>
+<li><strong>(a) Concatenated images:</strong> 複数の画像（コンテキスト例やクエリ画像）がグリッド状に配置された状態を示します。</li>
+<li><strong>(b) Language instructions:</strong> (a)の画像群に対する言語的な指示です。例えば、上段の例ではスタイルの融合、被写体の融合、レイアウトの融合といった複雑なタスクを指示し、下段の例では参照画像を用いた画像編集タスクを指示しています。これらの指示によって、モデルは実行すべきタスクを理解します。</li>
+</ul>
+<p>評価指標の文脈では、これらの言語指示（特にテキストプロンプト）と生成された画像の<span class="highlight">整合性 (Text consistency)</span> が重要な評価項目となります。</p>
+</div>
+<img alt="Figure 14. Effects of separate mean and shift in fine-tuning FLUX.1-dev" src="flux1dev_mean_shift_comparison.jpg"/>
+<p class="caption" style="text-align: center; font-size: 12px; color: var(--color-gray);">図14. FLUX.1-devのファインチューニングにおける平均とシフトの分離の効果。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tools"></i> 図14の解説</p>
+<p>この図は、Appendix Bで説明されているFLUX.1-devモデルのファインチューニング戦略に関するものです。具体的には、adaLN-Zeroブロックにおいて、条件画像のクリーンな領域とノイズが付加されたターゲット画像の領域に対して、<span class="highlight">平均 (mean) とシフト (shift) のパラメータを分離して計算する</span>ことの効果を示しています。</p>
+<p>この図は直接的には評価指標の解説ではありませんが、モデルのアーキテクチャや学習戦略が最終的な生成画像の品質に影響を与え、それが評価指標のスコアに反映されることを示唆しています。FLUX.1-devをファインチューニングする際に、この分離戦略を用いることで、より忠実度の高い画像生成が可能になることを示しており、これは例えば「生成品質」の指標向上に繋がる可能性があります。</p>
+</div>
+</div>
+</div>
+</body>
+</html>
