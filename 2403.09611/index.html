@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MM1: Methods, Analysis &amp; Insights from Multimodal LLM Pre-training解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">MM1: Methods, Analysis &amp; Insights from Multimodal LLM Pre-training</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-book-open"></i>1 Introduction</h2>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bullseye"></i>このセクションの目的と概要</p>
+<p>
+            この「はじめに」のセクションでは、本論文の研究背景、特に<span class="keyword">大規模言語モデル (LLM)</span> と<span class="keyword">視覚基盤モデル (Vision Foundation Models)</span> の最近の目覚ましい進展について触れます。そして、これらの技術を融合させた<span class="keyword">マルチモーダル大規模言語モデル (MLLM)</span> が新たなフロンティアとして登場している現状を説明します。
+            しかし、既存のMLLM研究には透明性の課題があり、特にモデル設計の選択プロセスに関する情報が不足しています。
+            本論文「MM1」は、この課題に対処するため、高性能なMLLMを構築するための<span class="highlight">設計原則や教訓を明らかにすること</span>を目的とし、そのためのアプローチと主な貢献を概説します。
+        </p>
+</div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i>背景: 言語モデリングと画像理解の進展</h3>
+<p>
+            ここ数年で、AI研究コミュニティは<span class="keyword">言語モデリング</span>と<span class="keyword">画像理解</span>の分野で目覚ましい進歩を遂げてきました。これは主に、インターネット上に存在する膨大な量の画像とテキストのペアデータ（例：写真とその説明文）と、強力な計算リソース（高性能なコンピュータ群）が利用可能になったおかげです。
+        </p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-brain fa-2x" style="color: var(--color-primary);"></i>
+<p><strong>大規模言語モデル (LLMs)</strong></p>
+<p class="reference">例: GPTシリーズ [9,10,19,21,26,92,93,102,107,109,116,131]</p>
+<p style="font-size: 0.9em;">大量のテキストデータで学習し、人間のように自然な文章を生成したり、質問に答えたりする能力を持つモデル。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-eye fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>視覚基盤モデル (Vision Foundation Models)</strong></p>
+<p class="reference">例: CLIP, DINO [40, 88, 91]</p>
+<p style="font-size: 0.9em;">大量の画像データで学習し、画像の内容を認識したり分類したりする能力を持つモデル。</p>
+</div>
+</div>
+<p>
+            これらのLLMや視覚基盤モデルは非常に高性能であり、現在では多くの言語処理タスクや画像理解タスクにおいて、<span class="highlight">事実上の標準（デファクトスタンダード）</span>となっています。
+        </p>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-link"></i>マルチモーダル基盤モデルの登場</h3>
+<p>
+            上記の言語モデルと視覚モデルの発展を受けて、これらを<span class="highlight">一つのモデルに統合</span>し、さらに優れた能力を実現する<span class="keyword">マルチモーダル基盤モデル</span>という分野が登場しました。
+        </p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-chalkboard-teacher"></i>用語解説: マルチモーダル大規模言語モデル (MLLM)</p>
+<p>
+<span class="keyword">MLLM (Multimodal Large Language Models)</span> とは、画像データとテキストデータの両方を入力として受け取り、それらを理解した上でテキストを出力として生成する、大規模な基盤モデルのことです。[28, 67, 79, 110]
+            </p>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-image fa-2x" style="color: var(--color-accent2);"></i> <i class="fas fa-plus fa-1x" style="color: var(--color-dark);"></i> <i class="fas fa-file-alt fa-2x" style="color: var(--color-accent2);"></i> <i class="fas fa-arrow-right fa-1x" style="color: var(--color-dark);"></i> <span style="font-family: 'Yomogi', cursive; font-size: 1.5em; color: var(--color-primary);">MLLM</span> <i class="fas fa-arrow-right fa-1x" style="color: var(--color-dark);"></i> <i class="fas fa-comment-dots fa-2x" style="color: var(--color-secondary);"></i>
+<p style="font-size:0.9em;">(画像 + テキスト → MLLM → テキスト出力)</p>
+</div>
+</div>
+<p>
+            LLMが大きな注目を集めた後、このMLLMが基盤モデル研究における<span class="highlight">次の重要なフロンティア</span>として台頭してきています。つまり、AIが人間のように複数の情報源（目と耳で得た情報など）を統合して理解し応答する能力への期待が高まっているのです。
+        </p>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-lock-open"></i>既存MLLMの透明性の問題</h3>
+<p>
+            既存のMLLMは、その<span class="keyword">透明性</span>（情報公開の度合い）という観点から、大きく二つのカテゴリに分けられます。
+        </p>
+<div class="two-column">
+<div class="column">
+<div class="glass-card" style="border-left: 5px solid var(--color-secondary);">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary);"><i class="fas fa-lock"></i> クローズドモデル <span class="badge orange">非公開</span></h4>
+<p class="reference">例: GPT-4V [1, 106]</p>
+<p>モデル自体はAPIなどを通じて利用できるかもしれませんが、その学習に使われた<span class="highlight">データセットの内容</span>、<span class="highlight">モデルの具体的な構造（アーキテクチャ）</span>、<span class="highlight">学習プロセスの詳細</span>については、ほとんど情報が公開されていません。</p>
+</div>
+</div>
+<div class="column">
+<div class="glass-card" style="border-left: 5px solid var(--color-accent1);">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1);"><i class="fas fa-folder-open"></i> オープンモデル <span class="badge green">公開</span></h4>
+<p class="reference">例: LLaVA, OpenFlamingo [3–5, 77, 90]</p>
+<p>モデルの重み（パラメータ）が公開されるだけでなく、学習データ、モデル構造、学習設定などの詳細な情報も提供されます。これにより、他の研究者や開発者がその成果を元に<span class="highlight">新しい研究や応用を積み重ねる</span>ことが可能になります。</p>
+</div>
+</div>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i>課題点</p>
+<p>
+                しかしながら、オープンモデルであってもクローズドモデルであっても、多くの研究では、彼らが最終的な<span class="highlight">アルゴリズム設計の選択（例えば、なぜそのモデル構造を選んだのか、なぜそのデータを使ったのかなど）に至ったプロセス</span>については、ほとんど情報を公開していません。特に、<span class="keyword">マルチモーダル事前学習</span>に関する設計判断の根拠は不明瞭なことが多いです。
+            </p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-microscope"></i>本論文の目的と貢献</h3>
+<p>
+            この分野の研究をさらに前進させるためには、個々の具体的なモデル実装（例：特定のモデルAやモデルB）だけでなく、それらの根底にある<span class="highlight">「どのようにして高性能なモデルを構築するのか」という原則や教訓</span>を抽出し、共有することが非常に重要だと考えています。そのような知見は、将来新しい技術が登場しても価値を持ち続ける可能性があります。
+        </p>
+<p>
+            そこで本論文では、MLLMの構築プロセスを詳細に記録し、研究コミュニティにとって有益と思われる<span class="keyword">設計上の教訓</span>を定式化することを試みます。
+        </p>
+<p>具体的には、本論文の貢献は以下の通りです。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i>貢献1: 小規模アブレーション研究による設計トレンドの特定</p>
+<div class="definition-box" style="margin-top: 10px;">
+<p class="definition-title"><i class="fas fa-flask"></i>用語解説: アブレーション研究 (Ablation Study)</p>
+<p>モデルやシステムの構成要素を一つずつ取り除いたり、変更したりしてみて、それぞれの要素が全体の性能にどのような影響を与えるかを調べる実験手法です。これにより、どの要素が重要であるかを特定できます。</p>
+</div>
+<p>私たちは、比較的小さなモデルを使って、以下の2つの側面について徹底的なアブレーション研究を行いました。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">1</span> モデルアーキテクチャの決定（例: どの視覚エンコーダを使うか）</li>
+<li><span class="badge blue">2</span> 事前学習データの選択肢（例: どの種類のデータをどれくらいの割合で混ぜるか）</li>
+</ul>
+<p>この結果、いくつかの興味深いトレンドが明らかになりました。特にモデリング側では、以下の要素が重要であることが分かりました（重要度順）：</p>
+<ol class="unstyled-list" style="list-style: none; padding-left: 0;">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent3); color: var(--color-dark);">1</div>
+<div class="step-content"><strong>画像解像度</strong>: 入力する画像の鮮明さが最も影響が大きい。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent3); color: var(--color-dark);">2</div>
+<div class="step-content"><strong>視覚エンコーダの損失関数とモデルサイズ（容量）</strong>: 画像情報を処理する部分の学習方法と大きさ。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent3); color: var(--color-dark);">3</div>
+<div class="step-content"><strong>視覚エンコーダの事前学習データ</strong>: 視覚エンコーダを事前に学習させる際に使われたデータ。</div>
+</li>
+</ol>
+<p><i class="fas fa-surprise" style="color: var(--color-secondary);"></i> 驚くべきことに、<span class="highlight">視覚データをLLMにどのように接続するかというアーキテクチャ上の詳細な設計</span>は、性能に対してそれほど大きな影響を与えないことが分かりました。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-database"></i>貢献2: 事前学習データの種類の重要性の解明</p>
+<p>私たちは、以下の3種類の異なるマルチモーダル事前学習データを使用しました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="info-card">
+<p style="text-align:center;"><i class="fas fa-image" style="color:var(--color-primary);"></i> + <i class="fas fa-closed-captioning" style="color:var(--color-primary);"></i></p>
+<p style="font-weight:bold; text-align:center;"><span class="keyword">画像キャプションデータ</span></p>
+<p style="font-size:0.9em;">画像とその内容を簡潔に説明するテキスト（キャプション）のペア。</p>
+</div>
+<div class="info-card">
+<p style="text-align:center;"><i class="fas fa-images" style="color:var(--color-accent1);"></i>  intertwined <i class="fas fa-file-alt" style="color:var(--color-accent1);"></i></p>
+<p style="font-weight:bold; text-align:center;"><span class="keyword">インターリーブ画像テキストデータ</span></p>
+<p style="font-size:0.9em;">Webページのように、画像と関連するテキストが交互に配置されているデータ。</p>
+</div>
+<div class="info-card">
+<p style="text-align:center;"><i class="fas fa-file-word" style="color:var(--color-accent2);"></i></p>
+<p style="font-weight:bold; text-align:center;"><span class="keyword">テキストのみのデータ</span></p>
+<p style="font-size:0.9em;">文章だけで構成されるデータ。</p>
+</div>
+</div>
+<p>分析の結果、以下の点が明らかになりました。</p>
+<ul>
+<li><span class="badge purple">Few-shot性能とテキストのみの性能向上</span>: <span class="keyword">インターリーブデータ</span>と<span class="keyword">テキストのみのデータ</span>が非常に重要。
+                    <div class="definition-box" style="margin-top: 5px; padding: 10px;">
+<p class="definition-title" style="font-size:0.9em;"><i class="fas fa-seedling"></i>用語解説: Few-shot学習</p>
+<p style="font-size:0.8em;">モデルが非常に少数の事例（数個～数十個）を提示されるだけで、新しいタスクを学習し実行する能力のこと。</p>
+</div>
+</li>
+<li><span class="badge yellow">Zero-shot性能向上</span>: <span class="keyword">画像キャプションデータ</span>が最も重要。
+                    <div class="definition-box" style="margin-top: 5px; padding: 10px;">
+<p class="definition-title" style="font-size:0.9em;"><i class="fas fa-rocket"></i>用語解説: Zero-shot学習</p>
+<p style="font-size:0.8em;">モデルが特定のタスクの事例を全く学習していなくても、そのタスクを実行できる能力のこと。指示や説明だけで対応するイメージです。</p>
+</div>
+</li>
+</ul>
+<p>さらに重要なのは、これらの傾向は、<span class="keyword">教師ありファインチューニング (SFT)</span> を行った後でも維持されることです。
+                <div class="definition-box" style="margin-top: 5px; padding: 10px;">
+<p class="definition-title" style="font-size:0.9em;"><i class="fas fa-user-graduate"></i>用語解説: 教師ありファインチューニング (SFT)</p>
+<p style="font-size:0.8em;">大規模データで事前学習されたモデルを、特定のタスクに関する少量の「正解ラベル付きデータ」を使って追加学習させ、そのタスクへの適応性を高める手法。</p>
+</div>
+            これは、事前学習段階で獲得されたモデルの基本的な能力や、そこで重要とされた設計要素の影響が、ファインチューニング後も失われずに残ることを示唆しています。
+            </p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-chart-line"></i>貢献3: モデルのスケールアップとMM1ファミリーの構築</p>
+<p>上記のアブレーション研究で得られた知見に基づき、モデルをスケールアップしました。</p>
+<ul>
+<li><span class="highlight">LLMのサイズ拡大</span>: パラメータ数を30億 (3B)、70億 (7B)、最大で300億 (30B) まで増やしました。</li>
+<li><span class="highlight">混合エキスパート (MoE) モデルの探求</span>:
+                    <div class="definition-box" style="margin-top: 5px; padding: 10px;">
+<p class="definition-title" style="font-size:0.9em;"><i class="fas fa-users-cog"></i>用語解説: 混合エキスパート (MoE) モデル</p>
+<p style="font-size:0.8em;">複数の「専門家」ニューラルネットワーク（エキスパート）を持ち、入力データに応じて最適なエキスパートを選択的に活性化させるアーキテクチャ。モデル全体のパラメータ数を増やしつつ、推論時の計算コストを抑えることができます。</p>
+</div>
+                    3Bモデルで64個のエキスパートを持つ構成から、7Bモデルで32個のエキスパートを持つ構成まで試しました。
+                </li>
+</ul>
+<p>
+                これにより、<span class="keyword">MM1</span>という高性能なマルチモーダルモデルのファミリーを構築することができました。このMM1ファミリーは、既存の多くの関連研究の性能を上回っています。
+            </p>
+<p>
+<i class="fas fa-trophy" style="color: var(--color-accent3);"></i> 特に、事前学習済みMM1モデルは、<span class="highlight">キャプション生成</span>タスクや<span class="keyword">視覚的質問応答 (VQA)</span> タスクの<span class="highlight">few-shot設定</span>において、Emu2 [105]、Flamingo [3]、IDEFICS [47] といった他の有力なモデルよりも優れた性能を示し、<span class="highlight">SOTA (State-of-the-Art: 現状最高水準)</span> を達成しました。これは、モデルサイズが小さい場合でも大きい場合でも同様です。
+            </p>
+<div class="definition-box" style="margin-top: 5px; padding: 10px;">
+<p class="definition-title" style="font-size:0.9em;"><i class="fas fa-question-circle"></i>用語解説: 視覚的質問応答 (VQA)</p>
+<p style="font-size:0.8em;">画像とその画像に関する質問が与えられ、モデルがその質問にテキストで回答するタスク。</p>
+</div>
+<p>
+                SFT後の最終的なMM1モデル群も、12種類の主要なマルチモーダルベンチマークにおいて、非常に競争力のある性能を達成しています。
+            </p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<img alt="Fig. 1: MM1の文脈内予測の例" src="mm1_in_context_predictions.jpg" style="width: 80%; border: 1px solid #ddd; border-radius: 8px; margin-bottom:10px;"/>
+<p style="text-align:center; font-size:0.9em; color: var(--color-gray);">Fig. 1: MM1は大規模なマルチモーダル事前学習のおかげで文脈内予測を実行できます。これによりMM1は、(a) オブジェクトを数え、カスタムフォーマットに従うこと、(b) 画像の一部を参照しOCRを実行すること、(c) 日常のオブジェクトに関する常識や単語知識を示すこと、(d) 基本的な数学関数を実行することができます。画像はCOCO 2014検証セット[72]からのものです。</p>
+<div class="glass-card" style="margin-top: 20px;">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-primary);"><i class="fas fa-binoculars"></i>図1の解説: MM1の優れた能力</h4>
+<p>図1は、本研究で提案するモデル<span class="keyword">MM1</span>が持つ優れた能力の具体例を示しています。これらの能力は、大規模なマルチモーダルデータ（画像とテキストの組み合わせ）による事前学習によって獲得されたものです。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-sort-numeric-up-alt" style="color:var(--color-accent1);"></i>
+<p><strong>(a) 物体のカウントとカスタムフォーマット</strong></p>
+<p style="font-size:0.9em;">左上の例では、テディベアがスマートフォンを持っている画像に対し、「"smartphone": 1, "teddy bear": 1」と、指定された形式で画像内の物体を正確に数え上げています。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-search-location" style="color:var(--color-accent2);"></i>
+<p><strong>(b) 画像内の部分参照とOCR</strong></p>
+<p style="font-size:0.9em;">上から2番目の例では、街中の看板や標識の画像（例：赤い丸で囲まれた部分）を提示し、その中の文字を読み取る（OCR: 光学文字認識）タスクを示しています。MM1は「no parking anytime」や「Raffaello」といったテキストを正確に認識しています。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-brain" style="color:var(--color-secondary);"></i>
+<p><strong>(c) 常識と単語知識</strong></p>
+<p style="font-size:0.9em;">上から3番目の例では、家具の画像（ベッドフレーム、ソファ、コンロ、冷蔵庫）と、それぞれの家具の一般的な重量範囲が示されています。MM1は、これらの日常的な物体に関する常識や知識（例：冷蔵庫は大体200～300ポンド）を理解していることを示唆しています。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-calculator" style="color:var(--color-accent3);"></i>
+<p><strong>(d) 基本的な数学演算</strong></p>
+<p style="font-size:0.9em;">一番下の例では、複数のケーキの画像と、それぞれのケーキに描かれた数字や個数に関する簡単な足し算（例：1+3=4、6+4=10、4+1=5）を行っています。MM1が画像から数量を把握し、基本的な計算ができることを示しています。</p>
+</div>
+</div>
+<p style="margin-top:15px;">
+            これらの例は、MM1が単に画像やテキストを個別に理解するだけでなく、それらを<span class="highlight">関連付けて文脈の中で情報を処理</span>し、多様なタスクに対応できることを示しています。図中の画像は、有名なデータセットであるCOCO 2014検証セット [72] から引用されています。
+        </p>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-star" style="color: var(--color-primary);"></i><strong>MM1の魅力的な特性</strong></p>
+<p>
+            大規模なマルチモーダル事前学習のおかげで、MM1は図1や図2（このセクションでは図2は直接参照されていませんが、論文中には存在します）で示されるような、以下のような魅力的な特性を備えています。
+        </p>
+<ul class="unstyled-list">
+<li><span class="badge blue">🌟</span> <span class="keyword">インコンテキスト予測 (In-context predictions)</span>: 提示された少数の例（文脈）に基づいて、新しい入力に対して予測を行う能力。図1の(a)のような形式指定に従うタスクなどがこれに該当します。</li>
+<li><span class="badge purple">🖼️🖼️</span> <span class="keyword">複数画像推論 (Multi-image reasoning)</span>: 複数の画像を同時に考慮して推論を行う能力。</li>
+<li><span class="badge orange">🤔</span> <span class="keyword">思考連鎖推論 (Chain-of-thought reasoning)</span>: 複雑な問題に対して、段階的な思考プロセス（中間的な推論ステップ）を生成しながら回答を導き出す能力。</li>
+</ul>
+<p>
+            さらに、MM1は指示チューニング（instruction tuning; SFTの一種で、特定の指示に従うように学習させること）を経ることで、強力な<span class="highlight">few-shot学習能力</span>を発揮します。
+        </p>
+<p>
+            これらの強力な結果は、本論文で提示するMLLM構築のための<span class="highlight">「レシピ」（設計原則や手順）</span>が、実際に競争力のある大規模モデルを生み出す上で有効であることを示しています。
+        </p>
+</div>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left: 3px solid var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-paper-plane"></i>結論と今後の展望</p>
+<p>
+            私たちは、本論文で提示する知見が、特定のモデリングコンポーネントやデータソースが将来進化していったとしても、依然として価値を持ち続けることを願っています。つまり、この研究で得られた教訓が、今後のMLLM研究開発の指針となることを期待しています。
+        </p>
+</div>
+</div>
+<div class="section-card" id="2_Related_Work">
+<h2 class="section-title"><i class="fas fa-book-open"></i>2 Related Work</h2>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; background-color: rgba(74, 111, 165, 0.05); padding: 15px; border-radius: 8px; border-left: 5px solid var(--color-primary);">
+        このセクションでは、本論文で取り組む「マルチモーダル大規模言語モデル（MLLM）」に関連する既存の研究を幅広く調査し、それらとの比較を通じて本研究の独自性と貢献を明らかにします。特に、MLLMの基本的なアーキテクチャ、最近の研究トレンドである視覚的指示チューニング、そして既存研究におけるアブレーション（構成要素の重要度分析）の取り組みと課題点について掘り下げていきます。
+    </p>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> MLLMの基本構成と本研究のアプローチ</h3>
+<div class="content-box">
+<p>本研究で対象とする<span class="keyword">マルチモーダル大規模言語モデル（MLLM）</span>は、非常に強力な<span class="keyword">事前学習済み自己回帰型大規模言語モデル（LLM）</span>をその中核に据えています。これらのモデルは、従来のLLMがテキスト情報のみを扱うのとは異なり、テキストトークンに加えて、<span class="keyword">画像エンコーダ</span>を介して変換された視覚トークンも入力として受け取り、処理することができます。参考文献として [5,17,28,45,64,76,90] が挙げられています。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-project-diagram"></i> MLLMの基本フロー</div>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge blue">入力</span> 🖼️ 画像データ <i class="fas fa-long-arrow-alt-right"></i> ⚙️ <strong>画像エンコーダ</strong> <i class="fas fa-long-arrow-alt-right"></i> 👁️ 視覚トークン (画像の特徴)
+                </div>
+<div class="pipeline-step">
+<span class="badge blue">入力</span> 📝 テキストデータ <i class="fas fa-long-arrow-alt-right"></i> 🗣️ テキストトークン
+                </div>
+<div class="pipeline-step">
+<span class="badge purple">処理</span> (👁️ 視覚トークン + 🗣️ テキストトークン) <i class="fas fa-long-arrow-alt-right"></i> 🧠 <strong>事前学習済みLLM (自己回帰型)</strong>
+</div>
+<div class="pipeline-step">
+<span class="badge orange">出力</span> <i class="fas fa-long-arrow-alt-right"></i> 📜 テキスト形式の応答
+                </div>
+</div>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-lightbulb"></i> 用語解説</div>
+<ul class="unstyled-list">
+<li><i class="fas fa-brain" style="color: var(--color-primary); margin-right: 5px;"></i><strong>MLLM (Multimodal Large Language Models)</strong>: テキスト、画像、音声など、複数の異なる種類の情報（モダリティ）を統合的に処理できる大規模言語モデルのことです。これにより、画像の内容について質問したり、画像に基づいた文章を生成したりできます。</li>
+<li><i class="fas fa-sync-alt" style="color: var(--color-primary); margin-right: 5px;"></i><strong>自己回帰型LLM (Autoregressive LLM)</strong>: テキストを生成する際に、それ以前に生成した単語（トークン）を考慮して、次に来る単語を予測していくタイプのモデルです。「今日の天気は」と入力すると、次「晴れです」のように、文脈を理解して続きを生成します。</li>
+<li><i class="fas fa-image" style="color: var(--color-primary); margin-right: 5px;"></i><strong>画像エンコーダ (Image Encoder)</strong>: 画像をLLMが理解できる数値データ（トークンや特徴ベクトル）に変換する役割を持つニューラルネットワークです。人間が目で見て情報を得るように、モデルが画像から意味を抽出するための「目」のようなものです。Vision Transformer (ViT)などがよく用いられます。</li>
+</ul>
+</div>
+<p>本論文で採用されているアプローチは、<span class="keyword">デコーダオンリーアーキテクチャ (decoder-only architecture)</span> に基づいています。これは、入力された情報を解釈し、応答を生成するデコーダ部分のみで構成されるモデル構造で、参考文献 <span class="highlight">Kosmos-1 [45]</span> のアプローチと類似しています。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-info-circle"></i> デコーダオンリーアーキテクチャとは？</div>
+<p>Transformerモデルは通常、入力情報を符号化する「エンコーダ」と、符号化された情報から出力を生成する「デコーダ」から構成されます。デコーダオンリーアーキテクチャは、このうちデコーダ部分のみを使用します。GPTシリーズ（例：GPT-3, GPT-4）がこのアーキテクチャの代表例で、特にテキスト生成タスクにおいて強力な性能を発揮します。マルチモーダルな文脈では、画像情報もテキスト情報と同様にデコーダへの入力シーケンスの一部として扱われます。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tasks"></i> 近年の研究動向: 視覚的指示チューニング</h3>
+<div class="content-box">
+<p>近年のMLLM研究において、特に注目を集めているのが、事前学習済みのLLMに対して行う<span class="keyword">視覚的指示チューニング (visual instruction tuning)</span> [63] です。これは、モデルがユーザーからの画像とテキストによる指示をより深く理解し、的確に応答できるようにするための追加学習フェーズです。</p>
+<div class="bubble-box">
+<p><i class="fas fa-question-circle" style="color:var(--color-primary); font-size: 1.2em;"></i> <strong>視覚的指示チューニングとは？</strong><br/>
+            簡単に言うと、「画像を見て、指示に従って答える」能力をモデルに教え込むことです。例えば、「この写真に写っている犬の種類は何ですか？」という指示（テキスト）と犬の写真（画像）、そして正解である「ゴールデンレトリバーです」（テキスト）というデータセットを大量に学習させます。これにより、モデルは多様な指示に対して、画像の内容を考慮した適切な応答を生成する能力を獲得します。チャットボットのような対話形式での利用や、複雑なマルチモーダルタスクへの対応が可能になります。</p>
+</div>
+<p>この視覚的指示チューニングに焦点を当てた代表的な研究例として、以下のモデルが挙げられます（一部抜粋）：</p>
+<div class="feature-card-grid">
+<div class="feature-item"><i class="fas fa-brain" style="color: var(--color-accent1);"></i>LLaVA(-1.5/NeXT) [74–76]</div>
+<div class="feature-item"><i class="fas fa-microchip" style="color: var(--color-accent1);"></i>MiniGPT-4 [134]</div>
+<div class="feature-item"><i class="fas fa-project-diagram" style="color: var(--color-accent1);"></i>mPLUG-Owl(-2/Doc) [123–125]</div>
+<div class="feature-item"><i class="fas fa-otter" style="color: var(--color-accent1);"></i>Otter [60, 61]</div>
+<div class="feature-item"><i class="fas fa-lightbulb" style="color: var(--color-accent1);"></i>InstructBLIP [24]</div>
+<div class="feature-item"><i class="fas fa-bug" style="color: var(--color-accent1);"></i>Honeybee [12]</div>
+<div class="feature-item"><i class="fas fa-cat" style="color: var(--color-accent1);"></i>SPHINX(-X) [36, 73]</div>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-paperclip"></i> 関連研究の広がり</div>
+<p>視覚的指示チューニングの研究は、モデル開発だけに留まりません。効果的な指示チューニングを行うための<span class="highlight">データセット構築</span>に関する研究 [15, 37, 66, 113, 132] も盛んです。さらに、MLLMを応用して、テキストで指示された画像内の特定の領域を理解する<span class="keyword">参照・グラウンディング</span> [14,56,90,115,126,130] や、テキスト指示に基づく<span class="keyword">画像生成・編集</span> [34, 54, 105] といった高度なタスクを実現する研究も数多く発表されています。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-flask"></i> アブレーション研究の現状と課題</h3>
+<div class="content-box">
+<p>MLLMのような複雑なモデルにおいて、どの構成要素（アーキテクチャ、データ、学習方法など）が最終的な性能にどれだけ影響を与えるのかを詳細に分析する<span class="keyword">アブレーション研究 (ablation studies)</span> は非常に重要です。しかし、特にモデルの基礎能力を形成する<span class="highlight">事前学習段階</span>における徹底的なアブレーション研究は、まだ比較的少ないのが現状です。</p>
+<p>以下に、関連するいくつかの先行研究とその特徴をまとめます。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4 style="font-family: 'Yomogi', cursive;"><i class="fas fa-microscope" style="color: var(--color-secondary);"></i> VILA [71]</h4>
+<p>マルチモーダル事前学習における様々なコンポーネント（例：画像エンコーダの種類、LLMのサイズなど）の調査に焦点を当てています。しかし、学習時の具体的な<span class="highlight">最適化の詳細</span>（学習率など）や、事前学習性能に関する<span class="highlight">詳細な評価結果</span>が不足している点が指摘されています。</p>
+<div style="margin-top:10px;"><span class="badge orange">課題</span> 最適化詳細・評価不足</div>
+</div>
+<div class="info-card">
+<h4 style="font-family: 'Yomogi', cursive;"><i class="fas fa-tools" style="color: var(--color-secondary);"></i> Emu2 [105]</h4>
+<p>事前学習における最適化パラメータや、ベースモデル（指示チューニング前）の性能結果について詳細な情報を提供しています。一方で、なぜ特定のコンポーネントや設定を選択したのか、その<span class="highlight">決定を正当化するためのアブレーション分析</span>は提供されていません。</p>
+<div style="margin-top:10px;"><span class="badge orange">課題</span> コンポーネント選択根拠不足</div>
+</div>
+<div class="info-card">
+<h4 style="font-family: 'Yomogi', cursive;"><i class="fas fa-search-dollar" style="color: var(--color-secondary);"></i> IDEFICS [58]</h4>
+<p>大規模なマルチモーダル事前学習に関する詳細情報を提供している別の研究です。しかし、この研究の主な焦点は、<span class="highlight">非公開（クローズドソース）のFlamingo [3]モデル</span>を可能な限り忠実に再現することに置かれています。そのため、汎用的な設計指針を探るアブレーションは限定的です。</p>
+<div style="margin-top:10px;"><span class="badge orange">課題</span> Flamingoモデル再現が主目的</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="bubble-box" style="border-color: var(--color-accent1); background-color: rgba(92, 184, 92, 0.05);">
+<p><i class="fas fa-bullseye" style="color: var(--color-accent1); font-size: 1.2em;"></i> <strong>本研究の独自性と貢献</strong> <br/>
+            これらの先行研究とは対照的に、本論文では、事前学習戦略における<span class="keyword">全ての構成要素</span>（ハイパーパラメータ、データ、アーキテクチャ）に関する詳細な情報提供を目指しています。さらに、マルチモーダル事前学習と指示チューニングの影響を区別するために、<span class="highlight">ベースとなる事前学習済みモデルの性能結果</span>も提示します。最も重要な点として、<span class="keyword">画像エンコーダ</span>の選択、<span class="keyword">視覚-言語コネクタ</span>の設計、そして<span class="keyword">事前学習データの混合比率</span>といった決定がモデル性能に与える正確な影響について、<span class="highlight">広範囲なアブレーション研究</span>を行っています。これにより、読者はMLLM構築における各要素の重要性を深く理解し、自身の研究開発に活かすことができます。</p>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 先行研究のギャップ</div>
+<ul>
+<li><i class="fas fa-puzzle-piece"></i> 事前学習の各コンポーネントが性能にどう影響するかの詳細な分析が不足している。</li>
+<li><i class="fas fa-cogs"></i> 最適化パラメータやアーキテクチャ選択の根拠が明確でない場合がある。</li>
+<li><i class="fas fa-lock"></i> クローズドなモデルの再現が主目的で、汎用的な知見が得られにくい研究もある。</li>
+</ul>
+<p style="text-align: center; margin-top: 15px;">
+<i class="fas fa-arrow-down" style="font-size: 24px; color: var(--color-secondary);"></i>
+</p>
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-lightbulb"></i> 本研究が目指すこと</p>
+<p>本研究 (MM1) は、これらのギャップを埋めることを目指し、MLLMの事前学習における様々な設計選択の影響を徹底的に解明します。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="3_Recipe_for_Building_MM1">
+<h2 class="section-title"><i class="fas fa-flask"></i>3 Recipe for Building MM1</h2>
+<div class="content-box">
+<p>高性能なマルチモーダル大規模言語モデル（MLLM）を構築する道のりは、<span class="keyword">非常に経験的な試み</span>です。基本的なアーキテクチャ設計や学習手順の概要は明確でも、具体的な形や実行方法はそうではありません。このセクションでは、高性能なモデルMM1を開発するために私たちが行った<span class="highlight">アブレーションスタディ（要素分析実験）</span>の詳細を説明します。🔧</p>
+<p>私たちは、以下の3つの主要な設計軸を探求しました：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-cogs"></i></div>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-microchip"></i>アーキテクチャ</h4>
+<p>事前学習済みの様々な<span class="keyword">画像エンコーダ</span>を調査し、これらのエンコーダと<span class="keyword">大規模言語モデル（LLM）</span>を接続する多様な方法を探ります。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-database"></i></div>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent2);"><i class="fas fa-table"></i>データ</h4>
+<p>異なる種類のデータと、それらの<span class="keyword">相対的な混合比率</span>を検討します。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-tasks"></i></div>
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent3);"><i class="fas fa-sliders-h"></i>学習手順</h4>
+<p>ハイパーパラメータや、モデルのどの部分をどの段階で学習させるかなど、MLLMの<span class="keyword">学習方法</span>を探ります。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> このセクションのゴール</p>
+<p>MM1モデルを構築する上で行われた様々な実験（アブレーションスタディ）を通じて得られた知見を共有し、高性能なMLLMを設計するための「レシピ」を提示することです。具体的には、モデルの構成要素や学習データ、学習方法といった選択肢が、最終的なモデル性能にどのような影響を与えるかを明らかにします。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tools"></i>3.1 Empirical Setup for Ablations (アブレーションスタディのための実験設定)</h3>
+<div class="content-box">
+<p>上記の各軸に沿って良い選択肢を特定するためには、<span class="keyword">モデルの性能を効率的に評価する方法</span>が必要です。大規模なMLLMの学習には膨大なリソースが必要となるため、アブレーションスタディには簡略化された設定を利用します。📊</p>
+<div class="bubble-box">
+<p>具体的には、アブレーションのベースとなる<span class="highlight">小規模な基本構成のモデル</span>を使用します。一度に一つの要素（アーキテクチャモジュールやデータソース）だけを変更し、それぞれの設計選択がこれらの要素に与える影響を評価します。これにより、最終的にモデルパラメータと学習時間の両方でスケールアップするモデルとデータの最適な構成に到達することができます。🧪</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i> アブレーションスタディの基本構成</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<span class="badge blue">画像エンコーダ</span>: <span class="keyword">ViT-L/14</span> [27] モデル。DFN-5B [31] と VeCap-300M [57] で <span class="keyword">CLIP損失</span> [91] を用いて学習。画像サイズは \(336 \times 336\) ピクセル。
+                        <div class="definition-box" style="margin-top:5px; padding: 8px;">
+<p class="definition-title" style="font-size:13px; margin-bottom:3px;"><i class="fas fa-camera-retro"></i> 画像エンコーダとは？</p>
+<p style="font-size:13px;">画像を入力として受け取り、その画像の特徴を数値のベクトル（特徴量）に変換するニューラルネットワークの一部です。これにより、コンピュータが画像を「理解」しやすくなります。</p>
+<p style="font-size:13px;"><span class="keyword">ViT-L/14</span>: Vision Transformer Largeモデルで、画像を14x14ピクセルのパッチに分割して処理します。</p>
+<p style="font-size:13px;"><span class="keyword">CLIP損失</span>: 画像とその説明文がどれだけ関連しているかを学習するための指標（損失関数）です。</p>
+</div>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<span class="badge purple">視覚言語コネクタ</span>: <span class="keyword">C-Abstractor</span> [12] を使用。144個の画像トークン。
+                        <div class="definition-box" style="margin-top:5px; padding: 8px;">
+<p class="definition-title" style="font-size:13px; margin-bottom:3px;"><i class="fas fa-link"></i> 視覚言語コネクタとは？</p>
+<p style="font-size:13px;">画像エンコーダが出力した視覚情報（画像トークン）を、大規模言語モデル（LLM）が処理できる形式に変換する橋渡し役のモジュールです。</p>
+<p style="font-size:13px;"><span class="keyword">C-Abstractor</span>: 畳み込みニューラルネットワークを利用して画像トークンを効率的に処理するコネクタの一種です。</p>
+<p style="font-size:13px;"><span class="keyword">画像トークン</span>: 画像を小さな領域（パッチ）に分割し、それぞれを数値ベクトルで表現したものです。LLMはこれを単語のように扱います。</p>
+</div>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<span class="badge orange">事前学習データ</span>: 以下の混合データを使用。
+                        <ul style="font-size:13px; margin-top:5px; padding-left: 15px;">
+<li>キャプション付き画像 (45%) 🖼️📄</li>
+<li>インターリーブされた画像-テキスト文書 (45%) 📄🖼️📄</li>
+<li>テキストのみのデータ (10%) 📄</li>
+</ul>
+<div class="definition-box" style="margin-top:5px; padding: 8px;">
+<p class="definition-title" style="font-size:13px; margin-bottom:3px;"><i class="fas fa-book-open"></i> データ種類</p>
+<p style="font-size:13px;"><span class="keyword">キャプション付き画像</span>: 1枚の画像とその内容を説明する短いテキストのペア。</p>
+<p style="font-size:13px;"><span class="keyword">インターリーブされた画像-テキスト文書</span>: ウェブページのように、複数の画像とテキストが混在している文書。</p>
+<p style="font-size:13px;"><span class="keyword">テキストのみのデータ</span>: 画像を含まない、文章だけのデータ。これによりLLMの言語能力を維持します。</p>
+</div>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">
+<span class="badge green">言語モデル</span>: 12億 (1.2B) パラメータのTransformerデコーダのみの言語モデル。
+                        <div class="definition-box" style="margin-top:5px; padding: 8px;">
+<p class="definition-title" style="font-size:13px; margin-bottom:3px;"><i class="fas fa-brain"></i> 言語モデルとは？</p>
+<p style="font-size:13px;">大量のテキストデータで学習し、人間のように自然な文章を理解したり生成したりするモデルです。<span class="keyword">Transformerデコーダのみ</span>のアーキテクチャは、主にテキスト生成タスクに用いられます。</p>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<p>これらの設計選択の影響を評価するために、さまざまな<span class="keyword">キャプション生成タスク</span>と<span class="keyword">VQA（視覚的質問応答）タスク</span>における<span class="highlight">ゼロショット</span>および<span class="highlight">フューショット（4ショット、8ショット）</span>の性能を使用します。評価タスクは以下の通りです：</p>
+<div class="tag-list">
+<span class="tag">COCO Captioning [18]</span>
+<span class="tag">NoCaps [2]</span>
+<span class="tag">TextCaps [103]</span>
+<span class="tag">VQAv2 [38]</span>
+<span class="tag">TextVQA [104]</span>
+<span class="tag">VizWiz [39]</span>
+<span class="tag">GQA [46]</span>
+<span class="tag">OK-VQA [82]</span>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-question-circle"></i> ゼロショット vs フューショット性能</p>
+<p><span class="keyword">ゼロショット性能</span>: モデルが学習データに全く含まれていないタスクや事例に対して、事前の例示なしに正しく応答できる能力のことです。汎化性能の高さを示します。</p>
+<p><span class="keyword">フューショット性能</span>: モデルがほんの数個の例（ショット）を見るだけで、新しいタスクや事例に対応できる能力のことです。例えば、「4ショット」なら4つの例を見た後にテストされます。文脈学習能力や適応力の高さを示します。</p>
+</div>
+<img alt="図3: モデルアブレーションとデータアブレーションの概要" src="model_data_ablations.jpg"/>
+<p class="reference">図3: 左側は<span class="keyword">モデルアブレーション</span>の対象を示しています。具体的には、どの視覚エンコーダを使用するか、豊富な視覚データをどのように供給するか、そして視覚表現をLLMにどのように接続するか、といった点です。右側は<span class="keyword">データアブレーション</span>の対象を示しており、データの種類やそれらの混合比率について検討します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-puzzle-piece"></i>3.2 Model Architecture Ablations (モデルアーキテクチャのアブレーション)</h3>
+<div class="content-box">
+<p>この研究では、LLMが<span class="highlight">視覚データを処理できるようにするコンポーネント</span>を分析します。具体的には、以下の2点を調査します：</p>
+<ol>
+<li>最適な<span class="keyword">視覚エンコーダの事前学習方法</span>は何か？ 🤔</li>
+<li>視覚的特徴を<span class="keyword">LLMの空間にどのように橋渡しするか</span>？ 🌉</li>
+</ol>
+<p>(図3の左側を参照)</p>
+<div class="glass-card" style="margin-top: 20px;">
+<h4 class="subsection-title" style="font-size: 16px;"><i class="fas fa-image"></i> Image Encoder Pre-training (画像エンコーダの事前学習)</h4>
+<p>ほとんどのMLLMは、<span class="keyword">CLIP</span>で事前学習された画像エンコーダを使用しています[24, 74, 76, 124]。一方、最近の研究では、<span class="keyword">DINOv2</span> [73, 108]のような視覚のみの自己教師ありモデルを画像エンコーダとして探求する動きも始まっています。</p>
+<p>これまでの研究と同様に、事前学習された画像エンコーダの選択は、マルチモーダル事前学習後と命令チューニング後の両方で、<span class="highlight">下流タスクの結果に大きな影響を与える</span>ことがわかりました。ここでは主に、<span class="keyword">画像解像度</span>と<span class="keyword">画像エンコーダの事前学習目的（損失関数）</span>の重要性をアブレーションします。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> 注意点</p>
+<p>他のアブレーションとは異なり、ここでは1.2Bではなく<span class="highlight">2.9BパラメータのLLM</span>を使用しています。これは、より大きな画像エンコーダの能力を十分に活用できるようにするためです。</p>
+</div>
+<img alt="表1: 異なる画像エンコーダでのMM1事前学習アブレーション" src="table1.png"/>
+<p class="reference" style="margin-bottom:15px;">表1: MM1事前学習における異なる画像エンコーダ（2.9B LLM使用）のアブレーション結果。注意点として、<span class="keyword">「Data」列の値</span>は、MM1自体ではなく、<span class="highlight">画像エンコーダ自体の初期学習に使用されたデータ</span>を指します。Recon.: 再構成損失。AIM: [30]; DFN-2/5B: [31]; VeCap: VeCap-300M [57]; OpenAI [91]。</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>エンコーダ</th>
+<th>解像度</th>
+<th>モデルサイズ</th>
+<th>タイプ</th>
+<th>データ</th>
+<th>0-shot</th>
+<th>4-shot</th>
+<th>8-shot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ViT-L/14</td>
+<td>224</td>
+<td>300M</td>
+<td>CLIP</td>
+<td>DFN-2B</td>
+<td>33.7</td>
+<td>56.2</td>
+<td>59.5</td>
+</tr>
+<tr>
+<td>ViT-L/14</td>
+<td>336</td>
+<td>300M</td>
+<td>CLIP</td>
+<td>DFN-2B</td>
+<td><span class="highlight">36.4</span></td>
+<td><span class="highlight">59.1</span></td>
+<td><span class="highlight">62.0</span></td>
+</tr>
+<tr>
+<td colspan="8" style="text-align:center; font-style:italic;">... 他のエンコーダの結果も同様に比較 ...</td>
+</tr>
+<tr>
+<td>ViT-L/14 (OpenAI)</td>
+<td>336</td>
+<td>300M</td>
+<td>CLIP</td>
+<td>OpenAI</td>
+<td>37.4</td>
+<td>60.2</td>
+<td>63.0</td>
+</tr>
+<tr>
+<td>ViT-H/14</td>
+<td>336</td>
+<td>600M</td>
+<td>CLIP</td>
+<td>DFN-5B+VeCap</td>
+<td><span class="keyword">38.1</span></td>
+<td><span class="keyword">62.0</span></td>
+<td><span class="keyword">64.9</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p style="margin-top:10px;">表1は、様々な画像エンコーダ設定（エンコーダの種類、解像度、モデルサイズ、学習目的、学習データ）が、MM1の事前学習後の性能（0ショット、4ショット、8ショットの平均VQA/Captioningスコア）にどう影響するかを示しています。</p>
+<div class="two-column">
+<div class="column">
+<div class="info-card">
+<h5 class="subsection-title" style="font-size: 15px; color: var(--color-secondary);"><i class="fas fa-adjust"></i> Contrastive losses (対照学習損失)</h5>
+<p>大規模な画像-テキストデータセットで学習すると、結果として得られるモデルは、様々な形式の画像分類や検索タスクの性能で証明されるように、<span class="highlight">画像データの強力な意味理解</span>を獲得します[91]。これらの結果は、視覚エンコーダに意味知識を与えることができる大規模な画像-テキストデータの利用可能性によって可能になりました。最近では、自動的にキュレートされた大規模データセットや<span class="keyword">合成キャプション</span>により、さらに強力なエンコーダが生まれています[31, 57]。</p>
+</div>
+</div>
+<div class="column">
+<div class="info-card">
+<h5 class="subsection-title" style="font-size: 15px; color: var(--color-secondary);"><i class="fas fa-undo"></i> Reconstructive Losses (再構成損失)</h5>
+<p><span class="keyword">密な予測 (dense prediction)</span> に関して言えば、CLIPスタイルのモデルは同等の強力な性能を達成するのに苦労します[94, 95, 112]。この特性は、VQAやキャプションのようなタスクの多くが<span class="highlight">詳細な画像理解</span>を必要とするため、MLLMにとって問題となる可能性があります。したがって、再構成損失を用いて学習された画像エンコーダも検討します。なぜなら、そのような損失は<span class="keyword">画像のすべての部分を明示的に捉える</span>からです。特に、画像データのみで慎重に設計された自己回帰的な再構成損失がうまくスケールすることを示した<span class="highlight">AIM [30]</span>を利用します。</p>
+<div class="definition-box" style="margin-top:5px; padding: 8px;">
+<p class="definition-title" style="font-size:13px; margin-bottom:3px;"><i class="fas fa-search"></i> 密な予測とは？</p>
+<p style="font-size:13px;">画像内の各ピクセルに対して予測を行うタスクのことです（例：セグメンテーション、深度推定など）。CLIPのような対照学習は画像全体の大まかな意味理解に長けていますが、ピクセルレベルの詳細な理解は苦手な場合があります。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bubble-box">
+<p><span class="badge yellow">💡 エンコーダの教訓</span>: <span class="keyword">画像解像度</span>が最も大きな影響を与え、次に<span class="keyword">モデルサイズ</span>と<span class="keyword">学習データの構成</span>が続きます。</p>
+<p>表1からわかるように、画像解像度を224から336に上げると、すべてのアーキテクチャですべての指標において約<span class="highlight">3%の向上</span>が見られます。モデルサイズをViT-LからViT-Hに増やす（パラメータ数が倍増）と、通常<span class="highlight">1%未満</span>のわずかな性能向上が見られます。最後に、合成キャプションのデータセットであるVeCap-300M [57]を追加すると、フューショットのシナリオで<span class="highlight">1%以上の向上</span>が得られます。</p>
+<p>モデルの種類に関しては、結果はそれほど決定的ではありません。<span class="highlight">対照学習（Contrastive）手法</span>は、再構成学習（Reconstructive）手法よりも高い性能を示す傾向があります。特に、3億パラメータのViT-Lベースのエンコーダは、同程度のサイズ（推論時にはAIMモデルの24層のうち20層のみ使用）のAIM-600Mと比較して、<span class="highlight">0.3%から1.5%の性能向上</span>をもたらします。しかし、AIMは半分以下のデータで学習されているため、この教訓はAIMの潜在能力については決定的ではありません。同様に、広く使用されているオープンソースのOpenAIモデル[91]は、同程度の容量でDFN+VeCapデータ混合で学習された私たちのモデルと同等の性能を示します。</p>
+</div>
+</div>
+<div class="glass-card" style="margin-top: 20px;">
+<h4 class="subsection-title" style="font-size: 16px;"><i class="fas fa-plug"></i> Vision-Language Connector and Image Resolution (視覚言語コネクタと画像解像度)</h4>
+<p>このコンポーネントの目標は、<span class="keyword">視覚表現をLLMの空間に変換する</span>ことです。画像エンコーダはViT（Vision Transformer）であるため、その出力は単一の埋め込み（embedding）か、入力画像のパッチに対応するグリッド状に配置された埋め込みのセットです。したがって、画像トークンの空間的配置をLLMのシーケンシャルな配置に変換する必要があります。同時に、実際の画像トークン表現は単語埋め込み空間にマッピングされる必要があります。</p>
+<p>そうする際には、2つの相反する要件があります：</p>
+<ul class="unstyled-list">
+<li><span class="badge green">詳細度向上</span>: 画像からできるだけ多くの詳細を捉えたい。これは画像トークンの埋め込み数を増やすことで達成されます。📈</li>
+<li><span class="badge red">計算コスト</span>: 特に複数画像の入力の場合、画像あたりの入力トークン数が多いと計算的に困難になります。📉</li>
+</ul>
+<p>画像を表現するために<span class="highlight">64または144トークン</span>を使用すること、および<span class="highlight">224と336の2つの異なる画像解像度</span>を検討します。さらに、以下のアーキテクチャオプションを検討します：</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-compress-arrows-alt"></i></div>
+<h5 style="font-size:14px; margin-bottom:5px;">Average Pooling (平均プーリング)</h5>
+<p style="font-size:13px;">[105] に倣い、ViT画像エンコーダの出力に \(n \times n\) 平均プーリングを適用し、その後に線形射影を行います (\(n \in \{8, 12\}\))。これは、複数の特徴ベクトルを平均化して1つの代表ベクトルにするシンプルな方法です。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-search-plus"></i></div>
+<h5 style="font-size:14px; margin-bottom:5px;">Attention Pooling (アテンションプーリング)</h5>
+<p style="font-size:13px;">画像トークン表現がLLM入力埋め込みとは異なる空間にあるという事実に動機付けられ、\(k\)個の学習可能なクエリを使用するアテンションプーリングは自然なアプローチです。\(k\)を変化させることで、単一の画像からLLMに入力される入力数を変えることができます (私たちは \(k \in \{64, 144\}\) を使用します)。これにより、画像内の重要な部分に「注目」して情報を集約できます。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-network-wired"></i></div>
+<h5 style="font-size:14px; margin-bottom:5px;">Convolutional Mapping (畳み込みマッピング)</h5>
+<p style="font-size:13px;">最近では、Honeybee [12] が上記の問題を研究し、<span class="keyword">C-Abstractor</span>モジュールを提案しました。これはResNet [41] ブロックとして実装されており、局所情報を保持しながら、適応プーリングを通じて画像トークンの数を変更できます。</p>
+</div>
+</div>
+<img alt="図4: 異なる視覚言語コネクタ、画像解像度、画像トークンサイズでの0/4/8ショットアブレーション" src="vl_connector_image_resolution_ablations.jpg"/>
+<p class="reference" style="margin-bottom:15px;">図4: 2つの画像解像度（224px, 336px）と2つの画像トークンサイズ（64tks, 144tks）について、異なる視覚言語コネクタ（Avg. Pool, Att. Pool, C-Abstractor）での0ショット、4ショット、8ショットの性能アブレーション結果。棒グラフの高さが性能を示します。</p>
+<p>グラフから読み取れる主な傾向：</p>
+<ul style="font-size:13px;">
+<li><strong>画像解像度とトークン数の影響</strong>: 全体的に、画像解像度が高いほど (224px &lt; 336px)、また画像トークン数が多いほど (64tks &lt; 144tks)、性能（0ショット、4ショット、8ショットの平均スコア）が向上する傾向が見られます。例えば、0ショット性能では、224px/64tksから336px/144tksにすると、どのコネクタタイプでも性能が向上しています。</li>
+<li><strong>コネクタタイプの影響</strong>: 各解像度/トークン数設定内でコネクタタイプを比較すると、C-Abstractor（緑色）がAttention Pooling（オレンジ色の斜線）やAverage Pooling（青色）よりもわずかに高いか同程度の性能を示すことが多いですが、その差は解像度やトークン数の影響ほど大きくありません。特に336px/144tksの設定では、3つのコネクタの性能差は比較的小さいです。</li>
+</ul>
+<div class="bubble-box">
+<p><span class="badge yellow">💡 VLコネクタの教訓</span>: <span class="keyword">視覚トークンの数</span>と<span class="keyword">画像解像度</span>が最も重要であり、VLコネクタの種類はほとんど影響しません。</p>
+<p>図4に示される結果は、視覚トークンの数や画像解像度を増やすと、ゼロショットとフューショットの両方の性能が向上することを示しています。しかし、文献[12]で報告されていることとは対照的に、<span class="highlight">異なるアーキテクチャ設計が決定的に強力なモデルを生み出すようには見えません</span>。命令チューニング後、336pxおよび144トークンの設定では、3つのアーキテクチャすべてが非常に類似した結果を達成します。(ファインチューニングの結果については、付録図10を参照してください。)</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-file-alt"></i>3.3 Pre-training Data Ablation (事前学習データのアブレーション)</h3>
+<div class="content-box">
+<p>高性能なモデルを学習するには、<span class="keyword">大規模でタスクに適したデータ</span>が最も重要です。通常、モデルは<span class="highlight">事前学習</span>と<span class="highlight">命令チューニング</span>の2段階で学習されます。前者の段階ではウェブスケールのデータが使用され、後者の段階ではタスク固有のキュレートされたデータが利用されます。以下では、事前学習段階に焦点を当て、私たちのデータ選択について詳しく説明します（図3の右側を参照）。</p>
+<img alt="表2: マルチモーダル大規模言語モデルの事前学習用データセット一覧" src="table2.png"/>
+<p class="reference" style="margin-bottom:15px;">表2: マルチモーダル大規模言語モデルの事前学習に使用されるデータセットのリスト。これには、画像とテキストのペア（キャプションデータ）、画像とテキストが混在するドキュメント（インターリーブデータ）、テキストのみのデータが含まれます。それぞれのデータソースと、おおよその画像数やテキストトークン数が記載されています。（具体的な数値は図を参照）</p>
+<div class="table-wrapper" style="margin-bottom:15px;">
+<table>
+<thead>
+<tr>
+<th>データタイプ</th>
+<th>データセット名</th>
+<th>画像数 (約)</th>
+<th>テキストトークン数 (約)</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td rowspan="4">キャプションデータ</td>
+<td>Conceptual Captions (CC3M, CC12M) [100, 13]</td>
+<td>15M</td>
+<td>150M</td>
+<td>ウェブから収集された画像と代替テキストのペア</td>
+</tr>
+<tr>
+<td>COYO-700M [11]</td>
+<td>700M</td>
+<td>35B</td>
+<td>大規模な画像-テキストペアデータセット</td>
+</tr>
+<tr>
+<td>LAION-2B (English subset)</td>
+<td>1.2B</td>
+<td>60B</td>
+<td>非常に大規模な公開画像-テキストペアデータセットの英語サブセット</td>
+</tr>
+<tr>
+<td>VeCap-300M (Synthetic Captions) [57]</td>
+<td>300M</td>
+<td>15B</td>
+<td>合成的に生成された高品質なキャプションを持つ画像データ</td>
+</tr>
+<tr>
+<td>インターリーブデータ</td>
+<td>Web Document Data (Internal)</td>
+<td>1B</td>
+<td>500B</td>
+<td>画像とテキストが混在するウェブ文書（内部データ）</td>
+</tr>
+<tr>
+<td>テキストのみデータ</td>
+<td>Text Document Data (Internal)</td>
+<td>-</td>
+<td>5T</td>
+<td>テキストのみの文書（内部データ）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>MLLMの学習には一般的に2種類のデータが使用されます：</p>
+<ul class="unstyled-list">
+<li><span class="badge purple">キャプションデータ</span>: 画像とペアになったテキスト記述から構成されます。</li>
+<li><span class="badge orange">インターリーブされた画像-テキスト文書</span>: ウェブからのもので、画像とテキストが交互に配置されています（詳細は付録A.1を参照）。</li>
+</ul>
+<p>注意点として、キャプションデータは比較的短いテキストで、画像との関連性が高い傾向があります。対照的に、インターリーブデータは<span class="highlight">はるかに長く多様なテキスト</span>を持ち、周囲の画像との関連性は平均して低くなります。最後に、基盤となる事前学習済みLLMの言語理解能力を維持するために、<span class="highlight">テキストのみのデータ</span>を含めます。データセットの完全なリストは表2にまとめられています。</p>
+<p>アブレーションにはセクション3.1で説明したのと同じモデル設定を使用しますが、唯一の例外として、ここでは大規模データ学習を最大限に活用するために<span class="highlight">20万ステップ</span>学習します。また、データ混合の影響をよりよく評価するために、一般的に使用されるテキストタスクのセット（<span class="keyword">TextCore1</span>と呼ばれる）を評価に組み込みます。これらから以下の教訓が得られます：</p>
+<img alt="図5: データアブレーションの結果を示すグラフ (a, b, c, d)" src="model_data_ablations.jpg"/>
+<p class="reference" style="margin-bottom:15px;">図5: データ混合に関するアブレーション実験の結果。 (a)キャプションデータとインターリーブデータの混合比率の影響。(b)テキストのみデータの重要性。(c)画像データとテキストのみデータの混合比率の影響。(d)合成キャプションデータ(VeCap)の影響。各グラフは、0ショット、4ショット、8ショットのVQA/Captioning平均性能とTextCore性能を示しています。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-book"></i> データ教訓1: (図5a参照)</p>
+<p><span class="keyword">インターリーブデータ</span>はフューショット性能とテキストのみ性能にとって不可欠であり、<span class="keyword">キャプションデータ</span>はゼロショット性能を向上させます。</p>
+<p>図5aでは、インターリーブデータとキャプションデータのさまざまな混合比率の結果を示しています。キャプションデータの量を増やすと、ゼロショット性能は<span class="highlight">25.8%から39.3%へと一貫して向上</span>します。しかし同時に、4ショットおよび8ショットの性能については、データのうち<span class="highlight">少なくとも50%がインターリーブデータ</span>であることが、8ショットで61%以上、4ショットで58%以上を維持するために不可欠です。それがないと、性能はそれぞれ45%と43.7%に大幅に低下します。インターリーブデータは自然に複数の画像と付随するテキストを含み、それらはしばしば相互に関連しているため、このようなデータは本質的にフューショットのテスト入力と類似しており、経験的な結果ともよく一致します。しかし、一般的な評価がキャプション問題に偏っているため（8つのベンチマークのうち3つがキャプション）、キャプションデータは特にゼロショット性能を向上させます。興味深いことに、インターリーブデータを使用すると、フューショット設定ではこれらの同じキャプションベンチマークの性能がさらに向上します。同様に、インターリーブデータには長文のテキストも含まれているため、テキストのみの性能もインターリーブデータから恩恵を受けます。</p>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-align-left"></i> データ教訓2: (図5b参照)</p>
+<p><span class="keyword">テキストのみデータ</span>はフューショット性能とテキストのみ性能に役立ちます。</p>
+<p>モデルの言語理解能力を維持する方法として、テキストのみデータを利用します。図5bに示すように、テキストのみデータとキャプションデータを組み合わせると、フューショット性能が向上します。言い換えれば、長いテキストによって、モデルは複数の画像とテキストの例をコンテキストとして利用し、より優れた質問応答とキャプション生成を行うことができます。一方、テキストのみデータとインターリーブデータを組み合わせると、わずかではありますが性能が低下します。どちらの場合も、TextCoreの数値の向上に示されるように、テキストのみの性能は向上します。</p>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="color: var(--color-accent3);"><i class="fas fa-balance-scale"></i> データ教訓3: (図5c参照)</p>
+<p>画像データとテキストデータの<span class="keyword">慎重な混合</span>により、最適なマルチモーダル性能と強力なテキスト性能を両立できます。</p>
+<p>上記の教訓は、強力な画像理解と言語理解の両方を達成するために、テキストのみデータをどのように組み合わせるのが最善かという疑問につながります。図5cでは、画像データ（キャプションとインターリーブ）とテキストのみデータのいくつかの混合比率を実験しています。キャプション：インターリーブ：テキストの比率が<span class="highlight">5:5:1</span>の場合、強力なマルチモーダル性能と、同等のテキストのみ理解性能を維持するという良好なバランスを達成できることがわかります。</p>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-magic"></i> データ教訓4: (図5d参照)</p>
+<p><span class="keyword">合成データ</span>はフューショット学習に役立ちます。</p>
+<p>最後に、合成キャプションデータであるVeCap [57]の重要性を調査します。これは高品質ですが、比較的小規模で、全キャプションデータのわずか7%です。図5dに示すように、フューショット性能において、<span class="highlight">絶対値で2.4%および4%という無視できない向上</span>をもたらします。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="4_Final_Model_and_Training_Recipe">
+<h2 class="section-title"><i class="fas fa-flask"></i>4 Final Model and Training Recipe</h2>
+<div class="content-box">
+<p>このセクションでは、これまでのセクション3で行われた様々な要素（画像エンコーダ、視覚・言語コネクタ、事前学習データ）に関する詳細なアブレーションスタディ（比較実験）の結果を統合し、最終的に<span class="keyword">MM1</span>モデルのマルチモーダル事前学習に採用された「レシピ」、つまり最適な構成要素の組み合わせと学習方法を具体的に提示します。これにより、高性能なマルチモーダル大規模言語モデル（MLLM）を構築するための知見が得られます。さらに、モデルの性能を向上させるためのスケーリング戦略（モデルサイズの拡大やMixture-of-Expertsの導入）や、それによって得られた事前学習結果についても詳しく解説していきます。✏️</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-clipboard-list"></i> MM1最終レシピの概要</p>
+<p>以下に、アブレーションスタディの結果から導き出された、MM1のマルチモーダル事前学習のための最終的なレシピを示します。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title mini"><i class="fas fa-eye"></i> 画像エンコーダ (Image Encoder)</h4>
+<p><span class="badge yellow">選定理由</span> 画像解像度の重要性（セクション3.2参照）に基づき、高性能なものを選択しました。</p>
+<ul>
+<li><span class="keyword">モデル:</span> ViT-H [27] (Vision Transformer - Huge)</li>
+<li><span class="keyword">解像度:</span> 378×378ピクセル</li>
+<li><span class="keyword">事前学習:</span> CLIP目的関数 [91] を使用し、DFN-5B [31] データセットで事前学習済み。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-book-open"></i> 用語解説</p>
+<p><span class="keyword">ViT-H [27]:</span> 画像をパッチに分割し、Transformerアーキテクチャで処理する巨大なVision Transformerモデル。高い画像理解能力を持ちます。</p>
+<p><span class="keyword">CLIP [91]:</span> 画像とテキストのペアデータを用いて、対照学習により画像とテキストの関連性を学習するモデル。エンコーダは画像の特徴を効果的に抽出できます。</p>
+<p><span class="keyword">DFN-5B [31]:</span> 大規模な画像・テキストペアのデータセット。高品質な画像エンコーダの学習に貢献します。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title mini"><i class="fas fa-link"></i> 視覚・言語コネクタ (Vision-Language Connector)</h4>
+<p><span class="badge yellow">選定理由</span> 視覚トークンの数が最も重要であるという知見（セクション3.2参照）に基づき、十分なトークン数を確保できるものを選択。実際のコネクタのアーキテクチャ自体の影響は比較的小さいと判断されました。</p>
+<ul>
+<li><span class="keyword">視覚トークン数:</span> 144トークン</li>
+<li><span class="keyword">アーキテクチャ:</span> C-Abstractor [12] を採用。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-book-open"></i> 用語解説</p>
+<p><span class="keyword">視覚トークン:</span> 画像エンコーダが出力する、画像情報を表現するベクトル（トークン）のこと。この数が多いほど、より詳細な画像情報をLLMに伝えられます。</p>
+<p><span class="keyword">C-Abstractor [12]:</span> ResNetブロックをベースとし、局所的な情報を保持しつつアダプティブプーリングで画像トークン数を調整できるコネクタアーキテクチャです。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title mini"><i class="fas fa-database"></i> データ (Data)</h4>
+<p><span class="badge yellow">選定理由</span> <span class="highlight">ゼロショット性能</span>（未知のタスクへの対応能力）と<span class="highlight">フューショット性能</span>（少量の例示データでの学習能力）の両方を高いレベルで維持するため、慎重にデータタイプとその混合比率を決定しました（セクション3.3参照）。</p>
+<ul>
+<li><span class="keyword">インターリーブド画像・テキスト文書:</span> 45%
+                        <div class="bubble-box mini-bubble">📄↔️🖼️ テキストと画像が混在した文書（Webページのような形式）。文脈理解やフューショット性能向上に寄与。</div>
+</li>
+<li><span class="keyword">画像・テキストペア文書:</span> 45%
+                        <div class="bubble-box mini-bubble">🖼️+📝 1枚の画像とそれに対応するキャプションのペア。ゼロショット性能向上に重要。</div>
+</li>
+<li><span class="keyword">テキストのみ文書:</span> 10%
+                        <div class="bubble-box mini-bubble">📝 LLMの言語能力を維持・向上させるため。</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-layer-group"></i> モデルのスケーリングアップと学習詳細</h3>
+<div class="content-box">
+<p>モデルの性能をさらに向上させるため、言語モデル（LLM）のサイズを<span class="keyword">30億 (3B)</span>、<span class="keyword">70億 (7B)</span>、<span class="keyword">300億 (30B)</span> パラメータへとスケールアップしました。 🚀</p>
+<p>MM1の画像エンコーダと基盤となるLLMデコーダの重みは、<span class="highlight">Apple社内で事前に学習されたモデルの重みを利用して初期化</span>されています (論文中脚注2)。これにより、学習の効率化と性能向上が期待されます。</p>
+<p>その後、上記のデータミックスを用いて、<span class="keyword">20万ステップ</span>（約4000億トークンに相当）のマルチモーダル事前学習を行いました。注目すべき学習設定の詳細は以下の通りです：</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-unlock-alt"></i></div>
+<h4>完全非凍結学習 (Entirely Unfrozen)</h4>
+<p>画像エンコーダやLLMの重みを固定せず、全てのパラメータを学習中に更新します。これにより、モデル全体がマルチモーダルデータに最適化されます。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-ruler-horizontal"></i></div>
+<h4>シーケンス長 (Sequence Length)</h4>
+<p>4096トークン。一度に処理できる情報の量を増やし、長文の理解や複雑な文脈の把握を可能にします。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="far fa-images"></i></div>
+<h4>シーケンスあたりの画像数</h4>
+<p>最大16画像。複数の画像を同時に処理する能力を高めます。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-expand-arrows-alt"></i></div>
+<h4>画像解像度 (Image Resolution)</h4>
+<p>378×378ピクセル。高解像度画像からより詳細な情報を抽出します。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-users"></i></div>
+<h4>バッチサイズ (Batch Size)</h4>
+<p>512シーケンス。一度に学習するデータ量を増やし、学習の安定性と効率を高めます。</p>
+</div>
+</div>
+<p>これらのモデルは全て、<span class="keyword">AXLearn</span>という学習フレームワークを使用して学習されました (論文中脚注3)。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> Model Scaling (モデルスケーリング) とハイパーパラメータ</h3>
+<div class="content-box">
+<p>これほど大規模なモデルになると、全てのハイパーパラメータ（学習率、重み減衰など）について最適な値をグリッドサーチ（総当たり的な探索）で見つけ出すのは計算資源的に<span class="highlight">実行不可能</span>です。🤯</p>
+<p>そこで、研究チームは既存のLLMのスケーリング特性に関する知見 [43, 44, 120, 121]（モデルサイズと最適ハイパーパラメータの関係性など）を活用しました。具体的には以下の手順で進められました。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="step-number">1</span>
+<div class="step-content">
+<span class="badge blue">小規模モデルで探索</span>
+                    比較的小さなモデルサイズ（900万、8500万、3億200万、12億パラメータ）で、学習率のグリッドサーチを実施しました。この際、セクション3.2で特定された最適な画像エンコーダや視覚・言語コネクタなどの構成要素は固定して使用されました (論文中脚注4)。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">2</span>
+<div class="step-content">
+<span class="badge blue">最適学習率の特定</span>
+                    これらの小規模モデルでの実験結果から、それぞれのサイズにおける最適なピーク学習率を特定しました。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">3</span>
+<div class="step-content">
+<span class="badge blue">大規模モデルへの外挿</span>
+                    得られた小規模モデルでの「モデルサイズと最適学習率」の関係性を、より大きなモデルサイズへと<span class="keyword">外挿（extrapolate）</span>しました。この外挿には、対数空間（log space）での線形回帰が用いられました。
+                </div>
+</div>
+</div>
+<p>以下の図6は、この外挿の様子を示しています。</p>
+</div>
+<img alt="Fig. 6: Optimal peak learning rate as a function of model size" src="learning_rate_model_size_scaling.jpg"/>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-chart-pie"></i> 図6の解説: モデルサイズと最適ピーク学習率の関係</p>
+<ul>
+<li><span class="keyword">グラフの目的:</span> LLMのパラメータ数（モデルサイズ）が大きくなるにつれて、最適なピーク学習率がどのように変化するかを示しています。</li>
+<li><span class="keyword">横軸 (Num LLM Params):</span> LLMの（非埋め込み）パラメータ数を対数スケールで示しています。右にいくほどモデルサイズが大きくなります。</li>
+<li><span class="keyword">縦軸 (Peak Learning Rate):</span> ピーク学習率（学習の初期段階で到達する最大の学習率）を対数スケールで示しています。上にいくほど学習率が高くなります。</li>
+<li><span class="keyword">青い点 (Data points):</span> 実際に実験が行われた小〜中規模モデルのデータ点です。これらの点は、それぞれのモデルサイズにおいて、下流タスク（ここでは8ショット平均性能）で最適に近い性能を達成した実験結果を表しています。</li>
+<li><span class="keyword">青い線 (Linear regression):</span> これらのデータ点に基づいて、対数空間で線形回帰を行った結果の予測線です。この線を使うことで、未実験のより大きなモデルサイズに対する最適なピーク学習率を予測します。</li>
+<li><span class="keyword">主な傾向:</span> <span class="highlight">モデルサイズが大きくなるにつれて、最適なピーク学習率は小さくなる傾向</span>が見て取れます。これは大規模モデルの学習における一般的な知見と一致します。</li>
+</ul>
+</div>
+<div class="content-box">
+<p>この線形回帰により、非埋め込みパラメータ数を <span class="keyword">N</span> としたときの、最適なピーク学習率 <span class="keyword">η</span> (イータ) を予測する以下の式が得られました。</p>
+<div class="formula">
+<p>📝 最適ピーク学習率の予測式:</p>
+            $$ \eta = \exp ( - 0 . 4 2 1 4 \ln ( N ) - 0 . 5 5 3 5 ) $$
+        </div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-calculator"></i> 数式の解説</p>
+<ul>
+<li><span class="keyword">η (イータ):</span> 予測される最適なピーク学習率。</li>
+<li><span class="keyword">N:</span> モデルの非埋め込みパラメータの数。埋め込み層のパラメータは学習ダイナミクスが異なるため、通常スケーリング則の分析からは除外されます。</li>
+<li><span class="keyword">ln(N):</span> Nの自然対数。モデルサイズを対数スケールで扱っていることを反映しています。</li>
+<li><span class="keyword">exp(...):</span> 指数関数（eのべき乗）。対数空間での線形関係を元のスケールに戻すために使われます。</li>
+<li><span class="highlight">-0.4214</span> と <span class="highlight">-0.5535</span>: 線形回帰によって決定された係数（傾きと切片）。</li>
+</ul>
+<p>この式は、モデルのパラメータ数 N が分かれば、最適なピーク学習率 η を推定できることを意味します。</p>
+</div>
+<p>興味深いことに、先行研究 [48] と同様に、予備実験では<span class="highlight">検証データセットでの損失 (validation loss) と下流タスクの性能との間に強い相関は見られませんでした</span>。そのため、この曲線フィッティングには、検証損失ではなく、直接的に<span class="keyword">下流タスクの8ショット平均性能</span>が使用されました。これにより、実際のタスク性能に直結するハイパーパラメータを見つけることを目指しています。</p>
+<p>この予測式を用いて、最終的なMM1-30Bモデル（N ≈ 3 × 10<sup>10</sup>、つまり300億パラメータ）の最適なピーク学習率を計算すると、<span class="keyword">η ≈ 2.2 × 10<sup>-5</sup></span> となり、この値が実際に使用されました。</p>
+<p>重み減衰 (weight decay、<span class="keyword">λ</span> ラムダ) についても、当初は学習率と同様の手順で適切な値を決定しようと試みられましたが、最終的には<span class="highlight">「重み減衰 λ = ピーク学習率 η × 0.1」という単純なルール</span>が全てのモデルで良好に機能することが判明しました。これはハイパーパラメータ設定を簡略化する上で有用な発見です。</p>
+<p>これら以外の詳細な学習設定については、論文のAppendix Bに記述されています。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-sitemap"></i> Scaling via Mixture-of-Experts (MoE) (MoEによるスケーリング)</h3>
+<div class="content-box">
+<p><span class="keyword">Mixture-of-Experts (MoE)</span> は、モデルの総パラメータ数を増やしながら、推論時に活性化するパラメータ数を一定に保つスケーリング手法です。これにより、推論速度を大幅に犠牲にすることなく、モデルの容量を大きくできるという利点があります。近年、MoEは言語モデル [23,29,32,49,136]、マルチモーダルモデル [70, 87]、コンピュータビジョン [16, 25, 55, 96] のタスクで有望な結果を示しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> MoEの基本概念</p>
+<p>MoEモデルは、複数の「エキスパート」と呼ばれる小さなニューラルネットワークと、「ゲート」と呼ばれるルーティング機構から構成されます。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-brain"></i> <strong>エキスパート (Experts):</strong> 特定の種類の入力やタスクに特化した比較的小さなニューラルネットワーク群。</li>
+<li><i class="fas fa-route"></i> <strong>ゲート (Gate):</strong> 入力データに応じて、どの日どのエキスパートを活性化するかを決定するネットワーク。通常、少数のエキスパートのみが選択されます（例：Top-k）。</li>
+</ul>
+<p>入力が与えられると、ゲートは関連性の高いエキスパートを選択し、そのエキスパートのみが計算を行います。これにより、モデル全体としては巨大なパラメータ数を持ちながら、実際の計算コストは小さく抑えられます。</p>
+<div style="text-align: center; margin: 15px 0;">
+<svg height="150" viewbox="0 0 300 150" width="300">
+<defs>
+<lineargradient id="grad1" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" style="stop-color:var(--color-primary);stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:var(--color-accent2);stop-opacity:1"></stop>
+</lineargradient>
+</defs>
+<!-- Input -->
+<rect fill="var(--color-light)" height="30" rx="5" stroke="var(--color-dark)" width="60" x="10" y="60"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="40" y="80">入力</text>
+<path d="M70 75 L100 75" marker-end="url(#arrowhead)" stroke="var(--color-dark)" stroke-width="2"></path>
+<!-- Gate -->
+<ellipse cx="130" cy="30" fill="var(--color-accent1)" rx="30" ry="15"></ellipse>
+<text fill="white" font-family="Yomogi" font-size="10" text-anchor="middle" x="130" y="34">ゲート</text>
+<path d="M130 45 L130 75 L100 75" fill="none" stroke="var(--color-dark)" stroke-width="1.5"></path>
+<path d="M130 45 Q150 60 170 50" fill="none" marker-end="url(#arrowhead-small)" stroke="var(--color-dark)" stroke-width="1.5"></path>
+<path d="M130 45 Q150 75 170 75" fill="none" marker-end="url(#arrowhead-small)" stroke="var(--color-dark)" stroke-width="1.5"></path>
+<path d="M130 45 Q150 90 170 100" fill="none" marker-end="url(#arrowhead-small)" stroke="var(--color-dark)" stroke-width="1.5"></path>
+<!-- Experts -->
+<rect fill="var(--color-secondary)" height="25" rx="3" stroke="var(--color-dark)" stroke-dasharray="4 2" width="50" x="170" y="10"></rect>
+<text font-family="Yomogi" font-size="8" text-anchor="middle" x="195" y="24">エキスパート1</text>
+<rect fill="url(#grad1)" height="25" rx="3" stroke="var(--color-dark)" width="50" x="170" y="40"></rect>
+<text fill="white" font-family="Yomogi" font-size="8" text-anchor="middle" x="195" y="54">エキスパート2</text>
+<rect fill="var(--color-secondary)" height="25" rx="3" stroke="var(--color-dark)" stroke-dasharray="4 2" width="50" x="170" y="70"></rect>
+<text font-family="Yomogi" font-size="8" text-anchor="middle" x="195" y="84">エキスパート3</text>
+<rect fill="url(#grad1)" height="25" rx="3" stroke="var(--color-dark)" width="50" x="170" y="100"></rect>
+<text fill="white" font-family="Yomogi" font-size="8" text-anchor="middle" x="195" y="114">エキスパートN</text>
+<path d="M220 52.5 L250 75" marker-end="url(#arrowhead)" stroke="var(--color-dark)" stroke-width="2"></path>
+<path d="M220 112.5 L250 75" marker-end="url(#arrowhead)" stroke="var(--color-dark)" stroke-width="2"></path>
+<!-- Output -->
+<rect fill="var(--color-light)" height="30" rx="5" stroke="var(--color-dark)" width="60" x="250" y="60"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="280" y="80">出力</text>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="0" refy="3.5">
+<polygon fill="var(--color-dark)" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+<marker id="arrowhead-small" markerheight="5" markerwidth="7" orient="auto" refx="0" refy="2.5">
+<polygon fill="var(--color-dark)" points="0 0, 7 2.5, 0 5"></polygon>
+</marker>
+</svg>
+<p style="font-size:12px; color: var(--color-gray);">MoEの概略図：入力はゲートにより一部のエキスパート（ここではエキスパート2とNが活性化）に送られ処理される。</p>
+</div>
+</div>
+<p>この研究では、既存の密な（dense）モデルをさらにスケーリングするために、言語モデルのFFN（Feed-Forward Network）層にエキスパートを追加する実験が行われました。MoEの実装は、概ね <span class="keyword">GShard [59]</span> と <span class="keyword">ST-MoE [136]</span> のアプローチに従っています。</p>
+<p>具体的には、以下の2つのMoEモデルが設計されました。</p>
+<div class="two-column">
+<div class="column">
+<div class="info-card">
+<h4 class="subsection-title mini"><i class="fas fa-atom"></i> 3B-MoE モデル</h4>
+<ul>
+<li><span class="keyword">ベースモデル:</span> 30億 (3B) パラメータの密なモデル</li>
+<li><span class="keyword">エキスパート数:</span> 64個</li>
+<li><span class="keyword">スパース層の配置:</span> 言語モデルのFFN層において、<span class="highlight">2層ごとに1層</span>を密な層からスパースなMoE層に置き換え。</li>
+<li><span class="keyword">総パラメータ数:</span> 640億 (64B)</li>
+</ul>
+</div>
+</div>
+<div class="column">
+<div class="info-card">
+<h4 class="subsection-title mini"><i class="fas fa-atom"></i> 7B-MoE モデル</h4>
+<ul>
+<li><span class="keyword">ベースモデル:</span> 70億 (7B) パラメータの密なモデル</li>
+<li><span class="keyword">エキスパート数:</span> 32個</li>
+<li><span class="keyword">スパース層の配置:</span> 言語モデルのFFN層において、<span class="highlight">4層ごとに1層</span>を密な層からスパースなMoE層に置き換え。</li>
+<li><span class="keyword">総パラメータ数:</span> 470億 (47B)</li>
+</ul>
+</div>
+</div>
+</div>
+<p>これらのMoEモデルの学習における重要なテクニック：</p>
+<ul>
+<li><span class="keyword">Top-2 Gating:</span> 各入力トークンに対して、ゲートは最も関連性の高い2つのエキスパートを選択します。</li>
+<li><span class="keyword">Load Balance Loss (負荷分散損失):</span> 係数0.01の損失項。全てのエキスパートが均等に使用されるように促し、一部のエキスパートに負荷が集中するのを防ぎます。
+                <div class="bubble-box mini-bubble">⚖️ 全エキスパートがバランス良く働くようにする仕組み。</div>
+</li>
+<li><span class="keyword">Router z-loss:</span> 係数0.001の損失項。ゲートの出力（ロジット）の大きさを正則化し、学習を安定させるのに役立ちます。
+                <div class="bubble-box mini-bubble">🚦 ゲートの判断を安定させるための補助的な損失。</div>
+</li>
+</ul>
+<p>密なモデルをMoEモデルに変換する際には、<span class="highlight">言語デコーダの密なFFN層のみをMoE層に置き換え</span>ました。画像エンコーダと視覚・言語コネクタは変更されていません。</p>
+<p>MoEモデルの学習には、対応する密なバックボーンモデル（例：3B-MoEなら3B密モデル）で見つけられた学習ハイパーパラメータ (論文中脚注5) がそのまま使用され、学習データや総学習トークン数も同一のものが用いられました。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-poll"></i> Multimodal Pre-training Results (マルチモーダル事前学習の結果)</h3>
+<div class="content-box">
+<p>事前学習済みモデルの性能は、適切なプロンプト (論文中脚注6) を用いて、キャプション生成タスクとVQA（Visual Question Answering）タスクで評価されました。評価は<span class="keyword">ゼロショット</span>と<span class="keyword">フューショット</span>の両方で行われ、特にフューショットの事前学習性能を報告している数少ない既存研究と比較されています。</p>
+<p>重要な点として、MM1モデルは<span class="highlight">より大きな既存モデルと比較</span>されています。例えば、MM1-30Bモデルは、800億パラメータを持つ2つのモデル（IDEFICS-80B、Flamingo-80B）と比較されます。</p>
+</div>
+<img alt="Table 3: Multimodal pre-training evaluations" src="table3.png"/>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-table"></i> 表3の解説: マルチモーダル事前学習の評価</p>
+<p>この表は、MM1ファミリーの各モデル（3B, 7B, 30B, 3B-MoE, 7B-MoE）の事前学習後の性能を、複数のキャプション生成ベンチマーク（NoCaps, COCO, TextCaps）およびVQAベンチマーク（VQAv2, OKVQA, TextVQA, VizWiz）におけるゼロショットとフューショット（4ショット、8ショット）設定で示しています。比較対象として、Flamingo、IDEFICS、Emu2といった他の主要なMLLMの性能も掲載されています。</p>
+<p><strong>注目すべきポイント:</strong></p>
+<ul>
+<li><strong>フューショット性能:</strong>
+<ul>
+<li><span class="highlight">MM1は、公開されている事前学習済みMLLMの中で、フューショット性能において既存の全ての研究を上回っています。</span> 🎉</li>
+<li>特に<span class="keyword">MM1-30B</span>は、キャプション生成ベンチマーク全体とVizWiz-QAベンチマークで優れた性能を示しています。</li>
+<li>VQAv2, TextVQA, OKVQAでは、MM1-30BはEmu2 [105]（より大きなモデル）と同等の性能です。</li>
+</ul>
+</li>
+<li><strong>ゼロショット性能 (論文中脚注7):</strong>
+<ul>
+<li>命令チューニング（instruction fine-tuning）を行っていないにもかかわらず、MM1モデルは良好な性能を示します。</li>
+<li><span class="keyword">TextCaps</span>では、全てのモデルサイズで優れた性能を発揮しています。</li>
+<li>小規模モデル（例：MM1-3B）では、ほとんどのベンチマークでFlamingo-3Bと同等の性能です。</li>
+</ul>
+</li>
+<li><strong>MoEモデルの性能:</strong>
+<ul>
+<li><span class="keyword">MM1-3B-MoE (64B)</span> や <span class="keyword">MM1-7B-MoE (47B)</span> は、対応する密なモデル (MM1-3B, MM1-7B) と比較して、多くのタスクで同等またはそれ以上の性能を示しており、MoEアーキテクチャの有効性を示唆しています。特にフューショット性能で顕著な場合があります。</li>
+</ul>
+</li>
+<li><strong>脚注の注記:</strong>
+<ul>
+<li><span class="badge orange">(*) IDEFICS</span> は、その学習データにPMD（COCOを含む）を含んでいます。これは、COCOベンチマークでの性能に影響を与える可能性があります。</li>
+<li><span class="badge orange">(†) Flamingo と IDEFICS</span> は、プロンプトに2つのテキストのみのデモンストレーション（例示）を含んでいます。一方、MM1はこれを含んでいません。これはフューショット性能の比較において考慮すべき点です。</li>
+</ul>
+</li>
+</ul>
+<p>全体として、MM1は特に<span class="highlight">フューショット学習能力に優れており</span>、大規模な事前学習と言語モデルのスケーリング、そしてMoEの導入が性能向上に寄与していることが示唆されます。</p>
+</div>
+<div class="content-box">
+<p>フューショット性能に関しては、MM1は<span class="highlight">公開されている先行研究の事前学習済みMLLMを全て上回っています</span>。特に30Bモデルでは、キャプション生成ベンチマーク全体およびVizWiz-QAベンチマークで優れた性能を示しています。VQAv2, TextVQA, OKVQAといったタスクでは、その規模でEmu2 [105] と同等の性能です。</p>
+<p>ゼロショット性能 (論文中脚注7) に関しても、命令チューニング（SFT）を行っていない段階でも、MM1モデルはTextCapsでは全てのモデルサイズで好成績を収め、小規模モデルではほとんどのベンチマークでFlamingo-3Bと同等の性能を示しています。</p>
+</div>
+</div>
+<div class="section-card" id="5_Supervised_Fine-Tuning">
+<h2 class="section-title"><i class="fas fa-cogs"></i>5 Supervised Fine-Tuning</h2>
+<div class="content-box">
+<p>このセクションでは、前のセクションで説明した<span class="keyword">事前学習済みモデル</span>に対して実施した<span class="keyword">教師ありファインチューニング（Supervised Fine-Tuning, SFT）</span>の実験について詳しく解説します。SFTは、特定のタスクや指示に従う能力をモデルに付与するための重要なステップです。🎨</p>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <b>主な目的と論旨:</b></p>
+<p>事前学習で得られた汎用的な能力を基盤としつつ、SFTを通じてモデルがより具体的な指示に応答できるように調整すること、そしてその効果を検証することがこのセクションの主な目的です。特に、様々なデータセットを組み合わせたSFTデータ、高解像度画像への対応方法、そしてSFTの結果について詳細に議論します。</p>
+</div>
+<div class="subsection-title"><i class="fas fa-database"></i> SFTデータ混合</div>
+<div class="content-box">
+<p>SFTには、LLaVA-1.5 [74] や LLaVA-NeXT [75] のアプローチを踏襲し、約145万の多様なデータセットからSFT用例を収集しました。具体的には以下のものが含まれます：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 class="framework-title"><i class="fas fa-robot"></i> GPT-4 / GPT-4V 生成データ</h4>
+<ul class="unstyled-list">
+<li>✏️ <span class="highlight">LLaVA-Conv</span> および <span class="highlight">LLaVA-Complex [76]</span>: 会話や複雑な推論タスク用。</li>
+<li>🖼️ <span class="highlight">ShareGPT-4V [15]</span>: 詳細な画像記述用。（論文中では脚注8として言及されていますが、ここでは本文として統合します。）</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> ポイント</p>
+<p>これらは、人間が作成した指示と、それに対するGPT-4やGPT-4Vのような高性能モデルの応答をペアにしたものです。モデルに自然な対話能力や高度な推論能力を学習させるのに役立ちます。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="framework-title"><i class="fas fa-book-open"></i> 学術的タスク指向Vision-Language (VL) データセット</h4>
+<p>自然画像、テキストリッチ画像、文書・図表理解など、多岐にわたるタスクをカバーします。</p>
+<div class="two-column">
+<div class="column">
+<p><strong>(i) 自然画像向け:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge blue">VQAv2 [38]</span></li>
+<li><span class="badge blue">GQA [46]</span></li>
+<li><span class="badge blue">OKVQA [82]</span></li>
+<li><span class="badge blue">A-OKVQA [98]</span></li>
+<li><span class="badge blue">COCO Captions [18]</span></li>
+</ul>
+</div>
+<div class="column">
+<p><strong>(ii) テキストリッチ画像向け:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge orange">OCRVQA [86]</span></li>
+<li><span class="badge orange">TextCaps [103]</span></li>
+</ul>
+<p><strong>(iii) 文書・図表理解向け:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge purple">DVQA [51]</span></li>
+<li><span class="badge purple">ChartQA [83]</span></li>
+<li><span class="badge purple">AI2D [52]</span></li>
+<li><span class="badge purple">DocVQA [85]</span></li>
+<li><span class="badge purple">InfoVQA [84]</span></li>
+<li><span class="badge purple">Synthdog-En [53]</span></li>
+</ul>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> ポイント</p>
+<p>これらのデータセットは、画像キャプション生成、視覚的質問応答（VQA）、光学文字認識（OCR）を伴うVQAなど、特定の視覚言語タスクの性能向上を目的としています。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="framework-title"><i class="fas fa-file-alt"></i> テキストのみのSFTデータ</h4>
+<ul class="unstyled-list">
+<li>📝 内部のテキストのみのデータセットを含めることで、モデルがテキストベースの指示にも対応できるようにします。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> ポイント</p>
+<p>マルチモーダルモデルであっても、テキスト処理能力を維持・向上させることは非常に重要です。これにより、画像が関連しない純粋な言語タスクにも対応できます。</p>
+</div>
+</div>
+</div>
+<p>学術的なVLデータセットは、LLaVA-1.5 [74] に倣い、<span class="keyword">指示追従フォーマット</span>に変換されます。詳細については付録A.3で提供されています。全てのデータセットは混合され、学習中にランダムにサンプリングされます。（論文中では脚注9として言及されていますが、ここでは本文として統合します。）</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<strong>データ収集:</strong> 多様なソースから約145万のSFT用例を収集。
+            </div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<strong>フォーマット変換:</strong> 学術VLデータを指示追従形式に統一。
+            </div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<strong>データ混合とサンプリング:</strong> 全データセットを混ぜ、学習時にランダムに抽出。
+            </div>
+</div>
+<p>SFT中、<span class="highlight">画像エンコーダ</span>と<span class="highlight">LLMバックボーン</span>の両方を<span class="keyword">凍結解除（unfrozen）</span>状態で学習します。つまり、これらのパラメータもSFT中に更新されます。その他のSFT学習詳細は付録B.2に記載されています。モデルの評価は12のベンチマークで行われます（詳細は付録C.2参照）。</p>
+</div>
+<div class="subsection-title"><i class="fas fa-expand-arrows-alt"></i> 高解像度へのスケーリング</div>
+<div class="content-box">
+<p>直感的に、画像の解像度が高いほど、モデルの性能は向上すると考えられます。高解像度のSFTをサポートするために、2つのアプローチを使用します。</p>
+<div class="two-column">
+<div class="column">
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-search-plus"></i> 1. 位置埋め込み補間 (Positional Embedding Interpolation)</h4>
+<p>Qwen-VL [5] や BLIP-2 [65] などで探求されている手法です。位置埋め込みを補間した後、Vision Transformer (ViT) バックボーンはファインチューニング中に新しい解像度に適合されます。</p>
+<p>この手法により、モデルを <span class="badge yellow">448x448</span>、<span class="badge yellow">560x560</span>、<span class="badge yellow">672x672</span> といった様々な画像解像度に対応するようにファインチューニングしました。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-calculator"></i> 例：トークン数</p>
+<p>解像度 <span class="keyword">672x672</span>、パッチサイズ <span class="keyword">14x14</span> の場合、1つの画像は \( (672/14) \times (672/14) = 48 \times 48 = 2304 \) 個のトークンで表現されます。</p>
+<div class="formula">
+                            $$ \text{Number of Tokens} = \left( \frac{\text{Image Width}}{\text{Patch Size}} \right) \times \left( \frac{\text{Image Height}}{\text{Patch Size}} \right) $$
+                            $$ \text{For } 672 \times 672 \text{ with } 14 \times 14 \text{ patches: } \left( \frac{672}{14} \right) \times \left( \frac{672}{14} \right) = 48 \times 48 = 2304 \text{ tokens} $$
+                        </div>
+</div>
+<p>📌 <b>位置埋め込みとは？</b> ViTでは、画像をパッチに分割し、各パッチをトークンとして扱います。これらのパッチの位置情報をエンコードするために位置埋め込みが使用されます。解像度を変更する場合、パッチ数も変わるため、既存の位置埋め込みを新しいパッチ数に合わせて調整（補間）する必要があります。</p>
+</div>
+</div>
+<div class="column">
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-th-large"></i> 2. サブ画像分解 (Sub-image Decomposition)</h4>
+<p>SPHINX [73]、Monkey [69]、LLaVA-NeXT [75] によって最近導入された手法です。2000を超える画像トークン間で自己注意 (self-attention) を計算するのは計算コストが高く、さらに高解像度へのスケーリングを制限します。</p>
+<p>SPHINX [73] に倣い、図7aに示すように、例えば <span class="keyword">1344x1344</span> の高解像度入力画像に対して、<span class="keyword">672x672</span> の画像を5枚構成し、それらを独立した画像として視覚エンコーダに入力します。</p>
+<img alt="図7a 高解像度画像入力処理" src="image_resolution_pretraining_sft_performance.jpg"/>
+<div class="caption-box">
+<p class="caption-title"><i class="fas fa-image"></i> 図7aの説明</p>
+<p>この図は、高解像度画像を処理するためのサブ画像分解のアプローチを示しています。元の高解像度画像 (例: 1344x1344) は、まず全体像を捉えるために低解像度 (例: 672x672) にダウンサンプリングされます。さらに、詳細情報を保持するために、元の高解像度画像を複数のサブ画像 (例: 4つの672x672の領域) に分割します。これらのサブ画像と全体像の計5枚の画像が、それぞれ画像エンコーダに独立して入力され、その特徴量がLLMに送られます。</p>
+</div>
+<p>具体的には、まず入力画像を <span class="highlight">672x672</span> にダウンサンプリングして大まかな表現 (high-level representation) とし、さらに入力画像を <span class="highlight">1344x1344</span> にリサイズして、より詳細な視覚情報を保持する4つの <span class="highlight">672x672</span> のサブ画像に分割します。</p>
+<p>各サブ画像に対して位置埋め込み補間を使用することで、実験では最大 <span class="keyword">1792x1792</span> の画像解像度をサポートできました。</p>
+</div>
+</div>
+</div>
+</div>
+<img alt="表4 MLLMベンチマークにおけるSOTAモデルとの比較" class="figure-image" src="table4.png"/>
+<div class="caption-box">
+<p class="caption-title"><i class="fas fa-table"></i> 表4の説明: MLLMベンチマークにおけるSOTAモデルとの比較</p>
+<p>この表は、MM1モデル（SFT後）と他の最先端（SOTA）マルチモーダル大規模言語モデル（MLLM）の性能を、様々なベンチマークで比較したものです。評価されたベンチマークには以下が含まれます:</p>
+<ul class="unstyled-list">
+<li><span class="badge">VQAv2 [38]</span>: Visual Question Answering v2</li>
+<li><span class="badge">VQAT</span>: TextVQA [104] (テキストを含む画像の質問応答)</li>
+<li><span class="badge">SQAI</span>: ScienceQA-IMG [81] (科学に関する質問応答、画像あり)</li>
+<li><span class="badge">MMMU [128]</span>: Massive Multi-discipline Multimodal Understanding and Reasoning (大規模・多分野のマルチモーダル理解と推論)</li>
+<li><span class="badge">MathV</span>: MathVista [80] (視覚的文脈での数学的推論)</li>
+<li><span class="badge">MMEP/C</span>: MME [33] の Perception (知覚) / Cognition (認知) スプリット</li>
+<li><span class="badge">MMB</span>: MMBench [78] (マルチモーダルベンチマーク)</li>
+<li><span class="badge">SEED</span>: SEED-Bench [62]</li>
+<li><span class="badge">POPE [68]</span>: Evaluating Object Hallucination (物体幻覚の評価)</li>
+<li><span class="badge">LLaVAW</span>: LLaVA-Bench (In-the-Wild) [76] (実環境でのLLaVAベンチマーク)</li>
+<li><span class="badge">MMVet [127]</span>: Evaluating Large Multimodal Models for Integrated Capabilities (統合能力評価)</li>
+</ul>
+<p>MMMUの列に記載されている2つの数値は、それぞれ<span class="highlight">検証 (val) スプリット</span>と<span class="highlight">テスト (test) スプリット</span>での性能を示します。SEEDの列に記載されている2つの数値は、それぞれ<span class="highlight">SEED-Bench全体</span>と<span class="highlight">画像部分</span>での性能を示します。「(†) 8-shot prompting: 44.4」という注釈は、MathVistaにおいて8ショットプロンプティングを用いた場合の結果が44.4であったことを示しています。</p>
+<p>この表から、MM1モデルが特に同程度のサイズの他のモデルと比較して、多くのベンチマークで優れた性能を発揮していることが分かります。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> 5.1 SFT Results</h3>
+<div class="content-box">
+<p>SFT後のMM1モデル（「-Chat」と表記）の性能について、他の最先端モデル（SOTA）との比較、画像解像度や事前学習の影響などを分析します。</p>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-trophy"></i> SOTAとの比較 (Comparison with SOTA)</h4>
+<p>結果は表4にまとめられています。SFT後のMM1モデルは「-Chat」と表記します。</p>
+<div class="info-grid">
+<div class="info-card">
+<p>📊 <strong>MM1-3B-Chat と MM1-7B-Chat:</strong></p>
+<p>これらのモデルは、平均して、同じサイズのリストされている全てのモデルを<span class="keyword">上回り</span>、これらのモデルサイズにおける<span class="highlight">新たなSOTA</span>を確立しました。特に、<span class="badge blue">VQAv2</span>, <span class="badge orange">TextVQA</span>, <span class="badge blue">ScienceQA</span>、そして比較的新しいベンチマークである <span class="badge purple">MMMU</span> や <span class="badge purple">MathVista</span> で顕著な強さを示しています。</p>
+</div>
+<div class="info-card">
+<p>🧩 <strong>MoEモデルの探求:</strong></p>
+<p>2つのMixture-of-Experts (MoE) モデルも評価しました：</p>
+<ul class="unstyled-list">
+<li>(i) <span class="keyword">3B-MoE (64エキスパート)</span></li>
+<li>(ii) <span class="keyword">7B-MoE (32エキスパート)</span></li>
+</ul>
+<p>これらのMoEモデルは、ほぼ全てのベンチマークで、対応する<span class="highlight">密な（dense）モデルよりも一貫して優れた性能</span>を達成しました。これはMoEがさらなるスケーリングに大きな可能性を秘めていることを示唆しており、今後の研究課題となります。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-cogs"></i> MoE (Mixture-of-Experts) とは？</p>
+<p>MoEは、モデル内に複数の「エキスパート」と呼ばれる小さなニューラルネットワークを持ち、入力に応じて最適なエキスパートを選択的（スパースに）に活性化させるアーキテクチャです。これにより、モデル全体のパラメータ数を増やしながら、推論時の計算コストを抑えることができます。</p>
+</div>
+</div>
+<div class="info-card">
+<p>🚀 <strong>MM1-30B-Chat:</strong></p>
+<p>30Bモデルサイズでは、MM1-30B-Chatは <span class="badge orange">TextVQA</span>, <span class="badge purple">SEED</span>, <span class="badge purple">MMMU</span> において、Emu2-Chat37B [105] や CogVLM-30B [114] を<span class="keyword">上回りました</span>。</p>
+<p>同時期に発表された LLaVA-NeXT [75] と比較しても、<span class="highlight">全般的に競争力のある性能</span>を達成しています。しかし、LLaVA-NeXTは各画像を2,880トークンとしてLLMに送るため、複数画像推論やフューショットプロンプティングをサポートしていません。一方、MM1は合計でわずか720トークンです。この違いにより、LLaVA-NeXTは複数画像が関与する特定のアプリケーションには制限があります。</p>
+</div>
+</div>
+</div>
+<img alt="図7 画像解像度と事前学習がSFT性能に与える影響" src="image_resolution_pretraining_sft_performance.jpg"/>
+<div class="caption-box">
+<p class="caption-title"><i class="fas fa-images"></i> 図7の説明: 画像解像度と事前学習がSFT性能に与える影響</p>
+<div class="two-column">
+<div class="column">
+<p><strong>(a) 高解像度画像入力処理 (High resolution image input processing):</strong><br/>
+                    これは前述のサブ画像分解のアプローチを図示したものです。高解像度画像を、全体像を捉えるための低解像度版1枚と、詳細情報を保持するための高解像度版を分割した4枚のサブ画像、計5枚の画像として処理する様子が描かれています。各画像は画像エンコーダ（補間機能付き）を通り、エンコードされた画像のシーケンスとしてLLMに入力されます。</p>
+</div>
+<div class="column">
+<p><strong>(b) 画像解像度のSFT性能への影響 (Impact of image resolution on SFT performance):</strong><br/>
+                    横軸に画像解像度（ピクセル単位）、縦軸にSFT評価指標の平均性能を示しています。解像度が224pxから1344pxに増加するにつれて性能が向上し、1344pxでピークに達しています。1792pxではわずかに性能が低下しています。</p>
+<p><strong>(c) 事前学習のSFT性能への影響 (Impact of pre-training on SFT performance):</strong><br/>
+                    横軸に事前学習のステップ数（千単位）、縦軸にSFT評価指標の平均性能を示しています。事前学習データを見る量が増える（ステップ数が増加する）ほど、SFT後の性能も一貫して向上していることが分かります。</p>
+</div>
+</div>
+</div>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-ruler-combined"></i> 画像解像度の影響 (Impact of Image Resolution)</h4>
+<p>図7bは、入力画像解像度がSFT評価指標の平均性能（メタ平均の計算方法詳細は付録C.3参照）に与える影響を示しています。</p>
+<p>画像解像度336ピクセルのベースラインモデルと比較して、<span class="keyword">1344x1344</span> の画像解像度をサポートすることで、<span class="highlight">相対的に15%の性能向上</span>を達成できました。</p>
+<div class="bubble-box">
+<p><i class="fas fa-exclamation-triangle"></i> 注意点:</p>
+<p>最大の画像解像度 <span class="keyword">1792x1792</span> では、平均性能がわずかに低下しています。これは、評価画像の多くがこの解像度よりも小さく、リサイズによるアーティファクト（画像の劣化や歪み）がモデル性能に影響を与えた可能性が考えられます。</p>
+</div>
+<p>デフォルトでは、表4の結果は <span class="highlight">1344x1344</span> の画像解像度に対応しています。</p>
+</div>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-history"></i> 事前学習の影響 (Impact of Pre-training)</h4>
+<p>最近の多くのMLLMとは対照的に、MM1モデルでは大規模な事前学習を行っています。事前学習が最終的なモデル性能に与える影響を評価するため、同じ事前学習の実行過程で、異なるチェックポイントステップ（学習の途中段階）のモデルに対してSFTを実施しました。</p>
+<p>初期のチェックポイントステップでは、後のチェックポイントステップよりもモデルが見たユニークなデータサンプル数が少ないため、これは<span class="keyword">事前学習データの量の重要性</span>を測る指標となります。</p>
+<p>図7cでは、モデルがより多くの事前学習データを見るにつれて、<span class="highlight">一貫して性能が向上する</span>ことを示しています。</p>
+<p>さらに、大規模なマルチモーダル事前学習は、強力な<span class="keyword">コンテキスト内フューショット学習能力</span>や<span class="keyword">複数画像推論能力</span>を可能にします。一方、表4に示されているMLLMベンチマークの多くは、ゼロショット指標や単一画像推論に焦点を当てています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-glasses"></i> コンテキスト内フューショット学習とは？</p>
+<p>モデルに入力 (コンテキスト) として少数の例題 (ショット) を与えることで、追加の学習なしに新しいタスクに適応する能力です。大規模事前学習によってこの能力が向上します。</p>
+</div>
+</div>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-lightbulb"></i> SFT後のフューショット思考連鎖推論 (Few-shot Chain-of-Thought Reasoning after SFT)</h4>
+<p>セクション3.3で見たように、MM1は<span class="keyword">インターリーブデータ</span>のおかげでフューショット能力を獲得します。ファインチューニングデータには単一画像の例しか含まれていませんが、MM1-30B-Chatは依然として<span class="highlight">複数画像推論</span>の能力を示すことがわかりました。</p>
+<p>これは図2（論文の序盤に登場する図、ここでは引用省略）で質的に示され、MathVista [80] で量的に評価されています。MathVistaでは、<span class="keyword">思考連鎖プロンプティング (Chain-of-Thought prompting)</span> を用いたフューショット性能を評価しました結果：</p>
+<ul class="unstyled-list">
+<li>📝 <strong>4ショット性能:</strong> <span class="highlight">41.9</span> （ゼロショット性能の39.4より2.5ポイント高い）</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-brain"></i> 思考連鎖プロンプティング (CoT) とは？</p>
+<p>モデルに最終的な答えだけでなく、答えに至るまでの中間的な推論ステップ（思考の連鎖）も生成させるように促すプロンプティング手法です。複雑な推論タスクで性能を向上させることが知られています。</p>
+</div>
+<p>最も性能の高い高解像度SFTモデルは、画像1枚あたり<span class="keyword">720トークン</span>を使用します。これは、コンテキスト長の制限のため、4つ以上のコンテキスト内例題を使用する際に課題となります。</p>
+<p>より多くの例題を許容するために、<span class="highlight">混合解像度のコンテキスト内例題形式</span>を探求しました。この形式では、一部の例題を低解像度で供給します（詳細は付録C.5参照）。この形式を8つのコンテキスト内例題で使用すると、MathVistaでの性能は<span class="keyword">44.4</span>に向上しました（表4の(†)で示されている値）。</p>
+</div>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-question-circle"></i> 事前学習で得られた教訓はSFTに引き継がれるか？ (Do the lessons learned via pre-training transfer to SFT?)</h4>
+<p><span class="highlight">はい。</span>以下のことが分かりました：</p>
+<ol>
+<li><span class="badge green">教訓1:</span> キャプションのみのデータを用いた事前学習は、SFTの評価指標を改善する。</li>
+<li><span class="badge green">教訓2:</span> 異なるVLコネクタアーキテクチャは、最終結果にほとんど影響を与えない。</li>
+</ol>
+<p>詳細なアブレーション結果は付録C.4に提供されています。</p>
+</div>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-microscope"></i> 定性的分析 (Qualitative Analysis)</h4>
+<p>MM1をより深く理解するために、単一画像および複数画像の推論、フューショットプロンプティングを含む、より多くの定性的な例が付録Dに提供されています。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="6_Conclusion">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i>6 Conclusion</h2>
+<div class="content-box" style="text-align: center; margin-bottom: 25px;">
+<p style="font-size: 16px; font-family: 'Yomogi', cursive; line-height: 1.6;">
+            この論文では、<span class="highlight">高性能なマルチモーダル大規模言語モデル（MLLM）</span>をどのように構築すれば良いのか、という大きな問いを探求してきました。この「結論」セクションでは、その探求の旅路で得られた<span class="keyword">重要な発見</span>、それによって生まれた<span class="keyword">MM1モデルファミリー</span>の目覚ましい成果、そしてAIコミュニティ全体への貢献への期待を、分かりやすくまとめてお伝えします。
+        </p>
+</div>
+<div class="framework-box" style="border: 2px dashed var(--color-primary); background-color: rgba(74, 111, 165, 0.03);">
+<p class="framework-title" style="font-family: 'Yomogi', cursive; display: flex; align-items: center; font-size: 20px;"><i class="fas fa-microscope fa-fw" style="margin-right: 10px; color: var(--color-primary);"></i>研究の核心：高性能MLLM構築への緻密なアプローチ</p>
+<p style="line-height: 1.5;">本研究の中心的な目標は、画像と言語の両方を巧みに操るAI、つまり<span class="highlight">マルチモーダル大規模言語モデル（MLLM）</span>の性能を最大限に引き出すための設計図を描くことでした。そのために、私たちは以下の2つの側面から、まるで精密機械を組み立てるかのように、要素を一つ一つ丁寧に検証しました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top:15px;">
+<div class="info-card" style="background-color: #fdfcfe; border-left: 4px solid var(--color-secondary);">
+<h3 class="subsection-title" style="font-size: 17px; color: var(--color-secondary); margin-top: 0; margin-bottom:10px; padding-left:10px;"><i class="fas fa-cogs fa-fw" style="margin-right: 8px;"></i>モデリングの選択</h3>
+<p style="font-size: 14px;">どの画像エンコーダを使うか？画像情報をどうやって言語モデルに繋げるか？など、モデル構造の設計に関する様々な選択肢を検討しました。</p>
+</div>
+<div class="info-card" style="background-color: #fdfcfe; border-left: 4px solid var(--color-accent1);">
+<h3 class="subsection-title" style="font-size: 17px; color: var(--color-accent1); margin-top: 0; margin-bottom:10px; padding-left:10px;"><i class="fas fa-database fa-fw" style="margin-right: 8px;"></i>データの選択</h3>
+<p style="font-size: 14px;">画像とキャプションのペアデータ、画像とテキストが混在するデータ、テキストのみのデータなど、どんな種類のデータを、どのような比率で学習させるのが最も効果的かを調査しました。</p>
+</div>
+</div>
+<div style="text-align: center; margin: 20px 0;">
+<span style="font-family: 'Yomogi', cursive; font-size: 28px; color: var(--color-primary);">↓</span>
+</div>
+<div class="bubble-box" style="border: 2px solid var(--color-accent2); background-color: rgba(149, 117, 205, 0.05); margin-top:0px;">
+<h4 class="subsection-title" style="font-size: 17px; color: var(--color-accent2); border-left: none; padding-left:0px; margin-bottom: 8px; display:flex; align-items:center;"><i class="fas fa-vial fa-fw" style="margin-right: 8px;"></i>検証手法：アブレーションスタディ</h4>
+<p style="font-size: 14px; line-height:1.5;">これらの問いに対する答えを見つけるために、私たちは<span class="keyword">アブレーションスタディ</span>という実験手法を徹底的に行いました。これは、モデルの構成要素や学習データを少しずつ変えながら、その変更が性能にどのような影響を与えるかを詳細に分析するアプローチです。まるでジグソーパズルのピースを一つずつ試しながら最適な絵を完成させるように、最良の組み合わせを探求しました。✏️</p>
+<div class="note-box" style="background-color: rgba(149, 117, 205, 0.1); border-left-color: var(--color-accent2); margin-top:10px;">
+<p class="note-title" style="color: var(--color-accent2); font-family:'Yomogi', cursive;"><i class="fas fa-flask fa-fw" style="margin-right: 5px;"></i>「アブレーションスタディ」って何？</p>
+<p style="font-size: 13px; line-height:1.5;">簡単に言うと、「何が効いているのか？」を調べるための実験です。あるシステム（今回はMLLM）の部品（例：特定のニューラルネットワーク層、学習データの一部）を意図的に取り除いたり、別のものに置き換えたりして、性能がどう変わるかを見ます。これにより、各部品の重要度や最適な設定が分かります。料理のレシピで、ある調味料を抜いたり量を調整したりして、味がどう変わるか試すのに似ていますね！</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector" style="height: 40px;">
+<span style="font-size: 30px; color: var(--color-primary); font-family: 'Yomogi', cursive;">⇓</span>
+</div>
+<div class="framework-box" style="border: 2px dashed var(--color-secondary); background-color: rgba(255, 126, 95, 0.03);">
+<p class="framework-title" style="font-family: 'Yomogi', cursive; display: flex; align-items: center; font-size: 20px;"><i class="fas fa-trophy fa-fw" style="margin-right: 10px; color: var(--color-secondary);"></i>研究の成果：重要な教訓とモデル性能</p>
+<p style="line-height: 1.5;">この徹底的なアブレーションスタディの結果、MLLMを高性能化するための<span class="highlight">数々の重要な教訓</span>が明らかになりました。これらの知見を基に開発されたMM1モデルファミリーは、目覚ましい成果を上げています。</p>
+<div class="info-grid" style="gap: 15px; margin-top:15px;">
+<div class="info-card glass-card" style="border-top: 4px solid var(--color-accent2);">
+<h3 class="subsection-title" style="font-size: 17px; margin-top:0; color: var(--color-accent2);"><i class="fas fa-medal fa-fw" style="margin-right: 8px;"></i>成果①: 事前学習モデルがSOTAを達成！ 🚀</h3>
+<p style="font-size: 14px; line-height:1.5;">発見された教訓を活かして構築した<span class="keyword">事前学習モデル</span>は、様々な<span class="keyword">フューショット評価</span>において、<span class="keyword">SOTA（State-of-the-Art）</span>、つまりその時点での最高性能を達成しました。これは、モデルが少量のデータからでも効率的に学習できることを示しています。</p>
+<div class="note-box" style="background-color: rgba(149, 117, 205, 0.05); border-left-color: var(--color-accent2); padding: 10px; margin-top:10px;">
+<p class="note-title" style="color: var(--color-accent2); font-family:'Yomogi', cursive;"><i class="fas fa-question-circle fa-fw" style="margin-right: 5px;"></i>フューショット評価とは？</p>
+<p style="font-size: 13px; line-height:1.5;">モデルが新しいタスクを学習する際に、ごく少数の事例（数個～数十個）だけを見て、どれだけ高い性能を発揮できるかを評価する方法です。人間が新しいことを学ぶ時に、ほんの少しの例から全体を理解する能力に似ています。これが得意なモデルは、新しい問題に柔軟に対応できると言えます。</p>
+</div>
+</div>
+<div class="info-card glass-card" style="border-top: 4px solid var(--color-accent1);">
+<h3 class="subsection-title" style="font-size: 17px; margin-top:0; color: var(--color-accent1);"><i class="fas fa-cogs fa-fw" style="margin-right: 8px;"></i>成果②: SFT後も競争力のある性能！ 🛠️</h3>
+<p style="font-size: 14px; line-height:1.5;">事前学習モデルに<span class="keyword">SFT（Supervised Fine-Tuning：教師ありファインチューニング）</span>という追加の調整学習を施した後も、MM1モデルファミリーは<span class="highlight">広範なベンチマーク</span>で<span class="highlight">競争力のある性能</span>を示しました。これは、学習した知識が特定のタスクにうまく適用できることを意味します。</p>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.05); border-left-color: var(--color-accent1); padding: 10px; margin-top:10px;">
+<p class="note-title" style="color: var(--color-accent1); font-family:'Yomogi', cursive;"><i class="fas fa-graduation-cap fa-fw" style="margin-right: 5px;"></i>SFT（教師ありファインチューニング）って何？</p>
+<p style="font-size: 13px; line-height:1.5;">大規模なデータで汎用的に学習させたモデル（事前学習モデル）を、特定のタスク（例：質問応答、画像キャプション生成）の正解データセットを使って、さらに専門的に学習させることです。これにより、モデルはそのタスクに特化した能力を高めることができます。大学で一般教養を学んだ後、専門分野の研究室でさらに深く学ぶイメージです。</p>
+</div>
+</div>
+</div>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top:20px;">
+<div class="feature-item" style="background-color: rgba(255, 213, 79, 0.1); border: 1px dashed var(--color-accent3);">
+<div class="icon-item"><i class="fas fa-images fa-2x" style="color: var(--color-accent3);"></i></div>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-dark); font-size:16px; margin-bottom:5px;">マルチ画像推論</h4>
+<p style="font-size: 13px; line-height:1.4;">複数の画像を同時に理解し、それらの関連性を考慮した推論が可能です。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1); border: 1px dashed var(--color-secondary);">
+<div class="icon-item"><i class="fas fa-lightbulb fa-2x" style="color: var(--color-secondary);"></i></div>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-dark); font-size:16px; margin-bottom:5px;">フューショットプロンプティング</h4>
+<p style="font-size: 13px; line-height:1.4;">少数の例示（プロンプト）を与えるだけで、新しいタスクに対応できます。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector" style="height: 40px;">
+<span style="font-size: 30px; color: var(--color-primary); font-family: 'Yomogi', cursive;">⇓</span>
+</div>
+<div class="framework-box" style="border: 2px dashed var(--color-accent1); background-color: rgba(92, 184, 92, 0.03);">
+<p class="framework-title" style="font-family: 'Yomogi', cursive; display: flex; align-items: center; font-size: 20px;"><i class="fas fa-hands-helping fa-fw" style="margin-right: 10px; color: var(--color-accent1);"></i>コミュニティへの貢献と将来展望 🌍</p>
+<p style="line-height: 1.5;">私たちの最大の願いは、この研究で明らかになった<span class="keyword">重要な教訓</span>が、AI研究コミュニティ全体にとって価値あるものとなることです。特定のモデルアーキテクチャやデータ戦略に留まらず、<span class="highlight">より強力なモデルを構築するための普遍的な指針</span>として役立つことを期待しています。</p>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1); margin-top:15px;">
+<p class="note-title" style="color: var(--color-accent1); font-family:'Yomogi', cursive;"><i class="fas fa-bullhorn fa-fw" style="margin-right: 5px;"></i>研究者からのメッセージ 📣</p>
+<p style="font-size: 14px; line-height:1.5;">「この論文で共有する知見が、皆さんの研究開発の一助となり、AI技術のさらなる発展に繋がることを心から願っています。一緒に、より賢く、より役立つAIモデルを作っていきましょう！」</p>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+<i class="fas fa-seedling fa-3x" style="color: var(--color-accent1); opacity: 0.8;"></i>
+<i class="fas fa-lightbulb fa-3x" style="color: var(--color-accent3); opacity: 0.8; margin-left:15px;"></i>
+<i class="fas fa-rocket fa-3x" style="color: var(--color-secondary); opacity: 0.8; margin-left:15px;"></i>
+</div>
+</div>
+<div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--color-gray); text-align: center;">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 18px; color: var(--color-dark);">
+            📌 <strong>まとめ:</strong> 本研究は、MLLM構築のための<span style="border-bottom: 2px solid var(--color-primary); padding-bottom:1px;">詳細な実験</span>と<span style="border-bottom: 2px solid var(--color-secondary); padding-bottom:1px;">分析</span>を通じて、<span style="border-bottom: 2px solid var(--color-accent1); padding-bottom:1px;">設計上の重要な教訓</span>を提示し、<span style="border-bottom: 2px solid var(--color-accent2); padding-bottom:1px;">SOTAレベルのモデルファミリーMM1</span>を開発しました。これらの成果が、今後のMLLM研究開発の加速に貢献することを期待します。
+        </p>
+</div>
+</div>
+<div class="section-card" id="Appendix">
+<h2 class="section-title"><i class="fas fa-book-open"></i> Appendix</h2>
+<p class="content-box">このAppendixセクションでは、本論文で提案された多モーダル大規模言語モデルMM1に関する、より詳細な情報を提供します。具体的には、学習に使用されたデータセットの内訳と構築方法、モデルの事前学習および教師ありファインチューニング（SFT）の具体的な設定、評価に用いられたベンチマークや指標、そしてMM1モデルの能力を示す質的な応答例について掘り下げて解説します。これらの補足情報は、論文の主結果を理解し、再現する上で非常に重要です。さあ、一緒にMM1の深部を探検しましょう！✏️🔍</p>
+<h3 class="section-title"><i class="fas fa-database"></i> A Dataset Details</h3>
+<p class{="content-box">モデルの性能を左右する重要な要素の一つが、学習データです。このセクションでは、MM1の学習に使用された3種類の主要なデータセット、すなわち「画像とテキストが交互に配置されたデータ（Interleaved Image-Text Data）」、「テキストのみのデータ（Text-Only Data）」、そして「視覚的な指示チューニング用データ（Visual Instruction Tuning Data）」について、その構築プロセスや特性を詳しく見ていきます。📊</p>
+<h4 class="subsection-title"><i class="fas fa-images"></i> A.1 Interleaved Image-Text Data</h4>
+<div class="content-box">
+<p><span class="keyword">Interleaved Image-Text Data</span>とは、ウェブページのように画像とそれに関連するテキストが交互に現れる形式のデータです。MM1の学習では、この種のデータがモデルの文脈理解能力やFew-shot学習能力の向上に貢献します。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="step-number">1</span>
+<div class="step-content">
+<strong>データセット構築の概要</strong>: OBELICS [58] と同様の手法に基づき、<span class="highlight">5億件の画像・テキスト混合ドキュメント</span>を構築しました。これには、合計で<span class="highlight">10億枚の画像</span>と<span class="highlight">5000億のテキストトークン</span>が含まれます。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">2</span>
+<div class="step-content">
+<strong>ソースデータ</strong>: これらのドキュメントは、セクションA.2で説明する30億のHTMLファイル群から生成されました。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">3</span>
+<div class="step-content">
+<strong>抽出プロセス</strong>: 各HTMLファイルから、本文テキストと全ての<code>&lt;img&gt;</code>タグを抽出しました。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">4</span>
+<div class="step-content">
+<strong>初期フィルタリング</strong>: 画像を含まないドキュメントや、30枚を超える画像を持つドキュメントは除外しました。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">5</span>
+<div class="step-content">
+<strong>画像挿入</strong>: 画像をダウンロードし、元のテキスト中の位置に挿入しました。
+                </div>
+</div>
+<div class="pipeline-step">
+<span class="step-number">6</span>
+<div class="step-content">
+<strong>品質管理</strong>: 最後に、低品質または重複した画像を削除するために、画像フィルタリングと画像重複排除処理を行いました。
+                </div>
+</div>
+</div>
+<div class="two-column">
+<div class="column">
+<div class="note-box">
+<p class="note-title"><i class="fas fa-filter"></i> 画像フィルタリング基準</p>
+                    以下の条件に合致する画像は削除されました：
+                    <ul>
+<li><i class="fas fa-file-excel"></i> 破損したバイト/ヘッダーを持つ画像</li>
+<li><i class="fas fa-ruler-combined"></i> アスペクト比が1/2未満または2を超える画像</li>
+<li><i class="fas fa-compress-arrows-alt"></i> サイズが小さすぎる（100px未満）または大きすぎる（10,000px超）画像</li>
+<li><i class="fas fa-tag"></i> URLに "logo", "button", "icon", "plugin", "widget" といった単語が含まれる画像</li>
+</ul>
+</div>
+</div>
+<div class="column">
+<div class="note-box">
+<p class="note-title"><i class="fas fa-copy"></i> 画像重複排除基準</p>
+                    以下の条件に合致する画像は削除されました：
+                    <ul>
+<li><i class="fas fa-link"></i> URLまたはMD5ハッシュがデータセット内で10回以上出現する画像</li>
+<li><i class="fas fa-pager"></i> 単一ページ内で同じ画像が複数回出現する場合、最初の1枚のみ保持</li>
+</ul>
+</div>
+</div>
+</div>
+<p class="reference">これらの処理により、高品質で多様なInterleaved Image-Text Dataが得られました。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-file-alt"></i> A.2 Text-Only Data</h4>
+<div class="content-box">
+<p><span class="keyword">Text-Only Data</span>は、テキストのみで構成されるデータセットです。これは、基盤となるLLMの言語理解能力を維持・向上させるために重要です。</p>
+<div class="process-step">
+<span class="step-number">1</span>
+<div class="step-content">
+<strong>初期コーパス</strong>: 最初に、<span class="highlight">1500億の英語HTMLファイル</span>からなるWebコーパスを出発点としました。
+            </div>
+</div>
+<div class="process-step">
+<span class="step-number">2</span>
+<div class="step-content">
+<strong>ボイラープレート除去</strong>: HTMLファイルから主要なコンテンツを表すHTML部分を抽出するために、ボイラープレート（ヘッダー、フッター、広告など、本質的でない部分）を除去しました。
+            </div>
+</div>
+<div class="process-step">
+<span class="step-number">3</span>
+<div class="step-content">
+<strong>品質フィルタリング</strong>: GPT-3 [10] や CCNet [118] と同様のプロセスに従い、以下の条件に合致するドキュメントを除去しました：
+                <ul>
+<li><i class="fas fa-text-height"></i> 短すぎるドキュメント</li>
+<li><i class="fas fa-ban"></i> 不適切な言葉を含むドキュメント</li>
+<li><i class="fas fa-thumbs-down"></i> その他、低品質と見なされるドキュメント</li>
+</ul>
+</div>
+</div>
+<div class="process-step">
+<span class="step-number">4</span>
+<div class="step-content">
+<strong>重複排除</strong>: データの重複を排除するために、以下の2つの手法を用いました：
+                <ul>
+<li><i class="fas fa-equals"></i> 完全ハッシュ一致（Exact-hash matching）</li>
+<li><i class="fas fa-stream"></i> LSHベースの近傍重複検出（LSH-based near-duplicate detection）</li>
+</ul>
+</div>
+</div>
+<div class="process-step">
+<span class="step-number">5</span>
+<div class="step-content">
+<strong>最終結果</strong>: これらの手法を適用することで、最終的に<span class="highlight">30億のHTMLファイル</span>が得られました。これがInterleaved Image-Text Dataの構築基盤となります。
+            </div>
+</div>
+<p class="reference">この丁寧なフィルタリングと重複排除により、質の高いテキストデータが確保されました。</p>
+</div>
+<img alt="Table 5: List of datasets used for supervised fine-tuning." src="table5.png" style="width: 80%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-table"></i> 表5: 教師ありファインチューニングに使用されるデータセットのリスト</p>
+<p>この表は、教師ありファインチューニング（SFT）段階で使用される様々なデータセットをリストアップしています。これには、GPT-4やGPT-4Vによって生成された対話データ、画像キャプションデータ、視覚的質問応答（VQA）データなどが含まれます。それぞれのデータセットがどのような目的で（例：長文応答の促進、特定の視覚言語タスクの能力向上など）、どのようにフォーマットされているかが示されています。特に、学術的なタスク指向のデータセットは、LLaVA-1.5 [74] に倣って指示追従形式に変換されている点が重要です。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-tasks"></i> A.3 Visual Instruction Tuning Data</h4>
+<div class="content-box">
+<p><span class="keyword">Visual Instruction Tuning Data</span>は、モデルが視覚的な指示に従って応答する能力を向上させるために使用される、特別にキュレーションされたデータセットです。これにより、モデルはより対話的で、特定のタスクに特化した応答を生成できるようになります。</p>
+<p>最終的なSFTデータ混合物は、主にLLaVA-1.5 [74] および LLaVA-NeXT [75] のアプローチを踏襲し、多様なデータセットを含んでいます。具体的には以下の通りです：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h5><i class="fas fa-comment-dots"></i> 長文応答・対話能力の強化</h5>
+<p>モデルが詳細な長文応答を生成し、自然な会話を行えるようにするため、既存のGPT-4生成データ（LLaVA-Conv, LLaVA-Complex [76]）およびGPT-4V生成データ（ShareGPT-4V [15]）を使用しました。</p>
+<div class="bubble-box">
+<p>📝 <strong>実験メモ</strong>: LAION-GPT4Vも試しましたが、さらなる性能向上は見られなかったため、最終的な混合物には含めませんでした。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h5><i class="fas fa-microscope"></i> 視覚言語（VL）理解能力の強化</h5>
+<p>モデルのVL理解能力を向上させるため、様々な学術的タスク指向VLデータセットを使用しました。これらは画像キャプション形式または短い回答のVQA形式です。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">自然画像向け</span>: VQAv2 [38], GQA [46], OKVQA [82], A-OKVQA [98], COCO Captions [18]</li>
+<li><span class="badge orange">テキストリッチ画像向け</span>: OCRVQA [86], TextCaps [103]</li>
+<li><span class="badge green">文書・チャート理解向け</span>: DVQA [51], ChartQA [83], AI2D [52], DocVQA [85], InfoVQA [84], SynthDog-En [53]</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h5><i class="fas fa-font"></i> テキストのみの指示追従能力の強化</h5>
+<p>モデルがテキストのみの指示にも適切に応答できるようにするため、少量のテキストのみのSFTデータも混合しました。</p>
+</div>
+</div>
+<p class="content-box">学術的なタスク指向の画像キャプションおよびVQAデータセットは、LLaVA-1.5 [74] の手法に従い、指示追従形式にフォーマットされました。詳細なプロンプトは論文中の表5（上の図を参照）にまとめられています。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-cogs"></i> B Training Details</h3>
+<p class="content-box">モデルの学習プロセスは、その最終的な性能に大きく影響します。このセクションでは、MM1モデルの「事前学習（Pre-training）」と「教師ありファインチューニング（Supervised Fine-tuning, SFT）」という2つの主要な学習段階における詳細な設定について解説します。具体的には、バッチサイズ、シーケンス長、学習率スケジュール、最適化手法などが含まれます。🛠️</p>
+<h4 class="subsection-title"><i class="fas fa-layer-group"></i> B.1 Pre-training</h4>
+<div class="content-box">
+<p>事前学習は、モデルが広範な知識と基本的な能力を獲得するための初期段階の学習です。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cubes"></i> バッチサイズと構成</p>
+<ul>
+<li><strong>統一設定</strong>: 全てのMM1モデルは、単純化のため、バッチサイズ<span class="highlight">512</span>、最大デコーダシーケンス長<span class="highlight">4096</span>で事前学習されました。</li>
+<li><strong>画像入力</strong>: 1入力シーケンスあたり最大<span class="highlight">16枚の画像</span>を許容し、各画像はデコーダへの入力として<span class="highlight">144トークン</span>を生成します。
+                    <div class="bubble-box">
+<p>📌 <strong>結果</strong>: これにより、1バッチあたり約<span class="keyword">100万のテキストトークン</span>と<span class="keyword">100万の画像トークン</span>が処理されることになります。</p>
+</div>
+</li>
+<li><strong>入力ソースの種類とサンプリング確率</strong>: 各入力シーケンスは、以下の3種類のソースからサンプリングされます：
+                    <ol>
+<li><span class="badge blue">Interleaved Data (交互配置データ)</span>: 45%</li>
+<li><span class="badge orange">Packed Image-Text Pairs (パックされた画像テキストペア)</span>: 45%</li>
+<li><span class="badge green">Text-Only Data (テキストのみデータ)</span>: 10%</li>
+</ol>
+</li>
+<li><strong>アテンションマスクの変更</strong>: 画像テキストペアや交互配置ドキュメントをシーケンス次元に沿ってパックする際、トークンが事例境界を越えてアテンションしないように自己アテンションマスクを変更しました。
+                    <div class="bubble-box">
+<p>🔑 <strong>重要ポイント</strong>: 特に画像テキストペアにおいて、この変更は強力なFew-shot性能を維持するために不可欠でした。</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-fingerprint"></i> 決定論的データ混合</p>
+<p>サンプリング/混合手順は一度オフラインで実行され、事前学習混合データの固定された決定論的なスナップショットとして保存されます。これは、事前学習混合データ自体に関するアブレーションを除き、本論文の全てのモデルが同じ事例を同じ順序で学習することを意味します。</p>
+<p><span class="keyword">再現性の確保</span>: 入力パイプラインの異なるランダムシードが結果モデルに無視できない影響を与える可能性があることを初期実験で確認したため、この決定論的なアプローチは結果の内部再現性を確保するために重要でした。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-chart-line"></i> 学習率スケジュール</p>
+<ul>
+<li><strong>スケジュール</strong>: 多モーダル事前学習では、標準的な<span class="keyword">コサイン学習率減衰スケジュール</span>を採用し、初期に<span class="highlight">2000ステップ</span>の線形ウォームアップを行いました。</li>
+<li><strong>減衰</strong>: 学習率は、20万学習ステップ（2e5ステップ）かけてピーク値の<span class="highlight">10%</span>まで減衰されます。</li>
+<li><strong>勾配クリッピング</strong>: 最大ノルム1で勾配クリッピングを実行しました。</li>
+<li><strong>オプティマイザ</strong>: 学習率と重み減衰を分離する実装の<span class="keyword">AdamWオプティマイザ</span>を使用しました。</li>
+<li><strong>MM1-30Bの追加</strong>: MM1-30Bでは、学習の安定性を向上させるため（[119]と同様）、スケール1e-4の<span class="keyword">z-loss項</span>を追加しました。</li>
+</ul>
+</div>
+<img alt="Table 7: Predicted optimal peak learning rate and weight decay for MM1 model sizes." src="table7.png" style="width: 60%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-table"></i> 表7: MM1モデルサイズに対する予測された最適なピーク学習率 \(\eta\) と重み減衰 \(\lambda\)</p>
+<p>この表は、本研究で調査された主要なLLMサイズ（9M, 85M, 302M, 1.2B, 3B, 7B, 30B）ごとに予測された最適なピーク学習率 (\(\eta\)) と重み減衰 (\(\lambda\)) を示しています。これらの値は、図6および図8で示されるスケーリング則に基づいて導出されています。例えば、30Bモデルではピーク学習率が2.2e-5、重み減衰が2.2e-6と予測されています。実際のMM1 3B, 7B, 30Bモデルでは、簡略化のため、それぞれ6e-5, 4e-5, 2e-5の学習率が使用されました。また、全てのモデルサイズにおいて、ランダムに初期化されたVision-Languageコネクタのピーク学習率は8e-5に固定されています。</p>
+</div>
+<p>本研究で検討された主要なLLMサイズに対する予測された最適（ピーク）学習率は表7に示されています。単純化のため、実際のMM1 3B、7B、30Bモデルでは、それぞれ \(\eta\) = 6e-5、4e-5、2e-5 を使用しました。最後に、MM1のランダムに初期化されたVision-Languageコネクタのピーク学習率（LR）を、全てのモデルサイズで \(\eta\) = 8e-5 に固定しました。MM1の将来のバージョンでは、[121]と同様の技術を組み込み、コストのかかるハイパーパラメータ検索の必要性を回避する予定です。</p>
+<img alt="Table 6: Complete MM1 pre-training few-shot evaluation results." src="table6.png" style="width: 90%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-table"></i> 表6: MM1事前学習Few-shot評価結果の完全版</p>
+<p>この表は、MM1の様々なモデルサイズ（3B, 7B, 30B, 3B-MoE, 7B-MoE）における事前学習後のFew-shot評価結果を、複数のベンチマーク（COCO, NoCaps, TextCaps, VQAv2, TextVQA, VizWiz, GQA, OK-VQA）にわたって詳細に示しています。0-shot, 4-shot, 8-shotの各設定での性能が記載されており、Flamingo, Emu2, IDEFICSといった他の代表的な多モーダルモデルとの比較も行われています。
+            <br/>（*）IDEFICSは学習データにPMD（COCOを含む）を含んでいます。
+            <br/>（†）これらのモデルは、プロンプトにテキストのみのデモンストレーションを2つ含んでいますが、MM1は含んでいません。
+            この表から、MM1が特にFew-shot設定において、多くのベンチマークで既存のモデルを上回るか、同等の性能を達成していることがわかります。</p>
+</div>
+<div class="two-column" style="align-items: flex-start;">
+<div class="column">
+<img alt="Fig. 8: Optimal weight decay as a function of model size" src="weight_decay_model_size_scaling.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-area"></i> 図8: 最適な重み減衰とモデルサイズの関係</p>
+<p>このグラフは、セクションB.1で説明されているグリッドサーチに基づき、最適な<span class="keyword">重み減衰（Weight Decay）</span>がモデルサイズ（LLMの非埋め込みパラメータ数）に応じてどのように変化するかを示しています。X軸はLLMのパラメータ数、Y軸は重み減衰の値です。青い円はグリッドサーチからの実際のデータポイントを表し、そのサンプリング確率（および色の濃さ）は8-shot平均性能に比例します。このグラフから、モデルサイズが大きくなるにつれて最適な重み減衰が小さくなる傾向が見て取れます。</p>
+</div>
+</div>
+<div class="column">
+<img alt="Fig. 9: 8-shot average for grid searches" src="learning_rate_weight_decay_grid_search.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-th"></i> 図9: 学習率と重み減衰のグリッドサーチ結果</p>
+<p>この図は、異なるLLMサイズ（9M, 85M, 302M, 1.2B）に対して行われた、<span class="keyword">ピーク学習率（Y軸）</span>と<span class="keyword">重み減衰（X軸）</span>のグリッドサーチにおける8-shot平均性能を示しています。各セルは特定の学習率と重み減衰の組み合わせでの性能を表し、色が濃いほど性能が高いことを示します（カラースケール参照）。黒いセルは実験が行われなかった設定です。これらのグリッドサーチの結果が、図6の学習率スケーリング則の導出に使用されました。モデルは \(5 \times 10^4\) ステップ学習されています。</p>
+</div>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-search"></i> 学習率と重み減衰のグリッドサーチ</p>
+<p>図6の最終的な曲線フィットに対応する個々のグリッドサーチ結果は図9に示されています。グリッドサーチモデルは \(5 \times 10^4\) ステップで学習させました。[119]によると、このステップ数でも結論は変わらないとされています。最適な学習率を予測するために使用されたのと同じ手順を、図8に示すように重み減衰値の予測にも適用できます。青い円は、グリッドサーチからの実際のデータポイントに対応し、サンプリング確率（および色の濃さ）はそれらの8ショット平均性能に比例します。本研究の主要な各モデルサイズに対する対応する予測は、表7に示されています。</p>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-chalkboard-teacher"></i> B.2 Supervised Fine-tuning (SFT)</h4>
+<div class="content-box">
+<p>教師ありファインチューニング（SFT）は、事前学習済みモデルを特定のタスクや指示応答形式に適応させるための追加学習段階です。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-history fa-2x" style="color: var(--color-accent1);"></i>
+<strong>学習ステップ</strong>
+<p>モデルは<span class="highlight">10,000ステップ</span>ファインチューニングされました。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-cubes fa-2x" style="color: var(--color-accent2);"></i>
+<strong>バッチサイズ</strong>
+<p>バッチサイズは<span class="highlight">256</span>です。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-text-width fa-2x" style="color: var(--color-accent3);"></i>
+<strong>シーケンス長</strong>
+<p>シーケンス長は<span class="highlight">2048</span>です。</p>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i> オプティマイザと学習率</p>
+<ul>
+<li><strong>オプティマイザ</strong>: <span class="keyword">AdaFactorオプティマイザ</span>を採用しました。</li>
+<li><strong>ピーク学習率</strong>: ピーク学習率は<span class="highlight">1e-5</span>です。
+                    <div class="bubble-box">
+<p>📝 <strong>実験的知見</strong>: 様々な学習率を試した結果、経験的に1e-5が最適でした。</p>
+</div>
+</li>
+<li><strong>学習率減衰</strong>: 学習率は<span class="keyword">コサイン減衰</span>により0まで減少させました。</li>
+</ul>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-unlock-alt"></i> モデルの凍結について</p>
+<p>SFT中、<span class="keyword">画像エンコーダとLLMの両方を凍結せずに（unfrozen）</span>学習しました。経験的に、モデル全体をファインチューニングする方がより良い性能を達成することが観察されました。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-clipboard-check"></i> C Evaluation Details</h3>
+<p class="content-box">モデルの性能を客観的に評価するためには、適切な評価方法とベンチマークの選定が不可欠です。このセクションでは、MM1モデルの「事前学習段階での評価」と「SFT後の評価」それぞれについて、使用した手法、ベンチマーク、評価指標、そしてSFTアブレーション研究のためのメタ平均スコアの算出方法などを詳しく説明します。📝📊</p>
+<h4 class="subsection-title"><i class="fas fa-tasks"></i> C.1 Pre-training Evaluation</h4>
+<div class="content-box">
+<p>事前学習段階でのモデル評価は、モデルが基本的な多モーダル能力をどの程度獲得したかを測るために重要です。</p>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-random"></i> Few-shotプロンプトのサンプリング</h5>
+<p>Few-shotプロンプトは、利用可能であれば学習セットから、そうでなければ検証セットからデータセットごとにランダムにサンプリングされます。その際、<span class="highlight">クエリ例がショット（文脈例）のいずれにも現れない</span>ように注意が払われます。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-pen-fancy"></i> 出力生成</h5>
+<p>出力は、モデルがEOS（End-Of-Sequence）トークンを発するか、タスクごとに指定可能な追加のストップトークンを発するまで、<span class="keyword">貪欲デコーディング（greedy decoding）</span>によって生成されます。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">キャプションタスク</span>: 追加のストップトークンは改行文字のみ。</li>
+<li><span class="badge orange">VQAタスク</span>: "."、","、"Question" も有効なストップトークンとして含める。</li>
+</ul>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-magic"></i> VQA予測の後処理</h5>
+<p>VQA予測の後処理には、OpenFlamingo [4] と同じロジックを使用します。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-star"></i> キャプションタスクの評価指標</h5>
+<p>キャプションタスクでは、nlg-evalパッケージ [101] を使用して<span class="keyword">CIDErスコア</span> [111] を報告します。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-code-branch"></i> 評価実装</p>
+<p>全ての多モーダル事前学習評価は、EleutherAIのlm-evaluation-harness [35] の内部フォークで実装されています。</p>
+</div>
+<img alt="Table 8: Splits used for pretraining evaluation." src="table8.png" style="width: 80%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-table"></i> 表8: 事前学習評価に使用されたスプリット</p>
+<p>この表は、事前学習の評価に使用された各データセット（COCO Captions, NoCaps, TextCaps, VQAv2, TextVQA, VizWiz, GQA, OK-VQA）の具体的なデータスプリット（例：karpathy test, validation, testなど）を示しています。重要な注意点として、主要な事前学習結果と同様に、全ての事前学習アブレーションではVQAv2とVizWizについて検証スプリット（validation splits）が使用されています。これにより、評価の一貫性が保たれています。</p>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-tasks"></i> C.2 SFT Evaluation Benchmarks</h4>
+<div class="content-box">
+<p>SFT後のモデルは、より実践的なタスクでの性能を評価するために、広範なベンチマークセットで評価されます。</p>
+<p>SFTモデルは、従来の学術的なVLベンチマークと、MLLM向けに特別に設計された最近のベンチマークの両方を含むコレクションで評価します。</p>
+<div class="two-column">
+<div class="column framework-box">
+<p class="framework-title"><i class="fas fa-flask"></i> 学術的VLベンチマーク</p>
+<ul>
+<li>VQAv2 [38]</li>
+<li>TextVQA [104]</li>
+<li>ScienceQA [81] の画像サブセット</li>
+</ul>
+</div>
+<div class="column framework-box">
+<p class="framework-title"><i class="fas fa-rocket"></i> 最近のMLLMベンチマーク</p>
+<ul>
+<li>POPE [68]</li>
+<li>MME [33]</li>
+<li>MMBench [78]</li>
+<li>SEED-Bench [62]</li>
+<li>LLaVA-Bench-in-the-Wild [76]</li>
+<li>MM-Vet [127]</li>
+<li>MathVista [80]</li>
+<li>最近人気のMMMU [128]</li>
+</ul>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-cogs"></i> 評価設定</p>
+<ul>
+<li><strong>デコーディング</strong>: 全てのベンチマークで、応答生成には<span class="keyword">貪欲デコーディング</span>を使用します。</li>
+<li><strong>GPT-4評価</strong>: MMVetとLLaVA-Bench-in-the-Wild（これらは評価にGPT-4を使用）については、評価を<span class="highlight">3回実行</span>し、その平均を報告します。</li>
+</ul>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-calculator"></i> C.3 SFT Evaluation Meta-Average</h4>
+<div class="content-box">
+<p>SFTアブレーションの過程で、比較を単純化するために、全てのベンチマーク結果を単一の<span class="keyword">メタ平均数（meta-average number）</span>に統合します。</p>
+<div class="process-step">
+<span class="step-number">1</span>
+<div class="step-content">
+<strong>課題</strong>: 異なるデータセットの評価指標は範囲が異なる場合があります（例：ある指標は0-100、別の指標は0-1など）。
+            </div>
+</div>
+<div class="process-step">
+<span class="step-number">2</span>
+<div class="step-content">
+<strong>正規化</strong>: この問題を解決するため、ベースライン構成に対して正規化を行います。
+            </div>
+</div>
+<div class="process-step">
+<span class="step-number">3</span>
+<div class="step-content">
+<strong>標準化の手順</strong>:
+                <ol>
+<li>各タスクの結果を標準化します。具体的には、各指標をそれぞれの<span class="highlight">ベースラインの指標値で割ります</span>。</li>
+<li>その後、全ての正規化された指標にわたって平均を取ります。</li>
+</ol>
+</div>
+</div>
+<div class="process-step">
+<span class="step-number">4</span>
+<div class="step-content">
+<strong>ベースライン設定</strong>: ベースラインは、224x224の画像解像度で学習され、64個の画像クエリを持つアテンションプーリングを採用したコンパクトなMM1モデルの性能指標を使用して確立します。
+            </div>
+</div>
+<div class="bubble-box">
+<p>💡 このメタ平均スコアにより、異なる設定やコンポーネントがSFT後の全体的な性能に与える影響を、単一の数値で簡潔に比較評価できます。</p>
+</div>
+</div>
+<img alt="SFT ablations figure." src="learning_rate_model_size_scaling.jpg" style="width: 90%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-bar"></i> 図10: SFTアブレーション</p>
+<p>この図は、SFT（Supervised Fine-Tuning）段階における様々な要因の影響を調査したアブレーションスタディの結果を示しています。</p>
+<ul>
+<li><strong>(a) 事前学習データ混合の影響</strong>:
+                <p>横軸は事前学習データの構成（Interleaved / Captions / Textの割合）を示し、縦軸はSFT後のメタ平均スコアを表します。例えば、"0/100/0" はキャプションデータのみで事前学習したことを意味します。"tks" は画像トークンの数を示します。この結果から、キャプションデータのみで事前学習した場合 (0/100/0) がSFT評価において最も高い性能を示すことがわかります。</p>
+</li>
+<li><strong>(b) Vision-Languageコネクタの影響</strong>:
+                <p>横軸は異なるVision-Languageコネクタのタイプ（Avg. Pool, Att. Pool, C-Abstractor）と画像トークン数（64tks, 144tks）の組み合わせを示し、縦軸はSFT後のメタ平均スコアです。画像トークン数が少ない場合（64tks）、Average Pooling と C-Abstractor は同程度の性能ですが、トークン数が増える (144tks) と C-Abstractor が最良の結果を示します。</p>
+</li>
+<li><strong>(c) SFT中の画像エンコーダの凍結/非凍結の影響</strong>:
+                <p>横軸は画像エンコーダを凍結（Frozen Encoder）するか非凍結（Unfrozen Encoder）にするか、および画像解像度（224px, 336px, 672px, 1344px）を示し、縦軸はSFT後のメタ平均スコアです。低解像度ではエンコーダを凍結した方が性能が良く、高解像度（1344px）では非凍結の方が有利であることが示されています。</p>
+</li></ul>
+<p>これらのアブレーションは、MM1-3Bモデルに対してSFTを行い、その結果を評価しています。図中の数値 (例: 95, 100, 115) は、C.3で説明されたメタ平均スコアを表し、ベースライン構成に対する相対的な性能を示しています。</p>
+</div>
+<h4 class="subsection-title"><i class="fas-cogs"></i> C.4 Additional SFT Ablations</h4>
+<div class="content-box">
+<p>このセクションでは、追加のSFTアブレーションを行います。これはセクション3（事前学習のアブレーション）に類似しており、同じチェックポイントに対してSFTを行い、同様の教訓がSFT評価でも成り立つか、事前学習評価の代わりに評価します。さらに、SFT中に画像エンコーダを凍結すべきかどうかも検討します。これらのアブレーション全てについて、MM1-3B-Chatを学習させます。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-random"></i> 事前学習データ混合アブレーション (図10a参照)</p>
+<p>図10aでは、事前学習データの異なる重み付けでのSFT性能を比較しています。0ショット評価に関する図5と比較すると、同様の傾向が見られます。<span class="highlight">キャプションのみのデータでの事前学習が、SFT評価指標全体で最高の性能を示します</span>。これは、<span class="keyword">データ教訓1（キャプションデータはSFT評価でもゼロショット性能を向上させる）</span>を裏付けています。しかし、SFT指標はFew-shot性能を測定しないため、この表ではインターリーブドデータの影響は顕著ではありません。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-link"></i> Vision-Languageコネクタアブレーション (図10b参照)</p>
+<p>図10bでは、異なるVision-Languageコネクタ構成を評価しています。この図は図4（事前学習時のコネクタアブレーション）と似ていますが、対応するSFTモデルを評価している点が異なります。ご覧の通り、画像トークン数が少ない場合、<span class="highlight">Average PoolingはC-Abstractorと同等の結果</span>を示します。画像トークン数が増加すると、<span class="highlight">C-Abstractor構成が最良の結果</span>を示します。これらの傾向は、図4で報告された事前学習結果とは完全には一致しません。全体として、Vision-Languageコネクタの選択は、最終的なテスト性能にそれほど大きな影響を与えないように見えます。最終モデルではC-Abstractorアーキテクチャを使用しています。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-snowflake"></i> 画像エンコーダアブレーション (図10c参照)</p>
+<p>図10cでは、SFT中に画像エンコーダを凍結するかどうかを検討しています。結果は、低い画像解像度では、<span class="highlight">凍結した画像エンコーダの方が非凍結の画像エンコーダよりも良い性能</span>（+2.2ポイント）を示すことを示しています。しかし、より高い解像度（例：1344px）では、<span class="highlight">画像エンコーダを非凍結にすることが有益</span>（+2.9ポイント）です。これはおそらく、事前学習が補間や画像サブ分割なしの基本解像度で行われているためです。</p>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-microchip"></i> C.5 Implementation Details for Few-shot MM1-30B-Chat</h4>
+<div class="content-box">
+<p>セクション5.1で示したように、ファインチューニングされたモデルは、文脈内事例（in-context examples）を利用してさらに強力な性能を達成できます。興味深いことに、事例の数を増やすと性能が向上します。これをMM1-30B-Chatで実証します。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> Few-shot入力の課題: サブ画像分解</p>
+<p>Few-shot入力の一つの課題は、<span class="keyword">サブ画像分解（sub-image decomposition）</span>の使用に起因します。この戦略はゼロショット性能を向上させる一方で、画像ごとに消費される実効トークン数を大幅に増加させます。MM1-30B-Chatのように入力画像ごとに5つのサブ画像を使用すると、各事例が1つのソース画像のみを含む4ショット事例を処理するだけで、実効的に20枚の画像になります。各画像を144トークンで表現すると、画像だけで2,880トークンが必要となり、限られた言語モデルのコンテキスト長をすぐに使い果たしてしまいます。</p>
+</div>
+<div class="solution-box bubble-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 提案手法: 混合解像度アプローチ</p>
+<p>この制限を緩和するために、新しい<span class="keyword">混合解像度アプローチ（mixed-resolution approach）</span>を提案します。具体的には、\(K\)個の文脈内事例に対して、最後の\(N\)枚の画像のみを高解像度でサブ画像分解を介してエンコードし、残りの\(K-N\)個の文脈内事例は低解像度で処理します。これにより、文脈内事例のエンコードコストが大幅に削減され、固定されたトークンバジェット内で文脈内事例の数を増やすことができ、さらなる性能向上が可能になります。我々の実装では、<span class="highlight">\(N=3\)</span>と設定しました。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-chart-pie"></i> 有効性の実証: MathVistaベンチマーク</p>
+<p>提案戦略の有効性をMathVistaベンチマークを用いて実証します。</p>
+<ul>
+<li><strong>0-shot (Chain-of-Thoughtなし)</strong>: 39.4</li>
+<li><strong>4-shot (Chain-of-Thoughtあり, 全事例フルサブ画像分解)</strong>: 41.9 (+2.5ポイント)</li>
+<li><strong>8-shot (Chain-of-Thoughtあり, 混合解像度アプローチ適用)</strong>: <span class="highlight">44.4</span> (+2.5ポイント)</li>
+</ul>
+<p>この結果は、MM1-Chatモデルが事前学習レジメンから継承した文脈内学習能力を保持していること、そして我々の混合分解戦略が制限されたコンテキスト長内でFew-shot性能をさらに向上させるのに有効であることを示しています。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-comments"></i> D Qualitative Examples</h3>
+<p class="content-box">このセクションでは、MM1モデルの予測に関する質的な例を共有します。これらの例は、モデルのカウント能力、OCR（光学的文字認識）能力、科学的知識、敵対的プロンプトへの対応、画像とプロンプトの整合性評価、画像美学の知覚、複数画像の比較、機械操作やナビゲーションといったタスク指向シナリオ、グラフィックからの情報抽出、複数画像とテキストにまたがる推論能力など、MM1の多様な能力を示しています。🖼️🗣️</p>
+<img alt="Fig. 11: Examples testing MM1 counting, OCR and scientific knowledge capabilities." src="mm1_counting_ocr_scientific_knowledge.jpg" style="width: 90%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-image"></i> 図11: MM1のカウント、OCR、科学的知識の能力をテストする例</p>
+<p>この図は、MM1-30B-Chatモデルの3つの異なる能力を検証する具体例を示しています。</p>
+<ul>
+<li><strong>カウント能力 (左上)</strong>: 画像内のリンゴの数を尋ねるプロンプトに対し、「画像には7つのリンゴがあります」と正しく応答しています。</li>
+<li><strong>カウント能力 (右上)</strong>: 画像内のオレンジの数を尋ねるプロンプトに対し、「画像には3つのオレンジがあります」と正しく応答しています。</li>
+<li><strong>OCR能力 (中央左)</strong>: 画像内のシーンテキストを尋ねるプロンプトに対し、「The earth without art is just 'eh'」と正しく読み取っています。</li>
+<li><strong>OCR能力 (中央右)</strong>: 画像内の数字列を尋ねるプロンプトに対し、「3,642,039,031,055」と正しく読み取っています。</li>
+<li><strong>科学的知識/地理知識 (左下)</strong>: アメリカの地図画像に対し、「これらの州のうち最も北にあるのはどれですか？」という質問に「Delaware」と応答し、「他の州は何ですか？」という質問に「Arizona, Oklahoma, North Carolina」と応答しています。（注：地理的な正確性については、モデルの知識に基づいています。）</li>
+<li><strong>科学的知識/生態系理解 (右下)</strong>: 食物網の図に対し、「この食物網の生産者はどれですか？」という質問に「berries and flowers, grasses, seeds」と正しく応答しています。</li>
+</ul>
+<p class="reference">画像とプロンプトはCOCO 2014検証セット[72]および[122]から引用されています。</p>
+</div>
+<div class="glass-card" style="margin-bottom: 20px;">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-bottom: none; padding-left:0;"><i class="fas fa-microscope"></i> 図12の解説: MM1の敵対的プロンプトと画像-プロンプト整合性テスト</h4>
+<p>この図は、MM1-30B-Chatモデルが、意図的に誤解を招くようなプロンプト（敵対的プロンプト）や、画像とテキストプロンプト間の整合性を評価する能力をテストする例を示しています。</p>
+<div class="two-column">
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-secondary);">
+<p><strong>左側の例 (猫と赤いボール):</strong></p>
+<p><strong>ユーザー</strong>: 「画像の中に灰色の猫の近くに赤いボールを見つけられますか？」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「いいえ、画像の中に灰色の猫の近くに赤いボールはありません。猫はソファの上の枕に座っており、赤いボールのような他の物体は場面に見えません。」</p>
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-thumbs-up"></i> 分析: 存在しない物体について正しく「ない」と応答できています。</p>
+</div>
+</div>
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-secondary);">
+<p><strong>右側の例 (鳥の羽):</strong></p>
+<p><strong>ユーザー</strong>: 「鳥の翼に鮮やかな青い羽が見えますか？」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「いいえ、画像の鳥は翼に鮮やかな青い羽を持っていません。その鳥はタカやワシのような大型の猛禽類で、典型的な猛禽類の羽を持っています。」</p>
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-thumbs-up"></i> 分析: 画像の特徴と異なる記述について正しく否定できています。</p>
+</div>
+</div>
+</div>
+<div class="two-column">
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p><strong>左下の例 (イルカとテキストプロンプトの類似性):</strong></p>
+<p><strong>ユーザー</strong>: 「画像がテキストプロンプト『オウムが車を運転している』とどれほど類似しているか、1から10のスケールで評価し、理由を説明してください。」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「テキストプロンプト『オウムが車を運転している』との関連で、画像を1から10のスケールで1と評価します。画像は水から飛び出すイルカを示しており、テキストプロンプトはオウムが車を運転していることを指しています。両方が動物を含んでいるという事実以外に、画像とテキストプロンプトの間に類似性はありません。動物も異なり、イルカは水から飛び出しているのに対し、オウムは人間が作った陸上の環境にいます。環境も完全に異なり、イルカは自然な水生環境に、オウムは人工的な陸上環境にいます。」</p>
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas-check-circle"></i> 分析: 画像とテキストの不一致を明確に指摘し、低い類似度スコアとその根拠を詳細に説明できています。</p>
+</div>
+</div>
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p><strong>右下の例 (オウムとテキストプロンプトの類似性):</strong></p>
+<p><strong>ユーザー</strong>: 「画像がテキストプロンプト『オウムが車を運転している』とどれほど類似しているか、1から10のスケールで評価し、理由を説明してください。」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「画像はテキストプロンプト『オウムが車を運転している』と非常に類似したシーンを描写しています。画像には、青い車の中に2羽のオウムがいます。車はヤシの木と黄色い空を背景にした緑の野原に駐車されています。1羽のオウムはハンドルに止まっており、車を運転しているような印象を与えます。もう1羽のオウムは車の屋根に快適に座っており、景色を楽しんでいるようです。画像の色は鮮やかで、車の青が緑の野原と黄色い空と美しく対照的です。ヤシの木がシーンにトロピカルな雰囲気を加えています。画像は、オウムの数とその行動を除いて、テキストプロンプトを忠実に表現しています。プロンプトは1羽のオウムが車を運転していると述べていますが、画像は2羽のオウムを示しており、1羽は運転しているように見え、もう1羽は車の屋根にいます。これが画像に驚きとユーモアの要素を加えています。全体として、画像はテキストプロンプトの忠実な表現とその創造的な解釈により、10点満点中9点を獲得します。」</p>
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-check-circle"></i> 分析: 画像とテキストプロンプトの類似点を詳細に挙げ、わずかな差異（オウムの数と行動）も指摘しつつ、高い類似度スコアとその理由を創造的な解釈も含めて説明しています。</p>
+</div>
+</div>
+</div>
+<p class="reference" style="text-align: center;">画像とプロンプトはCOCO 2014検証セット[72]、[122]、[8]から引用されています。</p>
+</div>
+<div class="two-column">
+<div class="column">
+<img alt="Airplane window snowy mountains" src="airplane_window_snowy_mountains.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="bubble-box">
+<p><strong>ユーザー</strong>: 「下の画像を見て、人々は感情的にどのように感じ、反応する可能性がありますか？」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「この画像を見て、人々は畏怖、魅力、静けさなどの感情が入り混じったものを感じるかもしれません。飛行機の窓から見える翼と広大な雪山脈の息をのむような景色は、静けさと自然の美しさを感じさせます。壮大で整然とした山々のパターンと雪を頂いた峰々が、澄んだ青空と対照をなし、自然界への驚嘆と感謝の念を呼び起こします。この景色はまた、日常では体験できないかもしれない世界のユニークな視点を提供し、好奇心と興奮をかき立てます。さらに、描かれた手つかずの自然の風景から、この画像は落ち着きと平和の感情をもたらすことがあります。」</p>
+</div>
+</div>
+<div class="column">
+<img alt="Creepy dark stairwell" src="creepy_dark_stairwell.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="bubble-box">
+<p><strong>ユーザー</strong>: 「下の画像を見て、人々は感情的にどのように感じ、反応する可能性がありますか？」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「画像は不気味な雰囲気の暗い階段を示しており、人々に不安、恐怖、または好奇心といった感情を呼び起こすかもしれません。一部の人は階段を完全に避けることで反応するかもしれませんが、他の人は神秘的な雰囲気に興味をそそられ、さらに探索することを決めるかもしれません。階段の暗闇と影は人々の知覚を弄び、想像力を刺激し、影に誰かまたは何かが潜んでいるかのように感じさせる可能性があります。全体として、この画像は個人の気質や考え方に応じて、懸念から魅力まで、さまざまな感情的反応を引き起こす可能性があります。」</p>
+</div>
+</div>
+</div>
+<div class="two-column">
+<div class="column">
+<img alt="Multi image water sources" src="multi_image_water_sources.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="bubble-box">
+<p><strong>ユーザー</strong>: 「<img1> <img2> 2つの画像のそれぞれについて、水が塩辛いかどうかコメントしてください。」</img2></img1></p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「最初の画像では、いくつかのボートが水域に浮かんでいます。ボートの存在から、これは港である可能性が高く、ほとんどの港は通常海の近くにあるため、水は塩辛い可能性が高いです。ただし、より多くの情報がなければ、水の塩分濃度を確認することはできません。」</p>
+<p>「2番目の画像では、象やキリンを含む様々なアフリカの動物が、乾いた草原の水飲み場の周りに集まっています。動物は飲むために真水を必要とするため、この水域は真水である可能性が最も高いです。多数の動物が水飲み場から水を飲んでいる存在は、この水が彼らの生存に不可欠であることを確認しており、彼らが塩水を飲むことができる可能性は非常に低いです。」</p>
+</div>
+</div>
+<div class="column">
+<img alt="Multi image meal comparison" src="multi_image_meal_comparison.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="bubble-box">
+<p><strong>ユーザー</strong>: 「<img1> <img2> どちらの画像がより健康的な食事を示していますか？」</img2></img1></p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「提示された画像の中でより健康的な食事は、ブロッコリーと野菜のボウル、そして肉のプレートが特徴のものです。ブロッコリーやボウルの中の野菜のような野菜を取り入れることは、バランスの取れた健康的な食事に貢献する必須栄養素、ビタミン、繊維を提供します。ピザに様々なトッピングが乗っており、ビールが付いている食事は、野菜と肉を重視する他の食事と比較して、より多くのカロリー、脂肪、加工成分を含んでいる可能性があるため、より健康的でないと考えられます。」</p>
+</div>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-images"></i> 図13: MM1の画像美学の知覚能力と複数画像の比較能力をテストする例</p>
+<p>この図（上記4つの例）は、MM1-30B-Chatモデルが画像の雰囲気や感情的な影響を推測したり、複数の画像を比較して特定の情報を推論したりする能力を示しています。
+        <br/><strong>上段</strong>: 単一画像を見て、人々がどのような感情を抱き、どのように反応するかを推測するタスク。左は飛行機の窓からの雪景色、右は暗く不気味な階段。MM1はそれぞれについて、畏怖や静けさ、不安や好奇心といった妥当な感情的反応を生成しています。
+        <br/><strong>下段</strong>: 複数画像を比較するタスク。左は2つの異なる水辺の画像（港と水飲み場）で、それぞれの水が塩水か淡水かを推論。MM1はボートの存在や動物の行動から妥当な推論を行っています。右は2つの異なる食事の画像（ピザとビール、野菜と肉）で、どちらがより健康的かを判断。MM1は栄養バランスを考慮して適切な判断を下しています。
+        </p>
+<p class="reference">画像とプロンプトはCOCO 2014検証セット[72]および[122]から引用されています。</p>
+</div>
+<div class="two-column">
+<div class="column">
+<p><strong>ユーザー</strong>: 「まず、コーヒーマシンのボタンの操作メニューを以下で読んでください。」</p>
+<p>メニュー 1: <img alt="Coffee machine menu 6oz" src="coffee_machine_menu_6oz.jpg" style="width: 50%;"/></p>
+<p>メニュー 2: <img alt="Coffee machine menu 8oz" src="coffee_machine_menu_8oz.jpg" style="width: 50%;"/></p>
+<p>メニュー 3: <img alt="Coffee machine menu 10oz" src="coffee_machine_menu_10oz.jpg" style="width: 50%;"/></p>
+<p>「さて、下の画像のコーヒーマシンの操作パネルを見てください。6オンスのコーヒーにはどのボタンを使うべきですか：左、右、上、または下のボタン？」</p>
+<img alt="Coffee machine button panel" src="coffee_machine_button_panel.jpg" style="width: 80%; margin-top:10px;"/>
+<div class="bubble-box">
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「画像のコーヒーマシンで6オンスのコーヒーを淹れるには、左のボタンを使用する必要があります。これは、マシンのボタンがメニューアイコンに対応しており、左のボタンが6オンスのメニューアイコンに対応しているためです。他のボタンは異なるカップサイズに対応していますが、6オンスのコーヒーを淹れるために押す必要があるのは左のボタンです。」</p>
+</div>
+</div>
+<div class="column">
+<img alt="Car dashboard view" src="car_dashboard_view_road_trees_speedlimit.jpg" style="width: 100%; margin-bottom:10px;"/>
+<div class="bubble-box">
+<p><strong>ユーザー</strong>: 「画像を説明してください」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「画像は、車のダッシュボードカメラの視点からの瞬間を捉えています。車は黄色い線で区切られた2車線の道路を走行しており、田舎または人口の少ない地域であることを示唆しています。道路は両側に木々が並んでおり、その緑の葉が上の曇り空の灰色と対照的です。道路の右側には「35」と表示された速度制限標識が見え、車両の許容最高速度を示しています。全体的なシーンは、軽く木々に覆われた地域を穏やかで静かにドライブしている様子を示唆しています。」</p>
+</div>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-cogs"></i> 図14: MM1のタスク指向シナリオ（機械操作、ナビゲーション）でのテスト例</p>
+<p>この図は、MM1-30B-Chatモデルが、具体的な指示に基づいて機械を操作したり、画像内の情報から状況を理解したりする能力をテストする例を示しています。</p>
+<p><strong>左側（コーヒーマシン）</strong>: 複数のメニュー画像（6oz, 8oz, 10ozのコーヒー）を提示し、その後コーヒーマシンの操作パネルの画像を提示して、6ozのコーヒーを淹れるためにどのボタンを押すべきかを質問しています。MM1は、メニューアイコンと操作パネルのボタンの対応関係を理解し、正しく「左のボタン」と回答しています。</p>
+<p><strong>右側（車載カメラ）</strong>: 車のダッシュボードからの眺めを写した画像を提示し、その説明を求めています。MM1は、道路の状況、周囲の風景、速度標識などを詳細に捉え、落ち着いたドライブシーンであると的確に説明しています。</p>
+<p class="reference">画像とプロンプトは[122]および[Yang2023]から引用されています。</p>
+</div>
+<div class="glass-card" style="margin-bottom: 20px;">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-bottom: none; padding-left:0;"><i class="fas fa-chart-pie"></i> 図15の解説: MM1のグラフィックからの情報抽出能力テスト</h4>
+<p>この図は、MM1-30B-Chatモデルが図やフローチャートといったグラフィック情報から意味を理解し、説明する能力をテストする例を示しています。</p>
+<div class="two-column">
+<div class="column">
+<p><strong>左側の例 (蒸発と蒸発散):</strong></p>
+<p><strong>ユーザー</strong>: 「あなたが教師だと仮定して、この図を使って蒸発と蒸発散の違いを説明してください。」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「蒸発と蒸発散は、水の循環における重要な2つのプロセスであり、しばしば混同されます。画像は両者の明確な区別を示しています。蒸発は、水が液体状態から気体状態に変化するプロセスです。これは画像では、太陽の熱によって湖や海の水分が水蒸気に変わり、大気中に上昇することで表されています。一方、蒸発散は蒸発と植物の蒸散の組み合わせです。蒸散は、植物に吸収された水が植物の葉を通して大気中に放出されるプロセスです。画像では、蒸発散は木々や草に吸収された水が大気中に放出されることで表されています。要約すると、蒸発は水が蒸気に変わって大気中に上昇するプロセスであり、蒸発散は蒸発と植物の蒸散の組み合わせで、植物に吸収された水が大気中に放出されることを表します。」</p>
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-lightbulb"></i> 分析: 図の内容に基づいて、蒸発と蒸発散の定義と違いを正確に説明できています。</p>
+</div>
+<div class="column">
+<p><strong>右側の例 (フローチャート説明):</strong></p>
+<p><strong>ユーザー</strong>: 「図を説明してください。」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>: 「画像は、チームメンバーがプロジェクトを提案するプロセスを概説するフローチャートを示しています。フローチャートは、「チームメンバーがプロジェクトを提案する」というテキストを含む緑色の長方形で始まります。この開始点から、プロセスは一連の菱形の決定点と長方形のアクションポイントを流れ、それぞれがプロセスの次のステップを説明する特定のテキストを含んでいます。プロセスは、チームが会議でアイデアを議論し、その後参加者がそれが良いアイデアかどうかを決定する決定点で続きます。良いアイデアであれば、プロセスは前進します。そうでなければ、プロセスはチームメンバーがより多くの調査を行うポイントにループバックします。フローチャートは、アクションを表す緑色の長方形と決定を表す黄色い菱形で色分けされています。これらの形状を結ぶ線は黒で、プロセスの順序を示しています。フローチャートは白い背景に設定されており、色付きの形状が明確に際立っています。フローチャートはプロセスの明確で構造化された表現を提供し、プロジェクト提案と意思決定プロセスに関与するステップの順序を理解しやすくしています。複雑なプロセスを視覚化し、すべてのステップが考慮され、正しい順序で実行されることを保証するための有用なツールです。」
+                <br/><span style="color: red; font-weight: bold;">（注：右側の例では、モデルがフローチャートのテキスト "A team member suggests a project" を "${ } ^ { 1 1 } \mathrm { A }$ team member suggests a project" と誤って読み取っている箇所があり、赤で強調されています。これはOCRの潜在的な課題を示しています。）</span></p>
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-lightbulb"></i> 分析: フローチャートの構造、各要素の意味、プロセスの流れを概ね正確に説明していますが、一部テキストの誤読（赤字箇所）が見られます。</p>
+</div>
+</div>
+<p class="reference" style="text-align: center;">画像とプロンプトは[122]から引用されています。</p>
+</div>
+<img alt="Fig. 16: Examples testing MM1 ability at reasoning across images and texts." src="multi_image_temperature_estimation.jpg" style="width: 90%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-thermometer-half"></i> 図16: MM1の複数画像とテキストにまたがる推論能力のテスト例</p>
+<p>この図は、MM1-30B-Chatモデルが、複数の異なる画像（A: ビーチの傘、B: 雪上を飛ぶ飛行機、C: 野原で草を食む動物）を見て、それぞれの状況から気温を摂氏で推定し、その理由を説明する能力をテストしています。</p>
+<p><strong>ユーザー</strong>: 「いくつかの写真を見せますので、私の質問に答えてください。A: B: C: 各画像の温度を摂氏で推定してください。また、理由も述べてください。」</p>
+<p><strong>MM1-30B-Chat (Ours)</strong>:</p>
+<ul>
+<li><span class="highlight">ビーチの傘の画像</span>: 25-30℃。傘が立てられており、人々がビーチにいることから、暖かく晴れた日であることを示唆しています。</li>
+<li><span class="highlight">雪の上を飛ぶ飛行機の画像</span>: -20〜-30℃。飛行機が雪に覆われた地域の上を飛んでおり、地上には車両があることから、寒い冬の日であることを示しています。</li>
+<li><span class="highlight">野原で草を食む動物の画像</span>: 15-20℃。動物が草を食んでおり、これは通常穏やかな気象条件で起こります。草が緑色であることも、温暖な気候を示唆しています。</li>
+</ul>
+<p><i class="fas fa-thumbs-up"></i> <strong>分析</strong>: MM1は各画像の視覚的特徴（傘、雪、緑の草、動物の行動など）を捉え、それらと一般的な気象知識を結びつけて、妥当な温度範囲とその根拠を提示できています。これは、複数の視覚情報と常識的な知識を統合して推論する能力を示しています。</p>
+<p class="reference">画像はCOCO 2014検証セット[72]およびMMMU開発セット[128]から引用されています。</p>
+</div>
+<img alt="Fig. 17: Examples testing MM1 ability to follow instructions across multiple images and few shots." src="multi_image_instruction_following.jpg" style="width: 70%; margin: 20px auto; display: block;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tasks"></i> 図17: MM1の複数画像にわたる指示追従能力とFew-shotでのスタイル/タスク追従能力テスト</p>
+<p>この図は、MM1-30B-Chatモデルの2つの異なる側面をテストする例を示しています。</p>
+<p><strong>上段 (複数画像にわたる指示追従)</strong>:</p>
+<ul>
+<li><strong>ユーザー</strong>: 「画像A: (トーマスのケーキ) 画像B: (別の誕生日ケーキ) 各画像について、ケーキに表示されている数字を述べてください。そして合計を返してください。」</li>
+<li><strong>MM1-30B-Chat (Ours)</strong>: 「最初の画像はケーキに3という数字が表示されており、2番目の画像はケーキに4という数字が表示されています。合計は7です。」</li>
+<li><i class="fas fa-check-circle"></i> <strong>分析</strong>: 複数の画像を個別に認識し（数字のOCR）、それらの情報に基づいて指示された計算（合計）を正しく実行できています。</li>
+</ul>
+<p><strong>下段 (Few-shotでのスタイル/タスク追従)</strong>:</p>
+<p>左側の例:</p>
+<ul>
+<li><strong>ユーザー</strong>: (赤い風船の画像) 「風船の色は何ですか？」</li>
+<li><strong>MM1の思考/内部処理 (例示)</strong>: ユーザーは風船の色を尋ね、特定の色名と絵文字で答えるスタイルを期待している。</li>
+<li><strong>MM1</strong>: 「色は🔴 R_E_D 🔴✨」 (2番目、3番目の風船も同様の形式で応答)</li>
+<li><i class="fas fa-check-circle"></i> <strong>分析</strong>: 最初の例（プロンプトには明示されていないが、Few-shotの文脈として与えられたと推測される）の応答スタイル（色名 + 絵文字）を学習し、後続の同様の質問に対してもそのスタイルを一貫して適用できています。</li>
+</ul>
+<p>右側の例:</p>
+<ul>
+<li><strong>ユーザー</strong>: (文字「M」の画像) 「画像を見せて、画像を180度回転させたときに表示される文字または数字を予測する必要があります。」</li>
+<li><strong>MM1の思考/内部処理 (例示)</strong>: ユーザーは画像内の文字を180度回転させた結果を求めている。</li>
+<li><strong>MM1</strong>: 「W」 (次の数字「6」の画像に対しても同様に回転後の「9」と応答)</li>
+<li><i class="fas fa-check-circle"></i> <strong>分析</strong>: 与えられたタスク（180度回転後の文字/数字の予測）を理解し、後続の異なる入力に対しても同じタスクを実行できています。</li>
+</ul>
+<p class="reference">画像はCOCO 2014検証セット[72]および著者らから提供されています。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-users"></i> MM1-30B-Chat (Ours):</h4>
+<div class="content-box">
+<p>このセクション（図11から図17）で提示された「MM1-30B-Chat (Ours):」というラベルが付いた応答は、本論文で開発された300億パラメータを持つMM1モデルの教師ありファインチューニング版（Chatモデル）が出力したものです。これらの例は、モデルの多岐にわたる能力、例えば画像の理解、テキスト生成、論理的推論、指示追従などを具体的に示しています。ユーザーからのプロンプト（画像とテキストの組み合わせ）に対して、MM1-30B-Chatがどのように応答するかを実際に見ることで、その性能と特性を質的に評価することができます。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-award"></i> E Author Contributions and Acknowledgements</h3>
+<p class="content-box">このセクションでは、本研究論文の完成に貢献した著者たちの役割分担と、研究を支援した人々や機関への謝辞を記載しています。学術研究においては、貢献の明確化と協力者への感謝が非常に重要です。🤝🎖️</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="font-size:1em; color: var(--color-dark); border-left: 3px solid var(--color-primary);"><i class="fas fa-user-tie"></i> First Authors (筆頭著者)</h4>
+<ul class="unstyled-list">
+<li><strong>Brandon McKinzie</strong>: 多モーダル事前学習の設計、実装、実験を主導。多モーダル評価基盤の設計と実装を共同主導。全体的な方向性を共同設定。論文を共同執筆。</li>
+<li><strong>Zhe Gan</strong>: SFTの設計、実装、実験を主導。取り組みを共同開始。全体的な方向性を共同設定。論文を共同執筆。</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="font-size:1em; color: var(--color-dark); border-left: 3px solid var(--color-primary);"><i class="fas fa-users-cog"></i> Core Authors (主要著者)</h4>
+<ul class="unstyled-list">
+<li><strong>Jean-Philippe Fauconnier</strong>: 多モーダル評価基盤の設計と実装を共同主導、モデル評価、モデル実装、多モーダル事前学習およびSFT実験を支援。</li>
+<li><strong>Sam Dodge</strong>: SFT実験、データ混合、多モーダル評価基盤を支援。</li>
+<li><strong>Bowen Zhang</strong>: 取り組みを共同開始、画像エンコーダを学習、基盤を支援。</li>
+<li><strong>Philipp Dufter</strong>: モデル実装、評価、実験を支援。</li>
+<li><strong>Dhruti Shah</strong>: インターリーブドSFTを実装、実験を支援。</li>
+<li><strong>Xianzhi Du</strong>: 多モーダル事前学習、SFT、および基盤となるLLMのためのMoEを実装し学習。</li>
+<li><strong>Peter Grasch</strong>: 実験を助言・分析、多モーダル評価基盤の設計と実装を共同主導、論文を共同執筆。</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="font-size:1em; color: var(--color-dark); border-left: 3px solid var(--color-secondary);"><i class="fas fa-user-friends"></i> Further Authors (その他の著者)</h4>
+<p>データ処理、テキストベース評価基盤、MoEモデルの実装と実験、データセット作成とフィルタリング、VLコネクタの実装、パックされた画像テキストペアとインターリーブドキュメントの事前学習サポート、基盤となるLLMの設計・実装・学習など、多岐にわたる貢献をしました。</p>
+<ul class="unstyled-list">
+<li>Futang Peng, Floris Weers, Haotian Zhang, Anton Belyi, Karanjeet Singh, Doug Kang, Ankur Jain, Hongyu Hè, Max Schwarzer, Tom Gunter, Xiang Kong, Aonan Zhang, Jianyu Wang, Chong Wang, Nan Du, Tao Lei, Sam Wiseman, Guoli Yin, Mark Lee, Zirui Wang, Ruoming Pang.</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="font-size:1em; color: var(--color-dark); border-left: 3px solid var(--color-accent1);"><i class="fas fa-user-graduate"></i> Senior Authors (シニア著者)</h4>
+<ul class="unstyled-list">
+<li><strong>Alexander Toshev</strong>: 全体的な方向性を共同設定、実験を助言・分析、論文を共同執筆。</li>
+<li><strong>Yinfei Yang</strong>: 取り組みを共同開始、全体的な方向性を共同設定、実験を助言・分析、論文を共同執筆。</li>
+</ul>
+</div>
+</div>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-hands-helping"></i> Acknowledgements (謝辞)</p>
+<p>著者らは、貴重な指導、提案、フィードバックを提供してくれた多くの研究者（Vaishaal Shankar氏他多数）、指示チューニングに関する協力（Chen Chen氏、Qibin Chen氏）、入力パイプラインとデータ処理の支援（Maitreyi Kunnavakkam Vinjimur氏他）、AXLearn基盤と初期LLM作業の支援（Tom Nickson氏、Michael Tu氏）、データセット作成とフィルタリングの支援（Varsha Mohan Paidi氏）、実験追跡とモデル評価のための内部Weights &amp; Biasesインスタンスの支援（Esteban Gonzalez氏他、特にVenkata Yerneni氏）に感謝しています。</p>
+</div>
+</div>
+</div>
+</body>
+</html>
