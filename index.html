@@ -17,15 +17,6 @@
             text-align: center;
             padding: 2rem;
         }
-        nav {
-            background-color: #34495e;
-            padding: 1rem;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 0 1rem;
-        }
         main {
             max-width: 800px;
             margin: 2rem auto;
@@ -36,15 +27,6 @@
             padding: 1rem;
             margin-bottom: 1rem;
             border-radius: 5px;
-        }
-        footer {
-            background-color: #2c3e50;
-            color: white;
-            text-align: center;
-            padding: 1rem;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
         }
     </style>
 </head>
@@ -65,43 +47,20 @@ gtag('config', 'G-N7SLXFTVBP');
         <p>Making Research Papers Accessible to Everyone</p>
     </header>
 
-    <nav>
-        <a href="#home">Home</a>
-        <a href="#about">About</a>
-        <a href="#papers">Papers</a>
-        <a href="#contact">Contact</a>
-    </nav>
-
     <main>
-        <section id="papers">
+        <section>
             <h2>Recent Paper Explanations</h2>
             
             <div class="paper-card">
-                <h3>Attention Is All You Need</h3>
-                <p>Authors: Vaswani et al.</p>
-                <p>Simple Explanation: This paper introduces the Transformer model, which revolutionized natural language processing by using self-attention mechanisms instead of recurrent neural networks.</p>
-                <button>Read More</button>
+                <h3>Papers</h3>
+                <ul>
+                    <li><a href="/testpaper">Test Paper</a></li>
+                    <li><a href="/">Main Paper</a></li>
+                </ul>
             </div>
 
-            <div class="paper-card">
-                <h3>Deep Residual Learning for Image Recognition</h3>
-                <p>Authors: He et al.</p>
-                <p>Simple Explanation: This paper presents ResNet, which solved the problem of training very deep neural networks by introducing skip connections.</p>
-                <button>Read More</button>
-            </div>
-
-            <div class="paper-card">
-                <h3>BERT: Pre-training of Deep Bidirectional Transformers</h3>
-                <p>Authors: Devlin et al.</p>
-                <p>Simple Explanation: BERT improved language understanding by training a model to predict missing words in any direction, leading to better comprehension of context.</p>
-                <button>Read More</button>
-            </div>
         </section>
     </main>
-
-    <footer>
-        <p>&copy; 2024 Paper2Explainer. All rights reserved.</p>
-    </footer>
 </body>
 </html>
 
