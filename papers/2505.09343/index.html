@@ -1,0 +1,2430 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Insights into DeepSeek-V3: Scaling Challenges and Reflections on Hardware for AI Architectures解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+</head>
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">Insights into DeepSeek-V3: Scaling Challenges and Reflections on Hardware for AI Architectures</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-file-alt"></i> Abstract</h2>
+<!-- 主な目的と論旨 -->
+<div class="bubble-box" style="border-color: var(--color-primary); margin-bottom: 25px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; color: var(--color-dark);">
+            このセクションでは、大規模言語モデル (LLM) の急速な進化に伴い顕在化した<span class="keyword">ハードウェアの限界</span>と、それに対する<span class="keyword">DeepSeek-V3</span>という新しいモデルとAIインフラにおける革新的な解決策、そして将来のAIハードウェア設計への提言を概説します。
+            一言で言うと<span class="highlight">「LLMの成長痛(ハードウェアの壁)を、賢いモデル設計とインフラで乗り越え、未来のAIシステムへの道筋を示す」</span>というお話です。 🚀
+        </p>
+</div>
+<!-- 背景: LLMのスケーリングとハードウェアの限界 -->
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> LLMスケーリングの現状とハードウェアの課題</h3>
+<p>近年、<span class="keyword">大規模言語モデル (LLMs)</span> 🧠💬 は目覚ましい勢いで進化・巨大化しています。しかし、この急速なスケールアップは、現在の<span class="highlight">ハードウェアアーキテクチャ</span>が抱える深刻な限界を浮き彫りにしました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-memory fa-2x" style="color: var(--color-secondary);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; text-align: center; color: var(--color-secondary);">メモリ容量の制約 💾</h4>
+<p style="font-size: 13px; text-align: center;">モデルが大きくなるにつれて、必要なメモリも爆発的に増加します。しかし、GPUなどに搭載される高速メモリ(HBM)の容量増加は、この需要に追いついていません。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-bolt fa-2x" style="color: var(--color-accent1);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; text-align: center; color: var(--color-accent1);">計算効率の限界 ⚡️</h4>
+<p style="font-size: 13px; text-align: center;">巨大なモデルの計算処理には膨大な計算能力が必要ですが、既存のハードウェアでは効率的に処理しきれない場面が増えています。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-network-wired fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; text-align: center; color: var(--color-accent2);">相互接続帯域幅の不足 ↔️</h4>
+<p style="font-size: 13px; text-align: center;">多数のGPU間でデータをやり取りするための通信路 (インターコネクト) の帯域幅が、増大するデータ量に対して不足気味です。</p>
+</div>
+</div>
+<p style="text-align: center; margin-top: 15px; font-family: 'Yomogi', cursive;">これらの課題は、LLMのさらなる発展を阻む<span class="keyword">「大きな壁」</span>🚧として立ちはだかっています。</p>
+</div>
+<div class="arrow-connector"></div>
+<!-- DeepSeek-V3の紹介 -->
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> DeepSeek-V3: ハードウェアとモデルの協調設計による解決策</h3>
+<p><span class="keyword">DeepSeek-V3</span> ✨ は、これらの困難な課題に立ち向かうために開発された最先端のモデルです。特筆すべきは、<span class="highlight">2,048基ものNVIDIA H800 GPU</span> <i class="fas fa-microchip" style="color: var(--color-primary);"></i> を用いて訓練されたという点です。</p>
+<div class="framework-box" style="border-color: var(--color-primary); background-color: rgba(74, 111, 165, 0.05);">
+<p class="framework-title" style="font-family: 'Kaisei Decol', serif; font-size: 17px; text-align:center;">
+<i class="fas fa-handshake"></i> <strong>ハードウェアを意識したモデル協調設計 (Hardware-Aware Model Co-design)</strong>
+</p>
+<p style="font-family: 'Yomogi', cursive;">DeepSeek-V3は、単にモデルを大きくするだけでなく、使用するハードウェアの特性（例えば、NVIDIA H800 GPUのアーキテクチャや性能）を深く理解し、それに最適化されたモデル設計を行う<span class="keyword">「協調設計」</span>というアプローチを核心に据えています。この戦略により、前述のハードウェアの限界に効果的に対処し、非常に大規模なモデルでありながら<span class="highlight">コスト効率の良い訓練と推論</span>💰✅ を実現しています。これは、限られたリソースで最大のパフォーマンスを引き出すための賢い工夫と言えるでしょう。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- 本論文の内容: DeepSeek-V3/R1のアーキテクチャとAIインフラ -->
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> DeepSeek-V3/R1 のアーキテクチャとAIインフラの詳細分析</h3>
+<p>本論文では、<span class="keyword">DeepSeek-V3/R1</span> モデルアーキテクチャと、それを支えるAIインフラストラクチャについて、詳細な分析を行っています。特に、以下の主要な<span class="highlight">イノベーション（技術革新）</span>💡が、その成功の鍵を握っています。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-brain" style="color: var(--color-primary);"></i><i class="fas fa-compress-alt" style="color: var(--color-primary); margin-left: 5px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-primary);">Multi-head Latent Attention (MLA)</h4>
+<p style="font-size: 13px;">アテンション機構において、複数のアテンションヘッドが捉えた情報を、より小さな「潜在ベクトル」へと圧縮する技術です。これにより、特に推論時に大量に消費される<span class="keyword">Key-Valueキャッシュのメモリ使用量を大幅に削減</span>し、メモリ効率を向上させます。</p>
+<span class="badge blue"><i class="fas fa-memory"></i> メモリ効率UP</span>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-users-cog" style="color: var(--color-secondary);"></i><i class="fas fa-random" style="color: var(--color-secondary); margin-left: 5px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-secondary);">Mixture of Experts (MoE) アーキテクチャ</h4>
+<p style="font-size: 13px;">モデル内に多数の「専門家（Expert）」ネットワークを用意し、入力トークンに応じて最適な専門家サブセットを選択的に活性化させるアーキテクチャです。これにより、モデル全体のパラメータ数を増やしつつ、トークンあたりの<span class="keyword">計算コストと通信量のバランスを最適化</span>し、巨大モデルの効率的な運用を可能にします。</p>
+<span class="badge orange"><i class="fas fa-balance-scale"></i> 計算・通信最適化</span>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-sort-numeric-down" style="color: var(--color-accent1);"></i><i class="fas fa-cogs" style="color: var(--color-accent1); margin-left: 5px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent1);">FP8混合精度訓練</h4>
+<p style="font-size: 13px;">訓練プロセスにおいて、従来の16ビット浮動小数点数(BF16やFP16)よりもさらにデータサイズが小さい<span class="keyword">8ビット浮動小数点数 (FP8)</span> を活用する技術です。これにより、計算負荷とメモリ使用量を大幅に削減し、<span class="highlight">ハードウェア（特にGPUのTensor Core）の計算能力を最大限に引き出す</span>ことができます。</p>
+<span class="badge" style="background-color: var(--color-accent1);"><i class="fas fa-microchip"></i> ハードウェア活用</span>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-sitemap" style="color: var(--color-accent2);"></i><i class="fas fa-route" style="color: var(--color-accent2); margin-left: 5px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent2);">Multi-Plane Network Topology</h4>
+<p style="font-size: 13px;">AIクラスタ内のGPU間通信を効率化するためのネットワーク構成です。複数の独立したネットワークプレーン（通信経路の層）を設けることで、<span class="keyword">クラスタレベルでのネットワークオーバーヘッド（通信遅延やボトルネック）を最小限に抑制</span>し、大規模分散学習の効率を高めます。</p>
+<span class="badge purple"><i class="fas fa-network-wired"></i> 通信オーバーヘッド削減</span>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- 将来のハードウェアへの提言 -->
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-microchip"></i> 将来のハードウェア設計への提言 🛠️</h3>
+<p>DeepSeek-V3の開発過程で直面した<span class="keyword">ハードウェアのボトルネック（性能の制約箇所）</span>に基づき、本論文は学術界および産業界の専門家と共に、将来のAIハードウェアが目指すべき方向性について幅広く議論しています。具体的には、以下のような提案が含まれます。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="info-card glass-card" style="border-left: 5px solid var(--color-accent3);">
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent3);"><i class="fas fa-calculator"></i> 精密な低精度計算ユニット</h4>
+<p style="font-size: 13px;">FP8のような低精度データフォーマットでの計算を、精度を損なわずに、より効率的に実行できる専用計算ユニットの必要性。例えば、FP8の演算結果をより高い精度で一時的に保持できるアキュムレータなど。</p>
+</div>
+<div class="info-card glass-card" style="border-left: 5px solid var(--color-primary);">
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-primary);"><i class="fas fa-expand-arrows-alt"></i> スケールアップとスケールアウトの融合</h4>
+<p style="font-size: 13px;">単一ノード内の性能向上（スケールアップ）と、複数ノード連携による性能向上（スケールアウト）の境界を曖昧にし、シームレスに連携できるアーキテクチャ。例えば、ノード内・ノード間の通信が統一的に扱えるような仕組み。</p>
+</div>
+<div class="info-card glass-card" style="border-left: 5px solid var(--color-secondary);">
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-secondary);"><i class="fas fa-shipping-fast"></i> 低遅延通信ファブリックの革新</h4>
+<p style="font-size: 13px;">GPUやアクセラレータ間のデータ転送遅延を極限まで小さくする新しい通信技術（ファブリック）。光通信技術の活用や、通信プロトコルの最適化などが考えられます。</p>
+</div>
+</div>
+<div class="note-box" style="background-color: rgba(74, 111, 165, 0.08); border-left: 3px solid var(--color-primary); margin-top: 20px;">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-lightbulb"></i> 重要な示唆</p>
+<p>これらの提案は、AIワークロード（AI関連の計算処理）の<span class="highlight">急速に増大する要求</span>に応えるためには、<span class="keyword">ハードウェアとモデルの協調設計</span>がいかに重要であるかを強調しています。単にハードウェアの性能を上げるだけでなく、AIモデルの特性を理解し、それに最適化されたハードウェアを設計すること、逆にハードウェアの制約を考慮したモデルを開発することが、次世代AIシステムの革新に向けた<span class="highlight">実践的な設計図（ブループリント）</span>🗺️ となるのです。</p>
+</div>
+</div>
+<!-- 論文の貢献と意義 -->
+<div class="bubble-box" style="border-color: var(--color-accent1); margin-top: 25px; background-color: rgba(92, 184, 92, 0.05);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; text-align: center; color: var(--color-dark);">
+<i class="fas fa-trophy" style="color: var(--color-accent1);"></i> <strong>まとめると...</strong> <br/>
+            DeepSeek-V3は、既存ハードウェアの限界を賢く乗り越え、大規模AIモデルの訓練・推論をより効率的かつ低コストで行う道を示しました。そして、この経験から得られた知見は、<span class="keyword">将来のAIシステムを設計する上で非常に価値のある指針</span>となるでしょう。AIの進化は、ハードウェアとソフトウェアが手を取り合って進むことで加速するのです！🤝
+        </p>
+</div>
+</div>
+<div class="section-card" id="CCS_Concepts">
+<h2 class="section-title"><i class="fas fa-sitemap"></i> CCS Concepts</h2>
+<div class="content-box" style="text-align: center; margin-bottom: 25px; padding: 10px; background-color: rgba(240, 248, 255, 0.7); border-radius: 8px; border: 1px dashed var(--color-primary);">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.2em; color: var(--color-dark); margin:0;">
+            この論文がコンピュータサイエンスの広大な世界の中で、どの<span class="highlight">専門分野</span>に位置づけられるのか？ 🤔<br/>
+            それをキーワードで指し示すのが、この <strong class="keyword" style="font-size: 1.1em;">CCS Concepts</strong> です！ 🧭
+        </p>
+</div>
+<div class="glass-card" style="padding: 25px; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(8px);">
+<div style="text-align: center; margin-bottom: 25px; padding: 10px; background-color: var(--color-light); border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 1.3em; font-weight: bold; margin:0; color: var(--color-dark);">
+<span style="color: var(--color-primary);">•</span> Computer systems organization <span style="color: var(--color-secondary); font-size: 1.2em;">$$</span> Architectures<span style="color: var(--color-primary);">.</span>
+</p>
+</div>
+<div class="info-grid" style="grid-template-columns: 1fr; gap: 20px;">
+<div class="info-card" style="border-left: 7px solid var(--color-primary); background-color: rgba(74, 111, 165, 0.03); box-shadow: 0 3px 6px rgba(74, 111, 165, 0.1);">
+<h3 class="subsection-title" style="margin-top:0; border-left: none; padding-left:0; color: var(--color-primary); display: flex; align-items: center;">
+<span style="font-size: 1.8em; margin-right: 10px; line-height: 1;">💻</span>
+<span>Computer systems organization</span>
+</h3>
+<p style="font-family: 'Zen Kurenaido', sans-serif; line-height: 1.6;">
+                    これは、コンピュータシステムが<strong style="color: var(--color-primary); border-bottom: 2px dashed var(--color-accent3);">「全体としてどのように構成され、組織化されているか」</strong>を研究する大きな学問分野です。 🧩<br/>
+                    具体的には、CPU (中央処理装置)、メモリ、ストレージ (HDDやSSDなど)、入出力デバイス (キーボード、ディスプレイなど)、そしてそれらを相互接続するネットワークといった、コンピュータを成り立たせる様々な<span class="highlight">構成要素 (コンポーネント)</span> が、どのように連携し、一つの調和したシステムとして機能するのかを探求します。まるで、オーケストラの各楽器が指揮者のもとで一つの楽曲を奏でるように、システム全体の調和と効率を目指す分野と言えるでしょう。
+                </p>
+</div>
+<div style="text-align: center; margin: 5px 0; position: relative;">
+<i class="fas fa-arrow-down fa-2x" style="color: var(--color-gray);"></i>
+<div style="font-family: 'Yomogi', cursive; color: var(--color-gray); margin-top: 0px; background-color: rgba(230, 230, 230, 0.8); padding: 5px 10px; border-radius: 8px; display:inline-block; border: 1px dashed var(--color-gray); box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+<span style="font-weight: bold; font-size: 1.1em; color: var(--color-secondary);">$$</span> (下位の専門分野へ進むよ！)
+                </div>
+</div>
+<div class="info-card" style="border-left: 7px solid var(--color-secondary); background-color: rgba(255, 126, 95, 0.03); box-shadow: 0 3px 6px rgba(255, 126, 95, 0.1);">
+<h3 class="subsection-title" style="margin-top:0; border-left: none; padding-left:0; color: var(--color-secondary); display: flex; align-items: center;">
+<span style="font-size: 1.8em; margin-right: 10px; line-height: 1;">🏗️</span>
+<span>Architectures</span>
+</h3>
+<p style="font-family: 'Zen Kurenaido', sans-serif; line-height: 1.6;">
+                    そして、「Computer systems organization」という大きな枠組みの中で、この論文が特に焦点を当てているのが<strong style="color: var(--color-secondary); border-bottom: 2px dashed var(--color-accent3);">「アーキテクチャ」</strong>、つまりコンピュータシステムの<strong style="color: var(--color-secondary);">設計思想や基本構造、その青写真</strong>です。 🗺️<br/>
+                    これは、単に部品を寄せ集めるのではなく、それらがどのような<span class="highlight">設計原理</span>に基づいて効率的に、また特定の目的（この論文の場合はAI、特にLLMの処理）を達成するために最適に配置され、連携されるべきか、という問いに答える分野です。例えば、CPUの命令セットアーキテクチャ (x86, ARMなど)、メモリシステム（キャッシュ階層など）、並列処理を実現するためのマルチコアアーキテクチャ、そして近年非常に重要な<span class="highlight">AIアクセラレータ (GPU, TPUなど) のような特定用途向けアーキテクチャの設計</span>などがこれに含まれます。
+                </p>
+</div>
+</div>
+</div>
+<div class="note-box" style="margin-top: 30px; background-color: rgba(92, 184, 92, 0.08); border-left-color: var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-link"></i> この論文の核心との強いつながり 💡</div>
+<p style="font-family: 'Zen Kurenaido', sans-serif; line-height: 1.6;">
+            この論文 <em>"Insights into DeepSeek-V3: Scaling Challenges and Reflections on Hardware for AI Architectures"</em> は、まさにこのCCS分類が指し示すど真ん中のテーマを扱っています。
+        </p>
+<ol class="unstyled-list" style="list-style: none; padding-left: 0; font-family: 'Yomogi', cursive;">
+<li style="background-color: rgba(255,255,255,0.7); padding: 10px; margin-bottom:8px; border-radius: 6px; border-left: 4px solid var(--color-primary); display: flex; align-items: center;">
+<span style="font-size: 1.5em; margin-right:10px;">1️⃣</span>
+<span><span class="keyword">DeepSeek-V3</span> という超巨大な言語モデル (LLM) を、もっと賢く、もっと速く、もっと効率的に動かすためには…</span>
+</li>
+<li style="background-color: rgba(255,255,255,0.7); padding: 10px; margin-bottom:8px; border-radius: 6px; border-left: 4px solid var(--color-secondary); display: flex; align-items: center;">
+<span style="font-size: 1.5em; margin-right:10px;">2️⃣</span>
+<span>コンピュータシステム全体の<strong class="highlight" style="background-color: rgba(74, 111, 165, 0.2);">構成 (organization)</strong> をどう工夫し、最適化すれば良いのか？ (例: メモリ、計算資源、ネットワークのバランス)</span>
+</li>
+<li style="background-color: rgba(255,255,255,0.7); padding: 10px; margin-bottom:8px; border-radius: 6px; border-left: 4px solid var(--color-accent2); display: flex; align-items: center;">
+<span style="font-size: 1.5em; margin-right:10px;">3️⃣</span>
+<span>特に、AI処理に特化した<strong class="highlight" style="background-color: rgba(255, 126, 95, 0.2);">ハードウェアアーキテクチャ (architectures)</strong> はどうあるべきか？ (例: 低精度計算ユニット、通信ファブリックの革新)</span>
+</li>
+</ol>
+<p style="font-family: 'Zen Kurenaido', sans-serif; line-height: 1.6; margin-top: 15px;">
+            つまり、ソフトウェア (LLM) とハードウェア (AIシステム) を<strong class="keyword">密接に連携させて設計する「共設計 (co-design)」</strong>の観点から、既存ハードウェアの限界を克服し、次世代AIシステムのための新しいハードウェア設計の方向性を探る論文である、ということがこのCCS Conceptsから読み取れるわけですね！ 🚀🧠🔧
+        </p>
+</div>
+<div style="margin-top:20px; padding: 15px; background-color: rgba(255,255,255,0.7); border-radius: 10px; border: 1px solid var(--color-accent3); box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.1em; color: var(--color-dark); margin:0;">
+<i class="fas fa-search" style="color:var(--color-accent3);"></i> <strong>CCS Concepts</strong> は、研究者が自分の論文を適切な分野に分類し、他の研究者が関連論文を見つけやすくするための、いわば<span class="highlight" style="background-color:rgba(255, 213, 79, 0.4);">学術論文の「住所」や「タグ」</span>のような役割を果たします！
+        </p>
+</div>
+</div>
+<div class="section-card" id="Keywords">
+<h2 class="section-title"><i class="fas fa-key"></i>Keywords</h2>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 18px; margin-bottom: 30px; color: var(--color-dark);">
+        この論文の核心をギュッと凝縮した<span class="highlight">キーワード</span>たちを紹介するよ！<br/>
+        これらを理解すれば、DeepSeek-V3の凄さや、AIハードウェアの未来が見えてくるはずだ。さあ、探求の旅へ出発だ！ 🚀✨
+    </p>
+<div class="info-grid">
+<!-- Large Language Model -->
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-brain" style="color: var(--color-primary);"></i>Large Language Model (LLM)</h3>
+<div class="bubble-box" style="margin-top:25px;">
+<p><span class="keyword">大規模言語モデル (LLM)</span> 📚🧠💬 とは、たくさんの文章を読んで、人間みたいに言葉を操れるようになったAIのことだよ。</p>
+<ul class="unstyled-list" style="padding-left: 15px; margin-top:10px;">
+<li>📝 <span class="highlight">特徴:</span> 大量のテキストデータで学習し、文法や文脈を理解。</li>
+<li>🎯 <span class="highlight">能力:</span> 質問応答、文章生成、翻訳、要約など、多岐にわたる言語タスクをこなせる。</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title"><i class="fas fa-paperclip"></i>論文での位置づけ</p>
+<p>この論文のスター、<span class="keyword">DeepSeek-V3</span>自体がLLMなんだ！論文では、このLLMをどうやって<span class="highlight">効率よく、かつ大規模に</span>訓練したり使ったりするかの挑戦と工夫が語られているよ。特にコストパフォーマンスが重視されている点がポイントだね。💰</p>
+</div>
+</div>
+</div>
+<!-- Mixture-of-Experts -->
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-users-cog" style="color: var(--color-secondary);"></i>Mixture-of-Experts (MoE)</h3>
+<div class="bubble-box" style="margin-top:25px;">
+<p><span class="keyword">混合エキスパートモデル (MoE)</span> 🧩🧑‍🏫🚀 は、たくさんの「専門家（エキスパート）」AIを集めて、タスクに応じて最適な専門家を選んで働いてもらう賢い仕組みさ！</p>
+<ul class="unstyled-list" style="padding-left: 15px; margin-top:10px;">
+<li>💡 <span class="highlight">仕組み:</span> 小さなニューラルネットワーク（エキスパート）を複数持ち、入力に応じて一部のエキスパートだけを活性化。</li>
+<li>📈 <span class="highlight">利点:</span> モデル全体のパラメータ数を爆発的に増やせるのに、計算コストは抑えられる。つまり、賢いけど省エネ！</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title"><i class="fas fa-paperclip"></i>論文での位置づけ</p>
+<p>DeepSeek-V3では、<span class="keyword">DeepSeekMoE</span>という独自のMoEアーキテクチャを採用している。これのおかげで、モデルの規模を大きくしつつも、訓練や推論に必要な計算リソースをスマートに管理。コスト効率とパフォーマンスの両立に大きく貢献しているんだ！🛠️</p>
+</div>
+</div>
+</div>
+<!-- Deep Learning -->
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-layer-group" style="color: var(--color-accent1);"></i>Deep Learning (深層学習)</h3>
+<div class="bubble-box" style="margin-top:25px;">
+<p><span class="keyword">深層学習</span> 🧠🔗📊 は、人間の脳の神経回路網をヒントに作られた「ニューラルネットワーク」を何層も深く重ねて、コンピュータがデータから自動で学習する技術だよ。</p>
+<ul class="unstyled-list" style="padding-left: 15px; margin-top:10px;">
+<li>🏗️ <span class="highlight">基本原理:</span> 多層の処理ユニットを通じて、データ中の複雑なパターンや特徴を階層的に抽出・学習する。</li>
+<li>🌟 <span class="highlight">応用分野:</span> 画像認識、音声認識、自動運転、そしてLLMも、この深層学習の成果なんだ。</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title"><i class="fas fa-paperclip"></i>論文での位置づけ</p>
+<p>LLMであるDeepSeek-V3の設計、膨大なデータからの学習、そしてその驚異的な能力は、すべて<span class="keyword">深層学習</span>の技術が土台になっている。論文で議論されるモデル構造の工夫や学習方法の最適化も、深層学習の最先端の研究領域そのものだよ。まさにAI革命のエンジンだね！🔥</p>
+</div>
+</div>
+</div>
+<!-- FP8 Mixed-Precision Training -->
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-calculator" style="color: var(--color-accent2);"></i>FP8 Mixed-Precision Training</h3>
+<div class="bubble-box" style="margin-top:25px;">
+<p><span class="keyword">FP8混合精度学習</span> 💾⚙️⚡ とは、モデルを訓練する際に、計算の一部を軽い8ビット浮動小数点数（FP8）で行うテクニックさ！</p>
+<ul class="unstyled-list" style="padding-left: 15px; margin-top:10px;">
+<li>⚖️ <span class="highlight">バランス:</span> 計算速度向上とメモリ使用量削減のためFP8を使いつつ、精度が重要な部分はより高い精度（例: BF16, FP32）を維持する。</li>
+<li>🚀 <span class="highlight">効果:</span> 大規模モデルの訓練がより速く、より少ないリソースで可能になる。</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title"><i class="fas fa-paperclip"></i>論文での位置づけ</p>
+<p>DeepSeek-V3は、この<span class="keyword">FP8混合精度学習</span>を大規模モデルの訓練に積極的に取り入れたことで注目されているよ。NVIDIA Hopper GPUなどの最新ハードウェアが持つFP8計算能力をフルに活用し、訓練コストの大幅な削減と効率化を実現したんだ。賢くハードウェアを使いこなす秘訣の一つだね！💡</p>
+</div>
+</div>
+</div>
+<!-- Multi-Plane Network -->
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-network-wired" style="color: var(--color-accent3);"></i>Multi-Plane Network</h3>
+<div class="bubble-box" style="margin-top:25px;">
+<p><span class="keyword">マルチプレーンネットワーク</span> 🌐🔗🛡️ は、データ通信のための道路（ネットワーク経路）を複数本用意するようなイメージのネットワーク構造だよ。</p>
+<ul class="unstyled-list" style="padding-left: 15px; margin-top:10px;">
+<li>🛣️ <span class="highlight">構造:</span> 複数の独立した通信プレーン（層）で構成。各プレーンがトラフィックを分担する。</li>
+<li>💪 <span class="highlight">利点:</span> 一つの経路が混雑したり故障したりしても、他の経路で通信を継続できるため、大規模システム全体の通信効率と安定性（耐障害性）が向上する。</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title"><i class="fas fa-paperclip"></i>論文での位置づけ</p>
+<p>DeepSeek-V3を訓練するために使われたAIインフラでは、<span class="keyword">マルチプレーンネットワーク</span>（具体的にはMulti-Plane Fat-Treeトポロジー）が採用されたんだ。これにより、2000台を超えるGPUたちが効率的に連携し、巨大なモデルの学習に必要な大量のデータをスムーズにやり取りできた。まさに大規模AIを支える神経網だね！🕸️</p>
+</div>
+</div>
+</div>
+<!-- Co-Design -->
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-drafting-compass" style="color: var(--color-primary);"></i>Co-Design (協調設計)</h3>
+<div class="bubble-box" style="margin-top:25px;">
+<p><span class="keyword">協調設計 (Co-Design)</span> 🤝💻⚙️ とは、AIモデルのようなソフトウェアと、それを動かすコンピュータシステム（ハードウェア）を、お互いの特性や要求を考慮しながら、一緒に設計開発していくアプローチだよ。</p>
+<ul class="unstyled-list" style="padding-left: 15px; margin-top:10px;">
+<li>🔄 <span class="highlight">プロセス:</span> ハードウェアの制約や能力がソフトウェア設計に影響を与え、同時にソフトウェアの要求が次世代ハードウェアの設計方針を導く、という相互作用。</li>
+<li>🎯 <span class="highlight">目標:</span> システム全体としての性能、効率、コストなどを最適化する。</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title"><i class="fas fa-paperclip"></i>論文での位置づけ</p>
+<p>この論文全体を貫く、非常に重要な設計思想がこの<span class="keyword">協調設計</span>だ！DeepSeek-V3は、まさにハードウェア（H800 GPUのFP8性能、NVLink帯域、ネットワーク特性など）を深く理解し、それに最適化された形でモデルアーキテクチャ（MLA、MoEの専門家ルーティング戦略など）や学習方法を開発した。このアプローチによって、限られたリソースで最大限の成果を引き出すことに成功しているんだ。未来のAIシステム開発のスタンダードになるかもしれないね！🌟</p>
+</div>
+</div>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 40px; padding: 25px; border: 2px dashed var(--color-primary); background-color: rgba(74, 111, 165, 0.03);">
+<p class="framework-title" style="text-align:center; font-family: 'Yomogi', cursive; font-size: 22px; color: var(--color-primary); border-bottom: none; margin-bottom:15px;">
+<i class="fas fa-link"></i> キーワードたちの素敵な関係性 <i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i>
+</p>
+<p style="text-align: center; font-size: 16px; line-height: 1.8; font-family: 'Zen Kurenaido', sans-serif;">
+            これらのキーワードは、それぞれが独立しているわけではなく、互いに深く結びついているんだ。<br/>
+            まるでパズルのピースのように、組み合わさってDeepSeek-V3という大きな絵を完成させているのさ！
+        </p>
+<div style="text-align: center; margin-top: 20px; font-size:16px; line-height:2.0; font-family: 'Zen Kurenaido', sans-serif;">
+<span class="badge blue" style="font-size:15px;">Deep Learning</span> (基礎技術) <i class="fas fa-arrow-right" style="color:var(--color-gray); margin: 0 5px;"></i>
+<span class="badge orange" style="font-size:15px;">Large Language Model</span> (開発対象)<br/>
+<i class="fas fa-cogs" style="color:var(--color-gray); margin:0 5px;"></i> 効率化技術として <span class="badge purple" style="font-size:15px;">Mixture-of-Experts</span> と <span class="badge yellow" style="color: var(--color-dark); font-size:15px;">FP8 Mixed-Precision Training</span> を活用。<br/>
+<i class="fas fa-server" style="color:var(--color-gray); margin:0 5px;"></i> これら全てを支えるのが <span class="badge" style="background-color: var(--color-accent1); color:white; font-size:15px;">Multi-Plane Network</span> を含むAIインフラ。<br/>
+<span style="font-size:28px; display:block; margin: 10px 0; color:var(--color-primary);">✨🤝✨</span>
+            そして、これら全てを統合し、最適化する設計哲学が <span class="badge" style="background-color: var(--color-secondary); color:white; font-size:15px;">Co-Design</span> なんだ！
+        </div>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 17px; margin-top: 20px; color: var(--color-dark);">
+            DeepSeek-V3の成功は、これらの要素が見事に調和した結果と言えるね！ 🎨🚀
+        </p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-lightbulb"></i>1 Introduction</h2>
+<p style="text-align: center; font-size: 16px; margin-bottom: 25px;">
+<span class="highlight">このセクションでは、論文の導入部として、大規模言語モデル（LLM）の進化の背景、本研究が取り組む課題、そして論文全体の構成について解説します。</span> 🚀
+    </p>
+<div class="bubble-box" style="margin-bottom: 20px;">
+<p>近年のAI技術、特に<span class="keyword">大規模言語モデル (LLM)</span> の発展は目覚ましく、私たちの生活や研究に大きな影響を与え始めています。しかし、その急速な進化は、既存のハードウェアアーキテクチャの限界を浮き彫りにし、<span class="keyword">メモリ容量</span>、<span class="keyword">計算効率</span>、<span class="keyword">相互接続帯域幅</span>といった課題を生んでいます。この論文では、DeepSeek-AIが開発した<span class="keyword">DeepSeek-V3</span>というモデルを例に、これらの課題にどのように取り組めるかを探求します。特に、ハードウェアを意識したモデルの<span class="highlight">協調設計 (Co-design)</span> が、コスト効率の良い大規模な訓練と推論を実現する鍵であることを示します。 🔑</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-history"></i>1.1 Background</h3>
+<div class="content-box">
+<p>✏️ 大規模言語モデル（LLMs）は、ここ数年で驚異的な進化を遂げてきました。この進化は、以下の3つの要素が相互に作用し合い、進んできた結果です。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.1);">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-primary);"></i>
+<p style="font-weight: bold; margin-top: 5px;">モデル設計の進歩</p>
+<p style="font-size: 12px;">より洗練されたアーキテクチャや学習手法</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1);">
+<i class="fas fa-microchip fa-2x" style="color: var(--color-secondary);"></i>
+<p style="font-weight: bold; margin-top: 5px;">計算能力の向上</p>
+<p style="font-size: 12px;">GPUなどの高性能ハードウェアの登場</p>
+</div>
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.1);">
+<i class="fas fa-database fa-2x" style="color: var(--color-accent1);"></i>
+<p style="font-weight: bold; margin-top: 5px;">データ利用可能性の増大</p>
+<p style="font-size: 12px;">大規模で多様なデータセットの整備</p>
+</div>
+</div>
+<p>📈 2024年には、以下のような画期的なモデルが登場し、その進歩は目覚ましいものがあります。</p>
+<ul class="unstyled-list" style="padding-left: 20px; margin-bottom: 15px; columns: 2;">
+<li><span class="badge blue">GPT-4o [59]</span></li>
+<li><span class="badge blue">LLaMa-3 [3]</span></li>
+<li><span class="badge blue">Claude 3.5 Sonnet [8]</span></li>
+<li><span class="badge blue">Grok-2 [73]</span></li>
+<li><span class="badge blue">Qwen2.5 [75]</span></li>
+<li><span class="badge blue">Gemini-2 [37]</span></li>
+<li><span class="badge purple">DeepSeek-V3 [26] (本論文の主役!)</span></li>
+</ul>
+<p>これらのモデルは、<span class="keyword">汎用人工知能 (AGI: Artificial General Intelligence)</span> の実現に向けたギャップをさらに縮めています。</p>
+<div class="definition-box" style="margin-top:15px; margin-bottom: 15px;">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説: 汎用人工知能 (AGI)</div>
+<p>AGIとは、人間が持つ知的なタスクのほぼ全てを理解し、学習し、実行できる能力を持つ仮説上の人工知能のことです。特定のタスクに特化した現在のAIとは異なり、広範な知識と適応能力を持つとされています。</p>
+</div>
+<p>📊 <span class="keyword">スケーリング則 (Scaling Laws) [45]</span> によれば、モデルのサイズ、訓練データ量、計算資源を増やすことで、モデルの性能が大幅に向上することが示されています。これは、AIの能力を前進させる上で<span class="highlight">スケーリングが極めて重要な役割</span>を果たすことを裏付けています。これらの発展は総じて、モデルサイズと計算能力のスケーリングが、より高いレベルの知能を解き放つ鍵と見なされる時代をもたらしました。</p>
+<div style="text-align: center; margin: 15px 0;">
+<div style="display: inline-block; padding: 10px; border: 2px dashed var(--color-primary); border-radius: 8px; background-color: #f0f8ff;">
+<span style="font-size: 1.2em; font-weight: bold; color: var(--color-primary);">スケーリング則</span><br/>
+<i class="fas fa-cubes" style="font-size: 1.5em; color: var(--color-accent1);"></i> モデルサイズ <i class="fas fa-plus" style="color: var(--color-secondary);"></i>
+<i class="fas fa-database" style="font-size: 1.5em; color: var(--color-accent1);"></i> 訓練データ <i class="fas fa-plus" style="color: var(--color-secondary);"></i>
+<i class="fas fa-server" style="font-size: 1.5em; color: var(--color-accent1);"></i> 計算資源 <br/>
+<i class="fas fa-arrow-down" style="font-size: 2em; color: var(--color-primary); margin: 5px 0;"></i><br/>
+<i class="fas fa-brain" style="font-size: 1.5em; color: var(--color-accent2);"></i> <span style="font-weight: bold;">モデル性能の大幅向上</span>
+</div>
+</div>
+<p>🧠 最近の進展として、以下のような推論モデルが登場しています。</p>
+<ul class="unstyled-list" style="padding-left: 20px; margin-bottom: 15px; columns: 2;">
+<li><span class="badge blue">OpenAI o1/o3 シリーズ [60, 61]</span></li>
+<li><span class="badge purple">DeepSeek-R1 [28] (DeepSeekの推論モデル)</span></li>
+<li><span class="badge blue">Claude-3.7 Sonnet [9]</span></li>
+<li><span class="badge blue">Gemini 2.5 Pro [38]</span></li>
+<li><span class="badge blue">Seed1.5-Thinking [68]</span></li>
+<li><span class="badge blue">Qwen3 [71]</span></li>
+</ul>
+<p>これらのモデルは、大規模アーキテクチャがもたらす利点だけでなく、<span class="highlight">推論効率の向上</span>、特に<span class="keyword">長文脈 (longer contexts)</span> の処理や、より<span class="keyword">深い推論 (greater reasoning depth)</span> を達成する必要性を示しています。これらの進歩は、より高速で効率的な推論の必要性を強調し、結果として計算資源への要求をますます増大させています。</p>
+<div class="challenge-box" style="margin-top:15px; margin-bottom: 15px;">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 課題: 計算資源への要求増大</div>
+<p>推論モデルが高度化するにつれて、より多くの計算パワーが必要になります。これは、特にリアルタイム応答や複雑な問題解決が求められる場合に大きな課題となります。</p>
+</div>
+<p>これらの課題に対応するため、<span class="keyword">Alibaba</span>、<span class="keyword">ByteDance</span>、<span class="keyword">Google</span>、<span class="keyword">xAI</span>、<span class="keyword">Meta</span> といった業界のリーダーたちは、数万から数十万もの <span class="keyword">GPU (Graphics Processing Units)</span> や <span class="keyword">TPU (Tensor Processing Units)</span> を備えた<span class="highlight">巨大な訓練クラスタ</span>を導入しています [33, 42, 43, 56, 62, 74]。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card" style="border-left: 5px solid var(--color-accent1);">
+<h4 style="color: var(--color-accent1);"><i class="fas fa-server"></i> 巨大訓練クラスタ</h4>
+<p>最先端モデルの開発を可能にする一方で、その<span class="highlight" style="background-color: rgba(255, 99, 71, 0.2);">莫大なコスト</span>は、小規模な研究チームや組織にとっては大きな参入障壁となっています。</p>
+</div>
+<div class="info-card" style="border-left: 5px solid var(--color-accent2);">
+<h4 style="color: var(--color-accent2);"><i class="fas fa-users"></i> オープンソーススタートアップ</h4>
+<p>このような障壁にもかかわらず、<span class="keyword">DeepSeek [23–26, 28]</span> や <span class="keyword">Mistral [41, 55]</span> のようなオープンソースのスタートアップも、最先端モデルの開発に努めています。</p>
+</div>
+</div>
+<p>特に <span class="keyword">DeepSeek</span> は、効果的な<span class="highlight">ソフトウェア・ハードウェア協調設計 (software-hardware co-design)</span> が、大規模モデルのコスト効率の良い訓練を可能にし、小規模チームにとっても競争の場を平等にすることを示してきました。</p>
+<div class="note-box" style="margin-top:15px; margin-bottom: 15px;">
+<div class="note-title"><i class="fas fa-puzzle-piece"></i> ソフトウェア・ハードウェア協調設計</div>
+<p>ソフトウェア（モデルアーキテクチャ、アルゴリズムなど）とハードウェア（GPU、ネットワークなど）を個別に最適化するのではなく、互いの特性を考慮しながら一緒に設計することで、システム全体の効率を最大化するアプローチです。</p>
+</div>
+<p>この伝統に基づき、<span class="keyword">DeepSeek-V3 [26]</span> は、コスト効率の良い訓練における新たなマイルストーンを示しています。わずか <span class="highlight">2,048基のNVIDIA H800 GPU</span> を活用することで、DeepSeek-V3は最先端の性能を達成しています。この成果は、以前に <span class="keyword">Fire-Flyer AI-HPC [7]</span> のコスト効率の良いアーキテクチャで実証されたように、実用的でスケーラブルなソリューションを通じてAIを進歩させるというコミットメントに沿ったものです。</p>
+<div style="text-align: center; margin: 20px 0;">
+<div style="display: inline-block; border: 2px solid var(--color-primary); border-radius: 10px; padding: 15px; background: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+<i class="fas fa-microchip fa-2x" style="color: var(--color-primary);"></i> <span style="font-size: 1.1em; font-weight: bold;">DeepSeek-V3</span> <i class="fas fa-rocket fa-2x" style="color: var(--color-secondary);"></i><br/>
+<p style="margin: 5px 0;">NVIDIA H800 GPU × 2,048基</p>
+<p style="margin: 5px 0;"><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 最先端の性能達成</p>
+<p style="margin: 5px 0;"><i class="fas fa-dollar-sign" style="color: var(--color-accent1);"></i> コスト効率の良い訓練</p>
+</div>
+</div>
+<p>DeepSeek-V3から得られた実践と洞察は、既存のハードウェアリソースを最大限に活用する方法を示しており、より広範なAIおよび<span class="keyword">HPC (High-Performance Computing)</span> コミュニティにとって貴重な教訓を提供します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-bullseye"></i>1.2 Objectives</h3>
+<div class="content-box">
+<p>🎯 この論文の目的は、DeepSeek-V3のアーキテクチャやアルゴリズムの詳細を繰り返すことではありません（それらは技術報告書[26]に詳述されています）。</p>
+<p>代わりに、本論文は<span class="highlight">ハードウェアアーキテクチャ</span>と<span class="highlight">モデル設計</span>という<span class="keyword">二元的視点 (dual perspective)</span> を採用し、コスト効率の良い大規模な訓練と推論を達成する上での両者の複雑な<span class="keyword">相互作用 (interplay)</span> を探求します。</p>
+<div style="text-align: center; margin: 20px 0;">
+<div style="display: flex; justify-content: space-around; align-items: center; padding: 10px; background-color: rgba(230, 247, 255, 0.7); border-radius: 10px; border: 1px solid var(--color-primary);">
+<div style="text-align: center;">
+<i class="fas fa-server fa-3x" style="color: var(--color-primary);"></i><br/>
+<span style="font-weight: bold;">ハードウェアアーキテクチャ</span>
+</div>
+<i class="fas fa-exchange-alt fa-2x" style="color: var(--color-accent1);"></i>
+<div style="text-align: center;">
+<i class="fas fa-brain fa-3x" style="color: var(--color-secondary);"></i><br/>
+<span style="font-weight: bold;">モデル設計</span>
+</div>
+</div>
+<p style="text-align: center; margin-top: 10px;">この<span class="keyword">相乗効果 (synergy)</span> を検証することで、性能やアクセシビリティを犠牲にすることなくLLMを効率的にスケーリングするための<span class="highlight">実践的な洞察 (actionable insights)</span> を提供することを目指します。</p>
+</div>
+<p>具体的には、本論文は以下の点に焦点を当てます：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 style="color: var(--color-primary); display: flex; align-items: center;"><i class="fas fa-cogs" style="margin-right: 8px;"></i>ハードウェア駆動型モデル設計</h4>
+<p>FP8低精度計算やスケールアップ/スケールアウトネットワーク特性といったハードウェア機能が、DeepSeek-V3のアーキテクチャ選択にどのように影響を与えたかを分析します。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="badge yellow">FP8</span> <span class="badge yellow">Scale-up/out</span>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 style="color: var(--color-secondary); display: flex; align-items: center;"><i class="fas fa-link" style="margin-right: 8px;"></i>ハードウェアとモデルの相互依存性</h4>
+<p>ハードウェアの能力がモデルの革新をどのように形成し、LLMの進化する要求が次世代ハードウェアの必要性をどのように駆動するかを調査します。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="badge orange">Innovation</span> <span class="badge orange">Next-gen HW</span>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 style="color: var(--color-accent1); display: flex; align-items: center;"><i class="fas fa-directions" style="margin-right: 8px;"></i>ハードウェア開発の将来方向性</h4>
+<p>DeepSeek-V3から得られた実践的な洞察を基に、将来のハードウェアとモデルアーキテクチャの<span class="keyword">協調設計 (co-design)</span> を導き、スケーラブルでコスト効率の良いAIシステムへの道を開きます。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="badge green">Co-design</span> <span class="badge green">Scalable AI</span>
+</div>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-stream"></i>1.3 Structure of this Paper</h3>
+<div class="content-box">
+<p>📝 本論文の残りの構成は以下の通りです。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge purple" style="margin-bottom: 5px;">Section 2</span>
+                DeepSeek-V3モデルアーキテクチャを支える<span class="keyword">設計原則</span>を探求します。<span class="highlight">Multi-head Latent Attention (MLA)</span>、<span class="highlight">Mixture-of-Experts (MoE)</span> の最適化、<span class="highlight">Multi-Token Prediction (MTP)</span> モジュールといった主要な革新点に焦点を当てます。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple" style="margin-bottom: 5px;">Section 3</span>
+                私たちのモデルアーキテクチャが、どのようにして<span class="keyword">低精度計算</span>および<span class="keyword">通信</span>を追求しているかを示します。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple" style="margin-bottom: 5px;">Section 4</span>
+<span class="keyword">スケールアップ相互接続</span>の最適化について述べ、<span class="keyword">スケールアップ/スケールアウトの収束</span>について議論し、ハードウェア機能が<span class="keyword">並列処理</span>や<span class="keyword">エキスパート選択戦略</span>にどのように影響するかを探ります。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple" style="margin-bottom: 5px;">Section 5</span>
+<span class="keyword">スケールアウトネットワーク</span>の最適化に焦点を当て、<span class="keyword">マルチプレーンネットワーク</span>の協調設計や<span class="keyword">低遅延相互接続</span>を含みます。
+            </div>
+<div class="pipeline-step" style="background-color: rgba(92, 184, 92, 0.1);">
+<span class="badge green" style="margin-bottom: 5px;">Section 6</span>
+                セクション3から5で述べられた現在の制約と将来の提案に加え、DeepSeek-V3から得られた<span class="highlight">さらに重要な洞察</span>を詳述し、将来の<span class="keyword">ハードウェアとモデルの協調設計</span>の方向性を特定します。
+            </div>
+</div>
+<p style="text-align:center; margin-top:15px;">
+<i class="fas fa-book-reader fa-2x" style="color:var(--color-primary);"></i> この構成を通じて、DeepSeek-V3の知見と将来への展望を深く掘り下げていきます。
+        </p>
+</div>
+</div>
+<div class="section-card" id="2_Design_Principles_for_DeepSeek_Models">
+<h2 class="section-title"><i class="fas fa-drafting-compass"></i> 2 Design Principles for DeepSeek Models</h2>
+<p>このセクションでは、DeepSeek-V3モデル群を開発する上での設計思想について解説します。DeepSeek-V3の開発は、大規模言語モデル（LLM）をスケールさせる際に、<span class="keyword">ハードウェアの制約を強く意識</span>し、パフォーマンスとコスト効率を最適化するというアプローチを体現しています。各設計判断は、ハードウェアの特性と密接に連携して行われました。</p>
+<div class="glass-card">
+<p><i class="fas fa-lightbulb"></i> <strong>主な目的と論旨:</strong> DeepSeek-V3は、LLMのスケーリングにおける3つの主要な課題、すなわち<span class="highlight">メモリ効率</span>、<span class="highlight">コスト効率</span>、そして<span class="highlight">推論速度</span>の解決を目指しています。これらの課題に対処するために、既存技術の改良と新しい技術の導入が行われました。</p>
+</div>
+<p>まず、DeepSeek-V3のアーキテクチャの概要を見ていきましょう。下の図1は、DeepSeek-V3の主要な構成要素を示しています。</p>
+<img alt="Figure 1: DeepSeek-V3 Model Architecture Overview" src="figure1.png" style="width: 80%; margin: 20px auto; display: block; border: 1px solid #ccc;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-plus"></i> 図1の概要解説</p>
+<p>図1はDeepSeek-V3モデルのアーキテクチャの全体像を示しています。主な構成要素は以下の通りです：</p>
+<ul>
+<li><span class="keyword">Multi-Token Prediction (MTP) Module (図上部):</span> 複数の将来トークンを同時に予測し、推論速度を向上させます。メインモデルの出力だけでなく、複数の軽量なMTPモジュールがそれぞれ異なる数のトークン先読み予測を行います。</li>
+<li><span class="keyword">Transformer Block (図中央):</span> モデルの主要な計算層であり、L層積み重ねられています。このブロック内には、DeepSeekMoEとMulti-Head Latent Attention (MLA) が組み込まれています。</li>
+<li><span class="keyword">DeepSeekMoE Feed-Forward Routed Expert Network (図右下):</span> Mixture of Experts (MoE) アーキテクチャの一種で、計算コストを抑えつつモデルの表現力を高めます。トークンごとに一部の「エキスパート」のみが活性化されます。図では、Routerがエキスパートを選択し、トークンが選択されたRouted ExpertとShared Expertに送られる様子が描かれています。FP8混合精度が利用されています。</li>
+<li><span class="keyword">Multi-Head Latent Attention (MLA) (図左下):</span> Key-Value (KV) キャッシュのサイズを大幅に削減するアテンション機構です。従来のKVキャッシュではなく、圧縮された「潜在ベクトル」(Latent c_tQ, c_tKV)をキャッシュすることでメモリ効率を高めます。こちらもFP8混合精度が活用されています。</li>
+</ul>
+<p>全体として、FP8混合精度学習が随所に適用され、計算コストとメモリ使用量を削減しています。また、Embedding LayerやOutput HeadはBF16精度で共有されています。</p>
+</div>
+<p>DeepSeek-V3では、DeepSeek-V2 [25]で効果が実証された<span class="keyword">DeepSeekMoE</span> [27]と<span class="keyword">Multi-head Latent Attention (MLA)</span> [25]アーキテクチャが採用されています。DeepSeekMoEはMoEアーキテクチャの潜在能力を最大限に引き出し、MLAはKey-Value (KV)キャッシュを圧縮することでメモリ消費を劇的に削減します。これらに加え、DeepSeek-V3は<span class="keyword">FP8混合精度学習</span>を導入し、モデルの品質を損なうことなく計算コストを大幅に削減し、大規模学習をより現実的なものにしました。推論速度を向上させるために、DeepSeek-V3は<span class="keyword">Multi-Token Prediction Module</span>に基づく投機的デコーディングを統合し、生成速度を大幅に向上させています。モデルアーキテクチャ以外にも、従来の3層Fat-Treeトポロジーを<span class="keyword">Multi-Plane two-layer Fat-Treeネットワーク</span>に置き換えることで、クラスタのネットワーキングコストを削減し、コスト効率の高いAIインフラストラクチャも追求しました。</p>
+<p>これらの技術革新は、LLMをスケーリングする上での3つの核心的な課題—<span class="highlight">メモリ効率</span>、<span class="highlight">コスト効率</span>、そして<span class="highlight">推論速度</span>—に対処することを目的としており、以下のサブセクションで詳細に検討します。</p>
+<h3 class="subsection-title"><i class="fas fa-memory"></i> 2.1 Memory Efficiency (メモリ効率)</h3>
+<p>LLMは一般的に膨大なメモリリソースを必要とし、メモリ需要は年間<span class="highlight">1000%以上</span>も増加しています。これに対し、高速メモリ（例：HBM）の容量増加率は年間<span class="highlight">50%未満</span>と非常に遅いです[35]。マルチノード並列処理はメモリ制限に対処するための実行可能な解決策ですが、メモリ使用量を根本から最適化することは依然として重要かつ効果的な戦略です。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-compress-arrows-alt"></i> 2.1.1 Low-Precision Models (低精度モデル)</h4>
+<p>重みにBF16（16ビット浮動小数点数）を利用するモデルと比較して、<span class="keyword">FP8（8ビット浮動小数点数）</span>はメモリ消費量を半分に大幅削減し、AIの「メモリの壁」問題を効果的に軽減します。低精度技術に関する詳細な議論は、セクション3「Low-Precision Driven Design」で行われます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-circle"></i> 補足: 浮動小数点形式</p>
+<p><span class="keyword">BF16 (Brain Floating Point Format 16)</span>: Google Brainによって開発された16ビット浮動小数点形式。ダイナミックレンジはFP32と同等で、精度が低い。ディープラーニングの学習に適しています。</p>
+<p><span class="keyword">FP8 (Floating Point 8)</span>: 8ビットで数値を表現する浮動小数点形式。メモリ使用量と計算量を大幅に削減できますが、表現できる数値の範囲や精度が犠牲になります。最新のGPUではハードウェアサポートが進んでいます。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-layer-group"></i> 2.1.2 Reducing KV Cache with MLA (MLAによるKVキャッシュ削減)</h4>
+<p>LLMの推論では、ユーザーリクエストはしばしば複数ターンの会話形式になります。これらを効率的に処理するために、以前のリクエストからのコンテキストは一般的に<span class="keyword">KVキャッシュ</span>と呼ばれるものにキャッシュされます。KVキャッシュは、以前に処理されたトークンのKeyベクトルとValueベクトルをキャッシュすることでこの課題に対処し、後続のトークンでそれらを再計算する必要をなくします。</p>
+<p>各推論ステップで、モデルは現在のトークンのKeyベクトルとValueベクトルのみを計算し、履歴からキャッシュされたKey-Valueペアと組み合わせてアテンション計算を実行します。この増分計算により、各トークン生成の複雑度が \(O(N)\) に削減され（Nはシーケンス長）、長いシーケンスや複数ターンの入力を処理する際に効率的です。</p>
+<p>しかし、これは<span class="highlight">メモリ律速のボトルネック</span>を引き起こします。なぜなら、計算がGEMM（行列-行列積）からGEMV（行列-ベクトル積）に移行し、GEMVは計算対メモリ比がはるかに低いからです。最新のハードウェアが数百TFLOPSの計算能力を提供していても、GEMVはすぐにメモリ帯域幅によって制限され、メモリアクセスが主要なボトルネックとなります。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説: KVキャッシュ</p>
+<p>Transformerベースのモデルでは、アテンションメカニズムが入力シーケンス内の各トークン間の関連性を計算します。この計算過程で、各トークンはQuery (Q), Key (K), Value (V) という3つのベクトルに変換されます。<span class="keyword">KVキャッシュ</span>は、過去のトークンのKベクトルとVベクトルを保存しておくメモリ領域です。自己回帰的なトークン生成（次のトークンを予測する）の際に、毎回すべての過去トークンのKとVを再計算するのは非効率なため、これらをキャッシュしておくことで計算量を大幅に削減します。</p>
+</div>
+<p>このボトルネックに対処するため、私たちは<span class="keyword">Multi-head Latent Attention (MLA)</span> [25]を採用しています。MLAは、すべてのアテンションヘッドのKV表現を、モデルと一緒に訓練される射影行列を用いてより小さな<span class="highlight">潜在ベクトル</span>に圧縮します。推論時には、この潜在ベクトルのみをキャッシュすればよいため、すべてのアテンションヘッドのKVキャッシュを保存する場合と比較してメモリ消費量が大幅に削減されます。（図1左下参照）</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i> MLAの仕組み (概念図)</p>
+<div style="text-align: center; margin: 10px 0;">
+<p style="font-family: 'Yomogi', cursive;">全ヘッドのKVペア → <span style="font-size: 20px; color: var(--color-primary);">[射影行列]</span> → 圧縮された潜在ベクトル</p>
+<p style="font-family: 'Yomogi', cursive;"> (例: 多数のベクトル)                     (例: 少数のベクトル)</p>
+<p>これをキャッシュ！ <i class="fas fa-database" style="color: var(--color-accent1);"></i></p>
+</div>
+</div>
+<p>MLAに加えて、KVキャッシュのサイズを削減するためにいくつかの他のアプローチが提案されています。これらの方法は非常に価値があり、メモリ効率の高いアテンションメカニズムの進歩に重要な示唆を与えています：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-share-alt" style="color: var(--color-accent2);"></i> <span class="keyword">Shared KV (Grouped-Query Attention, GQA; Multi-Query Attention, MQA):</span> 各アテンションヘッドごとに個別のKVペアを維持する代わりに、複数のヘッドが一つのKVペアセットを共有し、KVストレージを大幅に圧縮します。代表的な手法にはGQA [5]やMQA [70]があります。</li>
+<li><i class="fas fa-window-maximize" style="color: var(--color-accent2);"></i> <span class="keyword">Windowed KV:</span> 長いシーケンスの場合、KVペアのスライディングウィンドウのみがキャッシュに保持され、ウィンドウ外の結果は破棄されます。これによりストレージは削減されますが、長期的な文脈理解能力が損なわれる可能性があります。代表的な手法にはLongformer [11]などがあります。</li>
+<li><i class="fas fa-compress" style="color: var(--color-accent2);"></i> <span class="keyword">Quantized Compression:</span> KVペアは低ビット表現 [40, 44, 52] を使用して保存され、メモリ使用量をさらに削減します。量子化は、モデルの性能への影響を最小限に抑えつつ、大幅な圧縮を実現します。</li>
+</ul>
+</div>
+</div>
+<img alt="Table 1: KV cache size comparison" src="table1.png" style="width: 80%; margin: 20px auto; display: block; border: 1px solid #ccc;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-table"></i> 表1の解説: KVキャッシュサイズの比較 (BF16精度)</p>
+<p>この表は、DeepSeek-V3、Qwen-2.5 72B [75]、LLaMA-3.1 405B [4]の3つのモデルについて、1トークンあたりのKVキャッシュメモリ使用量を比較しています。</p>
+<ul>
+<li><span class="keyword">DeepSeek-V3 (MLA採用):</span> トークンあたりわずか<span class="highlight">70 KB</span>のKVキャッシュしか必要としません。</li>
+<li><span class="keyword">LLaMA-3.1 405B (GQA採用):</span> トークンあたり<span class="highlight">516 KB</span>。</li>
+<li><span class="keyword">Qwen-2.5 72B (GQA採用):</span> トークンあたり<span class="highlight">327 KB</span>。</li>
+</ul>
+<p>この結果は、MLAがGQAベースの手法と比較してKV表現の圧縮において非常に効率的であることを示しています。このようにメモリ消費量を大幅に削減できるため、DeepSeekV3は特に長いコンテキスト処理やリソースが制約された環境に適しており、よりスケーラブルでコスト効率の高い推論を可能にします。</p>
+</div>
+<div class="info-card" style="margin-top: 20px;">
+<h4 class="subsection-title"><i class="fas fa-lightbulb"></i> 2.1.3 Future Directions and Perspectives on Resource-Efficient Techniques (リソース効率化技術の将来展望)</h4>
+<p>KVキャッシュのサイズ削減はメモリ効率を改善する有望な方法ですが、Transformerベースの自己回帰デコーディングに固有の<span class="keyword">二乗の計算量</span>（\(O(N^2)\)）は、特に非常に長いコンテキストの場合、依然として大きな課題です。</p>
+<p>最近の研究では、<span class="keyword">Mamba-2</span> [21]や<span class="keyword">Lightning Attention</span> [63]などが、計算コストとモデル性能のバランスを取る新しい可能性を提供する線形時間（\(O(N)\)）の代替案を調査しています。さらに、<span class="keyword">スパースアテンション</span> [76]のようなアプローチは、アテンションのキーとバリューを圧縮し、疎に活性化することで、アテンションに関連する計算上の課題を克服しようとする別の試みです。私たちは、この分野でのブレークスルーに向けて、より広範なコミュニティとの協力的な進展を期待しています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-coins"></i> 2.2 Cost-Effectiveness of MoE Models (MoEモデルのコスト効率)</h3>
+<p>スパースコンピューティング（疎な計算）のために、私たちは<span class="keyword">DeepSeekMoE</span>という高度なMixture of Experts (MoE)アーキテクチャを開発しました。これは図1の右下に示されています。MoEモデルの利点は主に2つあります。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-calculator"></i> 2.2.1 Reducing Computational Requirements for Training (学習時の計算要件削減)</h4>
+<p>MoEアーキテクチャの主な利点は、学習コストを大幅に削減できる能力にあります。エキスパートパラメータのサブセットのみを選択的に活性化することにより、MoEモデルは総パラメータ数を劇的にスケールアップさせながら、計算要件を控えめに保つことができます。</p>
+<div class="bubble-box">
+<p><i class="fas fa-rocket"></i> <strong>MoEのスケールアップ戦略:</strong></p>
+<ul class="unstyled-list">
+<li><span class="keyword">DeepSeek-V2:</span> 総パラメータ数 <span class="highlight">236B</span> (2360億)、トークンあたり活性化パラメータ数 <span class="highlight">21B</span> (210億)。</li>
+<li><span class="keyword">DeepSeek-V3:</span> 総パラメータ数 <span class="highlight">671B</span> (V2の約3倍)、トークンあたり活性化パラメータ数 <span class="highlight">37B</span>。</li>
+</ul>
+<p>比較として、Qwen2.5-72BやLLaMa3.1-405Bのような<span class="keyword">密なモデル (dense models)</span>は、学習中にすべてのパラメータがアクティブである必要があります。</p>
+</div>
+</div>
+<div class="info-card">
+<img alt="Table 2: Comparison of computational costs for training MoE and dense models" src="table2.png" style="width: 100%; margin: 10px auto; display: block; border: 1px solid #ccc;"/>
+<div class="note-box" style="margin-top:10px;">
+<p class="note-title"><i class="fas fa-table"></i> 表2の解説: MoEモデルと密なモデルの学習計算コスト比較</p>
+<p>この表は、トークンあたりの計算コスト（シーケンス長4096と仮定）を比較しています。</p>
+<ul>
+<li><span class="keyword">DeepSeek-V3 (MoE):</span> 約<span class="highlight">250 GFLOPS</span>/トークン</li>
+<li><span class="keyword">72B 密なモデル:</span> <span class="highlight">394 GFLOPS</span>/トークン</li>
+<li><span class="keyword">405B 密なモデル:</span> <span class="highlight">2448 GFLOPS</span>/トークン</li>
+</ul>
+<p>これは、MoEモデルが密なモデルと同等またはそれ以上の性能を達成しながら、計算リソースを桁違いに少なく消費することを示しています。</p>
+</div>
+</div>
+</div>
+<div class="info-card" style="margin-top: 20px;">
+<h4 class="subsection-title"><i class="fas fa-user-cog"></i> 2.2.2 Advantages for Personal Use and On-Premises Deployment (個人利用およびオンプレミス展開での利点)</h4>
+<p>パーソナライズされたLLMエージェント[53]が普及する将来において、MoEモデルは単一リクエストのシナリオで独自の利点を提供します。リクエストごとにパラメータのサブセットのみが活性化されるため、メモリと計算の要求が大幅に削減されます。</p>
+<p>例えば、DeepSeek-V2（236Bパラメータ）は推論中にわずか21Bのパラメータしか活性化しません。これにより、AI SoCチップ[6, 10, 58]を搭載したPCでも、ほぼ<span class="highlight">20トークン/秒 (TPS)</span>、あるいはその2倍の速度を達成でき、これは個人利用には十分すぎるほどです。対照的に、同程度の能力を持つ密なモデル（例：70Bパラメータ）は、同様のハードウェアで通常、1桁のTPSしか達成できません。</p>
+<p>特筆すべきは、ますます人気が高まっている<span class="keyword">KTransformers [39]推論エンジン</span>により、DeepSeek-V3モデル全体を、コンシューマ向けGPU（約10,000ドルのコスト）を搭載した低コストサーバーで実行でき、それでもほぼ<span class="highlight">20 TPS</span>を達成できることです。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-desktop"></i> オンプレミス展開のメリット</p>
+<p>この効率性により、MoEアーキテクチャは、ハードウェアリソースがしばしば制限されるローカル展開やシングルユーザーシナリオに適しています。メモリと計算のオーバーヘッドを最小限に抑えることで、MoEモデルは高価なインフラストラクチャを必要とせずに高品質な推論性能を提供できます。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tachometer-alt"></i> 2.3 Increasing Inference Speed (推論速度の向上)</h3>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-sync-alt"></i> 2.3.1 Overlapping Computation and Communication: Maximizing Throughput (計算と通信のオーバーラップ：スループットの最大化)</h4>
+<p>推論速度には、システム全体の最大スループットと単一リクエストのレイテンシの両方が含まれます。スループットを最大化するために、私たちのモデルは最初から<span class="keyword">デュアルマイクロバッチオーバーラップ</span> [31, 78]を活用するように設計されており、意図的に通信レイテンシを計算とオーバーラップさせています。</p>
+<p>オンライン推論システムで実証され、オープンソースのプロファイリングデータ[31]によって裏付けられているように、MLAとMoEの計算を2つの異なるステージに分離します。一方のマイクロバッチがMLAまたはMoE計算の一部を実行している間、もう一方のマイクロバッチは対応するディスパッチ通信を同時に実行します。逆に、2番目のマイクロバッチの計算フェーズ中、最初のマイクロバッチはコンバイン通信ステップを実行します。このパイプライン化されたアプローチにより、All-to-All通信と進行中の計算がシームレスにオーバーラップし、GPUが常に完全に利用されることが保証されます。</p>
+<div class="pipeline" style="margin-top:15px;">
+<div class="pipeline-step"><strong>マイクロバッチ1:</strong> MLA/MoE計算 <i class="fas fa-cogs" style="color:var(--color-primary)"></i></div>
+<div class="pipeline-step"><strong>マイクロバッチ2:</strong> ディスパッチ通信 <i class="fas fa-network-wired" style="color:var(--color-accent1)"></i> (マイクロバッチ1と並行)</div>
+<div class="pipeline-step"><strong>マイクロバッチ2:</strong> MLA/MoE計算 <i class="fas fa-cogs" style="color:var(--color-primary)"></i></div>
+<div class="pipeline-step"><strong>マイクロバッチ1:</strong> コンバイン通信 <i class="fas fa-network-wired" style="color:var(--color-accent1)"></i> (マイクロバッチ2と並行)</div>
+</div>
+<p>さらに、本番環境では、<span class="keyword">プリフィルとデコードの分離アーキテクチャ</span> [80]を採用し、大きなバッチサイズのプリフィルリクエストとレイテンシに敏感なデコードリクエストを異なるエキスパート並列処理グループサイズに割り当てます。この戦略は、実世界のサービス条件下でシステムスループットを最終的に最大化します。</p>
+</div>
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-stopwatch"></i> 2.3.2 Inference Speed Limits (推論速度の限界)</h4>
+<p>このセクションでは、LLMサービスのデコード出力速度、通常は<span class="keyword">Time Per Output Token (TPOT)</span>で測定されるものに焦点を当てます。TPOTはユーザーエクスペリエンスにとって重要な指標であり、OpenAIのo1/o3やDeepSeek-R1のような推論モデルの応答性にも直接影響します。これらのモデルは、推論長に依存して知能を強化します。</p>
+<p>MoEモデルの場合、高い推論速度を達成するには、エキスパートパラメータを計算デバイス全体に効率的に展開することが重要です。可能な限り最速の推論速度を達成するためには、各デバイスが理想的には単一のエキスパートの計算を実行する（または必要に応じて複数のデバイスが共同で単一のエキスパートを計算する）必要があります。しかし、<span class="keyword">エキスパート並列処理 (Expert Parallelism, EP)</span>は、トークンを適切なデバイスにルーティングする必要があり、これにはネットワークを介したAll-to-All通信が含まれます。その結果、MoEの推論速度の上限は相互接続帯域幅によって決定されます。</p>
+<p>各デバイスが1つのエキスパートのパラメータを保持し、一度に約32トークンを処理するシステムを考えます。このトークン数は、計算対メモリ比と通信レイテンシのバランスを取ります。また、このトークン数は、エキスパート並列処理中に各デバイスが等しいバッチサイズを処理することを保証し、通信時間を容易に計算できるようにします。</p>
+<p>CX7 400Gbps InfiniBand (IB) NICで相互接続されたシステムの場合、EPにおける2回のAll-to-All通信に必要な時間は次のように計算されます：</p>
+<div class="formula">
+<p>\( \mathrm { Comm. } \mathrm { Time } = \left( 1 \mathrm { Byte } + 2 \mathrm { Bytes } \right) \times 32 \times 9 \times 7 \mathrm { K } / 50 \mathrm { G B } / \mathrm { s } = 120.96 \mu s \)</p>
+</div>
+<p>ここで、ディスパッチはFP8（1バイト）、コンバインはBF16（2バイト）を使用し、各トークンの隠れ層サイズは約7Kです。係数9は、各トークンが8つのルーティングされたエキスパートと1つの共有エキスパートに転送されることを示します。</p>
+<p>セクション2.3.1で議論したように、スループットを最大化するにはデュアルマイクロバッチオーバーラップの使用が必要です。この戦略では、理論的な最良ケース分析では計算オーバーヘッドが最小化されると仮定するため、パフォーマンスの上限は通信レイテンシによって決定されます。ただし、実際の推論ワークロードでは、リクエストのコンテキストがはるかに長く、MLA計算が通常実行時間を支配します。したがって、この分析はデュアルマイクロバッチオーバーラップ下の理想的なシナリオを表します。この仮定の下では、レイヤーあたりの合計時間は次のように定式化できます：</p>
+<div class="formula">
+<p>\( \mathrm { Total \ Time \ Per \ Layer } = 2 \times 120.96 \mu s = 241.92 \mu s \)</p>
+</div>
+<p>DeepSeek-V3には61のレイヤーがあるため、総推論時間は次のようになります：</p>
+<div class="formula">
+<p>\( \text{Total Inference Time} = 61 \times 241.92 \mu s = 14.76 \mathrm { ms } \)</p>
+</div>
+<p>したがって、このシステムの理論的な上限は約<span class="highlight">14.76 ms TPOT</span>、つまり毎秒67トークンに相当します。しかし、実際には、通信オーバーヘッド、レイテンシ、不完全な帯域幅利用、計算の非効率性などの要因により、この数値は減少します。</p>
+<p>対照的に、GB200 NVL72（72個のGPU間で900 GB/sの単方向帯域幅）のような高帯域幅インターコネクトを使用した場合、EPステップあたりの通信時間は次のように低下します：</p>
+<div class="formula">
+<p>\( \mathrm { Comm. } \mathrm { Time } = \left( 1 \mathrm { Byte } + 2 \mathrm { Bytes } \right) \times 32 \times 9 \times 7 \mathrm { K } / 900 \mathrm { G B } / \mathrm { s } = 6.72 \mu s \)</p>
+</div>
+<p>計算時間が通信時間と等しいと仮定すると、これにより総推論時間が大幅に短縮され、理論上の上限は0.82 ms TPOT以上、約1200トークン/秒が可能になります。この数値は純粋に理論的なものであり、経験的に検証されていませんが、高帯域幅スケールアップネットワークが大規模モデル推論を加速する変革的な可能性を鮮やかに示しています。</p>
+<p>MoEモデルは優れたスケーラビリティを示しますが、ハードウェアリソースを増やすだけで高い推論速度を達成するのはコストがかかりすぎます。したがって、ソフトウェアとアルゴリズムも推論効率の向上に貢献する必要があります。</p>
+</div>
+</div>
+<div class="two-column" style="margin-top: 20px;">
+<div class="column">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-project-diagram"></i> 2.3.3 Multi-Token Prediction (マルチトークン予測)</h4>
+<p>Gloeckleら[36]に触発され、DeepSeek-V3は<span class="keyword">Multi-Token Prediction (MTP)</span>フレームワークを導入し、モデル性能と推論速度を同時に向上させます。（図1上部参照）</p>
+<p>推論時、従来の自己回帰モデルは1デコーディングステップで1トークンを生成するため、シーケンシャルなボトルネックが生じます。MTPは、モデルがより低コストで追加の候補トークンを生成し、それらを並列に検証できるようにすることでこの問題を軽減します。これは、以前の自己ドラフティングベースの投機的デコーディングアプローチ[14, 48]と同様です。このフレームワークは、精度を損なうことなく推論を大幅に加速します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-magic"></i> MTPの仕組み</p>
+<p>通常: 1ステップ → 1トークン生成</p>
+<p>MTP: 1ステップ → <span class="highlight">複数候補トークン生成</span> (軽量モジュール使用) → 並列検証</p>
+</div>
+<p>図1の上部に示されているように、各MTPモジュールはフルモデルよりもはるかに軽量な単一層を使用して追加のトークンを予測し、複数の候補トークンの並列検証を可能にします。スループットはわずかに低下しますが、このアプローチはエンドツーエンドの生成レイテンシを大幅に改善します。実際のデータでは、MTPモジュールは2番目の後続トークンの予測で<span class="highlight">80%から90%の受容率</span>を達成し、MTPモジュールなしの場合と比較して生成TPSを<span class="highlight">1.8倍</span>向上させることが示されています。</p>
+<p>さらに、MTPはステップごとに複数のトークンを予測することで推論バッチサイズを増加させます。これは、EPの計算集約度とハードウェア使用率を高める上で非常に重要です。このようなアルゴリズム革新は、DeepSeek-V3における高速かつコスト効率の高い推論にとって不可欠です。</p>
+</div>
+</div>
+<div class="column">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-brain"></i> 2.3.4 High Inference Speed for Reasoning Models and Test-Time Scaling (推論モデルおよびテスト時スケーリングのための高速推論)</h4>
+<p>LLMにおけるテスト時スケーリングは、OpenAIのo1/o3シリーズ[60, 61]に代表されるように、推論中に計算リソースを動的に調整することで、数学的推論、プログラミング、および一般的な推論において大幅な進歩を可能にしました。DeepSeek-R1 [28]、Claude-3.7 Sonnet [9]、Gemini 2.5 Pro [38]、Seed1.5-Thinking [68]、Qwen3 [71]などの後続モデルも同様の戦略を採用し、これらのタスクで顕著な改善を達成しています。</p>
+<p>これらの推論モデルにとって、<span class="highlight">高いトークン出力速度</span>は最も重要です。PPO [67]、DPO [64]、GRPO [69]などの強化学習（RL）ワークフローでは、多数のサンプルを迅速に生成する必要があるため、推論スループットが重大なボトルネックになります。同様に、長時間の推論シーケンスはユーザーの待ち時間を増加させ、そのようなモデルの実用性を低下させます。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 推論速度の重要性</p>
+<p>ハードウェアとソフトウェアの相乗的な革新を通じて推論速度を最適化することは、推論モデルの効率を向上させるために不可欠です。しかし、推論を加速し、RL学習を迅速化するための効果的な戦略は、セクション2.1.3で議論したように、依然として活発な研究分野です。私たちは、これらの継続的な課題に対する新しい解決策を共同で模索し、開発することを広範なコミュニティに奨励します。</p>
+</div>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-vial"></i> 2.4 Technique Validation Methodology (技術検証方法論)</h3>
+<p>MLA、FP8混合精度計算、ネットワーク協調設計されたMoEゲートルーティングなど、各高速化技術は、その精度への影響を評価するために厳密な経験的検証を受けます。フルスケールモデルでの網羅的なアブレーションスタディ（特定の要素を除外して影響を調べる研究）はコストがかかりすぎるため、階層的でリソース効率の高い検証パイプラインを採用しています。</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">各技術はまず、<span class="highlight">小規模モデルで広範囲に検証</span>されます。</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">次に、<span class="highlight">最小限の大規模チューニング</span>が行われます。</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">最後に、単一の<span class="highlight">包括的な学習実行に統合</span>されます。</div>
+</div>
+<p>例えば、最終的な統合の前に、まず16Bと230BのDeepSeek-V2モデルの両方で詳細なFP8学習アブレーションスタディを実施しました。これらの制御された設定下では、BF16と比較した相対的な精度低下は<span class="highlight">0.25%未満</span>に抑えられており、これは高精度アキュムレーションと詳細な量子化戦略の使用によるものです。</p>
+</div>
+<div class="section-card" id="3_Low-Precision_Driven_Design">
+<h2 class="section-title"><i class="fas fa-microchip"></i>3 Low-Precision Driven Design</h2>
+<div class="glass-card">
+<p>このセクションでは、DeepSeek-V3において、モデルの学習と通信の効率を大幅に向上させるために、どのように<strong>低精度数値フォーマット</strong>を活用しているかに焦点を当てます。主な目的は、計算コストとメモリ使用量を削減しつつ、モデルの性能を維持することです。具体的には、学習時の計算にFP8混合精度を用いる手法と、通信圧縮のための新しい対数浮動小数点フォーマット（LogFMT）について詳述し、それぞれの利点、現在のハードウェアにおける限界、そして将来のハードウェア設計への提案を提示します。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-accent1);"></i>
+<p class="keyword">FP8混合精度学習</p>
+<span>学習中の計算効率とメモリ効率を向上</span>
+</div>
+<div class="feature-item">
+<i class="fas fa-network-wired fa-2x" style="color: var(--color-accent2);"></i>
+<p class="keyword">LogFMT通信圧縮</p>
+<span>ネットワーク通信量を削減し、通信時間を短縮</span>
+</div>
+<div class="feature-item">
+<i class="fas fa-lightbulb fa-2x" style="color: var(--color-accent3);"></i>
+<p class="keyword">ハードウェアへの提案</p>
+<span>低精度計算・通信の能力を最大限に引き出すための将来展望</span>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-brain"></i>3.1 FP8 Mix-Precision Training</h3>
+<div class="content-box">
+<p>大規模言語モデル（LLM）の学習では、膨大な計算リソースとメモリが必要となります。この課題に対処するため、<span class="keyword">量子化技術</span>が注目されています。量子化とは、数値のビット幅を減らすことで、メモリ使用量を削減し、計算を高速化する技術です。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i>用語解説：量子化 (Quantization)</div>
+<p>数値データをより少ないビット数で表現する技術です。例えば、32ビット浮動小数点数（FP32）を8ビット整数（INT8）や8ビット浮動小数点数（FP8）に変換します。これにより、モデルの重みや活性化値が占めるメモリ量が大幅に削減され、対応するハードウェアでは計算も高速化されます。</p>
+<div style="text-align: center; margin-top:10px;">
+<svg height="60" viewbox="0 0 200 60" width="200" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#AED6F1" height="40" rx="5" stroke="#3498DB" stroke-width="2" width="60" x="10" y="10"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="40" y="35">FP32/BF16</text>
+<path d="M 75 30 L 115 30" marker-end="url(#arrowhead)" stroke="#2ECC71" stroke-width="2"></path>
+<defs>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="0" refy="3.5">
+<polygon fill="#2ECC71" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+<text fill="#2ECC71" font-family="Yomogi" font-size="10" text-anchor="middle" x="95" y="25">量子化</text>
+<rect fill="#F9E79F" height="40" rx="5" stroke="#F1C40F" stroke-width="2" width="60" x="120" y="10"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="150" y="35">FP8/INT8</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 12px; color: var(--color-gray);">高精度から低精度へ変換するイメージ</p>
+</div>
+</div>
+<p>GPTQ [32] や AWQ [51] のような技術は、推論時のメモリ削減のためにビット幅を8ビット、4ビット、あるいはそれ以下に削減するために広く使われてきました。しかし、これらの技術は主に推論フェーズで適用され、学習フェーズではありませんでした。</p>
+<p>NVIDIAのTransformer Engineは以前からFP8混合精度学習をサポートしていましたが、DeepSeek-V3以前には、FP8を学習に活用したオープンソースの大規模モデルはありませんでした。私たちのインフラチームとアルゴリズムチーム間の緊密な協力、そして広範な実験と革新を経て、私たちはMoEモデル向けの<span class="highlight">FP8互換学習フレームワーク</span>を開発しました。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-project-diagram"></i>FP8の適用箇所 (図1参照)</div>
+<p>論文の図1（このセクションでは表示しませんが、論文全体図の一部）は、学習パイプラインにおいてFP8精度での順伝播および逆伝播プロセスが利用される計算コンポーネントを示しています。重要な点として、FP8はモデルの主要な計算部分であるTransformerブロック内の線形層などに適用されます。</p>
+</div>
+<p>私たちは<span class="keyword">微細粒度量子化 (Fine-grained quantization)</span> を適用しています。具体的には：</p>
+<ul>
+<li><span class="badge blue">活性化値 (Activations)</span>: タイルワイズ (tile-wise) 1x128 量子化</li>
+<li><span class="badge orange">モデル重み (Model weights)</span>: ブロックワイズ (block-wise) 128x128 量子化</li>
+</ul>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<h4 class="subsection-title" style="font-size:15px; margin-top:0px; border-left: none; padding-left:0px;"><i class="fas fa-puzzle-piece"></i>タイルワイズ量子化 (1x128)</h4>
+<p>活性化値のテンソルを1x128の小さなタイルに分割し、各タイルごとに量子化パラメータ（スケールファクタなど）を計算して適用します。</p>
+<div style="text-align: center; margin-top:5px;">
+<svg height="80" viewbox="0 0 150 80" width="150" xmlns="http://www.w3.org/2000/svg">
+<rect fill="none" height="30" stroke="#7DCEA0" stroke-dasharray="2,2" stroke-width="1" width="140" x="5" y="5"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="75" y="23">活性化値テンソル</text>
+<rect fill="#ABEBC6" height="15" stroke="#2ECC71" stroke-width="1" width="30" x="10" y="45"></rect>
+<text font-family="Yomogi" font-size="8" text-anchor="middle" x="25" y="56">1x128</text>
+<rect fill="#ABEBC6" height="15" stroke="#2ECC71" stroke-width="1" width="30" x="45" y="45"></rect>
+<text font-family="Yomogi" font-size="8" text-anchor="middle" x="60" y="56">1x128</text>
+<rect fill="#ABEBC6" height="15" stroke="#2ECC71" stroke-width="1" width="30" x="80" y="45"></rect>
+<text font-family="Yomogi" font-size="8" text-anchor="middle" x="95" y="56">1x128</text>
+<text font-family="Yomogi" font-size="8" text-anchor="middle" x="120" y="56">...</text>
+</svg>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title" style="font-size:15px; margin-top:0px; border-left: none; padding-left:0px;"><i class="fas fa-th-large"></i>ブロックワイズ量子化 (128x128)</h4>
+<p>モデルの重み行列を128x128のブロックに分割し、各ブロックごとに量子化パラメータを計算して適用します。</p>
+<div style="text-align: center; margin-top:5px;">
+<svg height="80" viewbox="0 0 150 80" width="150" xmlns="http://www.w3.org/2000/svg">
+<rect fill="none" height="60" stroke="#AED6F1" stroke-dasharray="2,2" stroke-width="1" width="80" x="5" y="5"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="45" y="15">重み行列</text>
+<rect fill="#A9CCE3" height="30" stroke="#3498DB" stroke-width="1" width="30" x="10" y="25"></rect>
+<text font-family="Yomogi" font-size="6" text-anchor="middle" x="25" y="43">128</text>
+<text font-family="Yomogi" font-size="6" text-anchor="middle" x="25" y="51">x128</text>
+<rect fill="#A9CCE3" height="30" stroke="#3498DB" stroke-width="1" width="30" x="45" y="25"></rect>
+<text font-family="Yomogi" font-size="6" text-anchor="middle" x="60" y="43">128</text>
+<text font-family="Yomogi" font-size="6" text-anchor="middle" x="60" y="51">x128</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="95" y="45">...</text>
+</svg>
+</div>
+</div>
+</div>
+<p>私たちのFP8フレームワークに関するさらなる技術的詳細はDeepSeek-V3技術レポート [26] に記載されており、微細粒度FP8 GEMM（一般行列積）実装はDeepGEMM [77] としてオープンソース化されています。</p>
+</div>
+<div class="subsection-title" style="font-size: 1em; color: var(--color-dark);"><i class="fas fa-exclamation-triangle"></i>3.1.1 Limitations</div>
+<div class="challenge-box">
+<div class="challenge-title">FP8活用のためのハードウェア上の制約</div>
+<p>FP8は学習を加速する大きな可能性を秘めていますが、その能力を完全に引き出すためには、いくつかのハードウェア上の限界に対処する必要があります。</p>
+<ul class="unstyled-list">
+<li style="margin-bottom: 15px;">
+<strong class="keyword"><i class="fas fa-calculator"></i>FP8 Accumulation Precision (FP8アキュムレーション精度)</strong>:
+                <p>FP8はTensor Core内で制約のあるアキュムレーション精度を使用しており、これが大規模モデルの学習安定性、特にNVIDIA Hopper GPUにおいて影響を与えます。</p>
+<div class="glass-card" style="padding:10px; margin-top:5px;">
+<p style="font-size:0.9em;">Tensor Coreでの処理フロー：</p>
+<ol class="unstyled-list" style="font-size:0.9em; position:relative; padding-left:20px;">
+<li class="process-step" style="margin-bottom:5px;">
+<div class="step-number" style="width:20px; height:20px; font-size:10px;">1</div>
+                            32個の仮数部の積を、最大の指数に基づいて右シフトして桁合わせします。
+                        </li>
+<li class="process-step" style="margin-bottom:5px;">
+<div class="step-number" style="width:20px; height:20px; font-size:10px;">2</div>
+                            Tensor Coreは、加算のためにこれらの上位13フラクションビットのみを維持し、この範囲を超えるビットは切り捨てます。
+                        </li>
+<li class="process-step" style="margin-bottom:5px;">
+<div class="step-number" style="width:20px; height:20px; font-size:10px;">3</div>
+                            加算結果はFP22レジスタ（符号1ビット、指数8ビット、仮数13ビット）に蓄積されます。
+                        </li>
+</ol>
+<div style="text-align:center; margin-top:10px;">
+<svg height="100" viewbox="0 0 250 100" width="250" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#FADBD8" height="30" rx="3" stroke="#E74C3C" width="70" x="10" y="10"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="45" y="28">FP8 x FP8</text>
+<path d="M 80 25 L 110 25" marker-end="url(#arrowhead_red)" stroke="#E74C3C" stroke-width="1.5"></path>
+<defs>
+<marker id="arrowhead_red" markerheight="5" markerwidth="8" orient="auto" refx="0" refy="2.5">
+<polygon fill="#E74C3C" points="0 0, 8 2.5, 0 5"></polygon>
+</marker>
+</defs>
+<rect fill="#D6EAF8" height="30" rx="3" stroke="#3498DB" width="100" x="110" y="10"></rect>
+<text font-family="Yomogi" font-size="9" text-anchor="middle" x="160" y="22">アラインメント &amp; 上位13bit維持</text>
+<text font-family="Yomogi" font-size="7" text-anchor="middle" x="160" y="32">(Tensor Core内部)</text>
+<path d="M 160 40 L 160 55" marker-end="url(#arrowhead_blue)" stroke="#3498DB" stroke-width="1.5"></path>
+<defs>
+<marker id="arrowhead_blue" markerheight="5" markerwidth="8" orient="auto" refx="0" refy="2.5">
+<polygon fill="#3498DB" points="0 0, 8 2.5, 0 5"></polygon>
+</marker>
+</defs>
+<rect fill="#E8DAEF" height="30" rx="3" stroke="#8E44AD" width="100" x="110" y="60"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="160" y="78">FP22レジスタへ蓄積</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 10px; color: var(--color-gray);">FP8計算とアキュムレーションの概略</p>
+</div>
+<p style="font-size:0.9em; margin-top:5px;">この精度の制約が、特に勾配の累積などで誤差が蓄積し、学習の不安定性を引き起こす可能性があります。</p>
+</div>
+</li>
+<li>
+<strong class="keyword"><i class="fas fa-exchange-alt"></i>Fine-Grained Quantization Challenges (微細粒度量子化の課題)</strong>:
+                <p>タイルワイズやブロックワイズのような微細粒度量子化は、Tensor CoreからCUDA Coreへ部分結果を転送し、スケーリングファクタを乗算する際の<span class="highlight">大きな逆量子化オーバーヘッド</span>を導入します。</p>
+<div class="glass-card" style="padding:10px; margin-top:5px;">
+<p style="font-size:0.9em;">このプロセスは頻繁なデータ移動を引き起こし、計算効率を低下させ、ハードウェア利用を複雑にします。</p>
+<div style="text-align:center; margin-top:10px;">
+<svg height="100" viewbox="0 0 280 100" width="280" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#D5F5E3" height="40" rx="5" stroke="#2ECC71" width="80" x="10" y="30"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="50" y="55">Tensor Core</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="50" y="40">(部分結果)</text>
+<path d="M 95 40 Q 140 20 185 40" fill="none" marker-end="url(#arrowhead_red_alt)" stroke="#E74C3C" stroke-width="2"></path>
+<text fill="#E74C3C" font-family="Yomogi" font-size="9" text-anchor="middle" x="140" y="25">データ移動 (オーバーヘッド大)</text>
+<defs>
+<marker id="arrowhead_red_alt" markerheight="5" markerwidth="8" orient="auto" refx="8" refy="2.5">
+<polygon fill="#E74C3C" points="0 0, 8 2.5, 0 5"></polygon>
+</marker>
+</defs>
+<path d="M 185 60 Q 140 80 95 60" fill="none" marker-end="url(#arrowhead_blue_alt)" stroke="#3498DB" stroke-width="2"></path>
+<text fill="#3498DB" font-family="Yomogi" font-size="9" text-anchor="middle" x="140" y="85">データ移動 (オーバーヘッド大)</text>
+<defs>
+<marker id="arrowhead_blue_alt" markerheight="5" markerwidth="8" orient="auto" refx="0" refy="2.5">
+<polygon fill="#3498DB" points="0 0, 8 2.5, 0 5"></polygon>
+</marker>
+</defs>
+<rect fill="#EAECEE" height="40" rx="5" stroke="#7F8C8D" width="80" x="190" y="30"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="230" y="55">CUDA Core</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="230" y="40">(スケーリング)</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 10px; color: var(--color-gray);">逆量子化のためのデータ移動のイメージ</p>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="subsection-title" style="font-size: 1em; color: var(--color-dark);"><i class="fas fa-lightbulb"></i>3.1.2 Suggestions</div>
+<div class="note-box" style="border-left-color: var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-tools"></i>将来のハードウェア設計への提案</div>
+<p>既存のハードウェアの限界に対処するため、将来の設計に向けて以下の提案を行います。</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">1</div>
+<div class="step-content">
+<strong class="keyword">Increased Accumulation Precision (アキュムレーション精度の向上)</strong>:
+                    <p>ハードウェアは、アキュムレーションレジスタの精度を適切な値（例：FP32）に向上させるか、設定可能なアキュムレーション精度をサポートすべきです。これにより、さまざまなモデルの学習と推論の異なる要件に対して、性能と精度のトレードオフが可能になります。</p>
+<div style="text-align: center; margin-top:5px; margin-bottom:10px;">
+<svg height="70" viewbox="0 0 200 70" width="200" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#D6EAF8" height="25" rx="3" stroke="#3498DB" width="80" x="10" y="10"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="50" y="26">現状: FP22</text>
+<path d="M 50 38 L 50 50" marker-end="url(#arrow_green)" stroke="#2ECC71" stroke-width="1.5"></path>
+<text fill="#2ECC71" font-family="Yomogi" font-size="8" x="60" y="47">改善</text>
+<defs>
+<marker id="arrow_green" markerheight="4" markerwidth="6" orient="auto" refx="0" refy="2">
+<polygon fill="#2ECC71" points="0 0, 6 2, 0 4"></polygon>
+</marker>
+</defs>
+<rect fill="#A9DFBF" height="25" rx="3" stroke="#2ECC71" width="80" x="10" y="50"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="50" y="66">提案: FP32 or 可変</text>
+<circle cx="140" cy="40" fill="#F9E79F" r="25" stroke="#F1C40F"></circle>
+<text font-family="Yomogi" font-size="9" text-anchor="middle" x="140" y="38">設定可能</text>
+<text font-family="Yomogi" font-size="9" text-anchor="middle" x="140" y="48">精度</text>
+</svg>
+</div>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">2</div>
+<div class="step-content">
+<strong class="keyword">Native Support for Fine-Grained Quantization (微細粒度量子化のネイティブサポート)</strong>:
+                    <p>ハードウェアは微細粒度量子化をネイティブにサポートし、Tensor Coreがスケーリングファクタを受け取り、グループスケーリングを用いた行列乗算を実装できるようにすべきです。このようにして、部分和の蓄積と逆量子化の全体が、最終結果が生成されるまでTensor Core内で直接完了し、頻繁なデータ移動を回避して逆量子化オーバーヘッドを削減できます。</p>
+<div style="text-align:center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:12px; display:inline-block; padding:5px; background-color: #E8F8F5; border-radius:5px; border: 1px dashed #1ABC9C;">
+                        Tensor Core <i class="fas fa-arrow-right" style="color: #1ABC9C;"></i> [スケーリングファクタ入力 + グループスケーリング行列積 + 部分和蓄積 + 逆量子化] <i class="fas fa-arrow-right" style="color: #1ABC9C;"></i> 最終結果
+                        </span>
+</div>
+<p style="margin-top:10px;">このアプローチの注目すべき産業実装例として、NVIDIA Blackwellがサポートする<span class="highlight">マイクロスケーリングデータフォーマット [66]</span> があり、これは大規模なネイティブ量子化の実用的な利点を示しています。</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="section-card" id="3_2_LogFMT_Communication_Compression">
+<h3 class="subsection-title"><i class="fas fa-satellite-dish"></i>3.2 LogFMT: Communication Compression</h3>
+<div class="content-box">
+<p>現在のDeepSeek-V3アーキテクチャでは、ネットワーク通信のために<span class="keyword">低精度圧縮</span>を採用しています。特にエキスパート並列処理（EP parallelism）中、トークンは微細粒度FP8量子化を用いてディスパッチ（送信）され、BF16と比較して通信量を<span class="highlight">50%削減</span>します。これにより、通信時間が大幅に短縮されます。</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+<div class="info-card" style="background-color: #EBF5FB;">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-primary); text-align:center;">Dispatch Stage (トークン送信)</h4>
+<div style="text-align:center; margin: 10px 0;">
+<i class="fas fa-share-square fa-2x" style="color: var(--color-primary);"></i>
+</div>
+<p style="text-align:center;"><span class="badge blue">FP8 量子化</span></p>
+<p style="text-align:center;">通信量: <strong style="color: var(--color-accent1);">BF16の50%</strong></p>
+</div>
+<div class="info-card" style="background-color: #FEF9E7;">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary); text-align:center;">Combine Stage (結果集約)</h4>
+<div style="text-align:center; margin: 10px 0;">
+<i class="fas fa-reply-all fa-2x" style="color: var(--color-secondary);"></i>
+</div>
+<p style="text-align:center;"><span class="badge orange">高精度 (例: BF16)</span></p>
+<p style="text-align:center;">理由: <strong style="color: var(--color-dark);">精度要件のため</strong></p>
+</div>
+</div>
+<p>Combineステージ（エキスパートからの結果を集約する段階）では、精度の要件から依然としてBF16などの高精度フォーマットが使用されていますが、さらなる削減を目指してFP8、E5M6のようなカスタム精度フォーマット、FP8とBF16の混合などを積極的にテストしています。</p>
+<div class="bubble-box" style="border-color: var(--color-accent2); margin-top:25px;">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-accent2); font-weight: bold;"><i class="fas fa-lightbulb"></i>新提案：Logarithmic Floating-Point Formats (LogFMT-nBit)</p>
+<p>従来の浮動小数点フォーマットに加えて、<strong class="keyword">LogFMT-nBit</strong>という新しいデータ型も試みました。ここで、<span class="highlight">n</span>はビット数で、先頭の1ビットは符号ビット<span class="highlight">s</span>です。</p>
+<p>📌 <strong>アイデア</strong>: 活性化値を元の線形空間 (Linear space) から対数空間 (Log space) にマッピングすることで、活性化値の分布をより均一にします。</p>
+<div class="definition-box" style="margin-top:15px;">
+<div class="definition-title"><i class="fas fa-ruler-combined"></i>LogFMTエンコーディング手順</div>
+<p>実装では1x128の要素のタイル $[x_1, \cdots, x_m]$ を考えます。</p>
+<ol class="unstyled-list" style="position:relative; padding-left:20px;">
+<li class="process-step">
+<div class="step-number">1</div>絶対値を取り、全要素の対数を計算します。
+                        <div style="text-align: center; margin-top:5px; margin-bottom:5px;">
+<span style="font-family: 'Kaisei Decol', serif; font-size:12px; background-color:#f9f9f9; padding:3px; border-radius:3px;">$y_k = \log(|x_k|)$</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>対数値の最小値 $min = \log(|x_i|)$ と最大値 $max = \log(|x_j|)$ を見つけます。
+                    </li>
+<li class="process-step">
+<div class="step-number">3</div>エンコーディング:
+                        <ul>
+<li>最小値 ($min$) は <span class="badge purple">$S.00\cdots01$</span> としてエンコードされます。</li>
+<li>最大値 ($max$) は <span class="badge purple">$S.11\cdots11$</span> としてエンコードされます。</li>
+<li>ゼロ値は特別に <span class="badge gray">$S.00\cdots00$</span> として表現されます。</li>
+</ul>
+</li>
+<li class="process-step">
+<div class="step-number">4</div>区間 (Step) は以下のように定義されます:
+                        <div class="formula">
+                            $Step = \frac{max - min}{2^{n-1} - 2}$
+                        </div>
+<p style="font-size:0.9em; text-align:center;">(分母の-2は、最小値と最大値の表現に使われる2つのコードポイントを除外するため)</p>
+</li>
+<li class="process-step">
+<div class="step-number">5</div>残りの値は、$Step$ の最も近い整数 $K$ 倍に丸められます。
+                         <div style="text-align:center; margin-top:5px;">
+<svg height="70" viewbox="0 0 250 70" width="250" xmlns="http://www.w3.org/2000/svg">
+<line stroke="#7DCEA0" stroke-width="2" x1="20" x2="230" y1="35" y2="35"></line>
+<circle cx="20" cy="35" fill="#3498DB" r="3"></circle>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="20" y="25">$S.00..01$</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="20" y="50">($min$)</text>
+<circle cx="230" cy="35" fill="#E74C3C" r="3"></circle>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="230" y="25">$S.11..11$</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="230" y="50">($max$)</text>
+<circle cx="80" cy="35" fill="#F1C40F" r="3"></circle>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="80" y="55">Value 1</text>
+<line stroke="#F1C40F" stroke-dasharray="2,2" stroke-width="1" x1="80" x2="80" y1="35" y2="28"></line>
+<text font-family="Yomogi" font-size="9" text-anchor="middle" x="80" y="20">$K_1 \times Step$</text>
+<circle cx="150" cy="35" fill="#F1C40F" r="3"></circle>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="150" y="55">Value 2</text>
+<line stroke="#F1C40F" stroke-dasharray="2,2" stroke-width="1" x1="150" x2="150" y1="35" y2="28"></line>
+<text font-family="Yomogi" font-size="9" text-anchor="middle" x="150" y="20">$K_2 \times Step$</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="125" y="30">Interval: Step</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 10px; color: var(--color-gray);">LogFMTの量子化ステップのイメージ</p>
+</div>
+</li>
+</ol>
+</div>
+<div class="definition-box" style="border-color: var(--color-accent1); margin-top:15px;">
+<div class="definition-title" style="color: var(--color-accent1); border-bottom-color: var(--color-accent1);"><i class="fas fa-magic"></i>デコーディングプロセス</div>
+<p>デコーディングは簡単で、符号ビットと以下の値を組み合わせることで行われます：</p>
+<div class="formula">
+                    $\exp(min + Step \times (K-1))$
+                </div>
+<p style="font-size:0.9em; text-align:center;">(ここで、$(K-1)$ は、エンコードされた値が $S.00\cdots01$ から数えて何番目のステップかを示します)</p>
+</div>
+<p>📝 <strong>LogFMTの利点</strong>:</p>
+<ul>
+<li><strong class="keyword">動的な表現範囲</strong>: $min$ と $Step$ を局所的に計算することで、このデータ型はブロックごとに動的な表現範囲をサポートし、静的な浮動小数点フォーマットと比較して、より広い範囲をカバーしたり、より高い精度を提供したりできます。</li>
+<li><strong class="keyword">不偏活性化量子化</strong>: バイアスのない活性化量子化のためには、対数空間ではなく元の線形空間で丸めることが重要であることを見出しました。</li>
+<li><strong class="keyword">表現範囲の制約</strong>: $min$ を $max - \log(2^{32})$ より大きく制約します。これは、最大表現範囲がE5（指数部5ビットの浮動小数点数）と同様であることを意味します。</li>
+</ul>
+<p>📊 <strong>検証結果</strong>:</p>
+<p>LogFMT-nBitを約70億パラメータの密な言語モデルで検証しました。MoEモデルのCombineステージをシミュレートするために、残差ブランチの出力を量子化しました。</p>
+<ul>
+<li><span class="badge yellow">LogFMT-8Bit (n=8)</span>: FP8と同じビット数を共有する場合、E4M3やE5M2と比較して優れた学習精度を示しました。</li>
+<li><span class="badge yellow">LogFMT-10Bit (n=10)</span>: nを10ビットに増やすと、BF16のCombineステージと同様の精度になることがわかりました。</li>
+</ul>
+</div>
+<img alt="Figure 2: H800 node interconnection" class="section-image" src="H800_node_interconnection.jpg" style="width: 60%; margin: 20px auto; display: block;"/>
+<p style="text-align:center; font-family: 'Yomogi', cursive; font-size:12px; color: var(--color-gray);">図2: H800ノードの相互接続。この図は直接LogFMTを説明するものではありませんが、論文の文脈上、ハードウェア構成の参照として提示されています。LogFMTのような通信圧縮技術は、このようなノード間通信の効率化に貢献します。</p>
+</div>
+<div class="subsection-title" style="font-size: 1em; color: var(--color-dark);"><i class="fas fa-exclamation-triangle"></i>3.2.1 Limitations</div>
+<div class="challenge-box">
+<div class="challenge-title">LogFMTの現在の限界</div>
+<p>LogFMTを使用する当初の目的は、同じビット幅でFP8よりも高い精度を提供するため、送信中または活性化関数の近くで活性化値に適用することでした。しかし、以下の課題があります。</p>
+<ul class="unstyled-list">
+<li style="margin-bottom: 10px;">
+<i class="fas fa-sync-alt" style="color: var(--color-secondary);"></i> <strong>再変換の必要性</strong>: 後続の計算では、Hopper GPU Tensor Coreのデータ型に対応するために、BF16またはFP8への再変換が必要です。
+            </li>
+<li style="margin-bottom: 10px;">
+<i class="fas fa-tachometer-alt" style="color: var(--color-secondary);"></i> <strong>GPU帯域幅とレジスタ圧迫</strong>: $\log / \exp$ 操作のためのGPU帯域幅が不十分であり、エンコード/デコード中のレジスタ圧迫が過大です。
+            </li>
+<li>
+<i class="fas fa-hourglass-half" style="color: var(--color-secondary);"></i> <strong>オーバーヘッド</strong>: エンコード/デコード操作をAll-to-All通信と融合させると、オーバーヘッドが甚大（<span class="highlight">50%〜100%</span>）になる可能性があります。
+            </li>
+</ul>
+<p>したがって、実験結果はこのフォーマットの有効性を検証したものの、最終的には採用しませんでした。</p>
+<div style="text-align:center; margin-top:15px;">
+<svg height="120" viewbox="0 0 300 120" width="300" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#FADBD8" height="40" rx="5" stroke="#E74C3C" width="100" x="10" y="10"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="60" y="35">LogFMT</text>
+<path d="M 115 30 L 145 30" marker-end="url(#arrowhead_lim_red)" stroke="#E74C3C" stroke-width="2"></path>
+<defs>
+<marker id="arrowhead_lim_red" markerheight="5" markerwidth="8" orient="auto" refx="0" refy="2.5">
+<polygon fill="#E74C3C" points="0 0, 8 2.5, 0 5"></polygon>
+</marker>
+</defs>
+<text fill="#E74C3C" font-family="Yomogi" font-size="9" text-anchor="middle" x="130" y="20">変換</text>
+<rect fill="#D6EAF8" height="40" rx="5" stroke="#3498DB" width="100" x="150" y="10"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="200" y="35">BF16/FP8</text>
+<text font-family="Yomogi" font-size="9" text-anchor="middle" x="200" y="22">(Tensor Core用)</text>
+<rect fill="#FEF9E7" height="40" rx="5" stroke="#F39C12" width="240" x="10" y="70"></rect>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="130" y="88">Log/Exp帯域不足、レジスタ圧迫</text>
+<text font-family="Yomogi" font-size="10" text-anchor="middle" x="130" y="102">エンコード/デコードのオーバーヘッド大</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 10px; color: var(--color-gray);">LogFMTの課題の図解</p>
+</div>
+</div>
+<div class="subsection-title" style="font-size: 1em; color: var(--color-dark);"><i class="fas fa-lightbulb"></i>3.2.2 Suggestions</div>
+<div class="note-box" style="border-left-color: var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-cogs"></i>将来のハードウェアへの提案</div>
+<p>FP8またはカスタム精度フォーマットに合わせた<span class="keyword">圧縮および解凍ユニットのネイティブサポート</span>を提供することは、将来のハードウェアにとって実行可能なアプローチです。これにより、帯域幅要件を最小限に抑え、通信パイプラインを合理化することができます。</p>
+<div style="text-align: center; margin: 15px 0;">
+<span style="font-family: 'Yomogi', cursive; font-size:14px; display:inline-block; padding:8px 12px; background-color: #E8F8F5; border-radius:8px; border: 1px solid #1ABC9C;">
+<i class="fas fa-microchip" style="color: #1ABC9C;"></i> ハードウェア <i class="fas fa-arrow-right" style="color: #1ABC9C;"></i> ネイティブ圧縮/解凍ユニット <i class="fas fa-arrow-right" style="color: #1ABC9C;"></i> <i class="fas fa-network-wired" style="color: #1ABC9C;"></i> 効率的な通信
+            </span>
+</div>
+<p>通信オーバーヘッドの削減は、MoEトレーニングのような帯域幅集約的なタスクにおいて特に役立ちます。</p>
+</div>
+</div>
+<div class="section-card" id="4_Interconnection_Driven_Design">
+<h2 class="section-title"><i class="fas fa-network-wired"></i> 4 Interconnection Driven Design</h2>
+<div class="content-box">
+<p>このセクションでは、大規模言語モデル (LLM) の学習と推論において、<span class="keyword">ハードウェアの相互接続 (インターコネクション)</span> がいかに重要であるか、そしてDeepSeek-V3の開発で直面した具体的な課題と、それらに対する設計上の工夫について掘り下げていきます。特に、使用したNVIDIA H800 GPUの特性を踏まえ、<span class="highlight">モデル設計と並列化戦略をどのようにハードウェア制約に適合させたか</span>、そしてノード内 (スケールアップ) とノード間 (スケールアウト) の通信能力のバランスと、それらの統合に向けた将来の展望について詳細に解説します。このセクションの目的は、インターコネクションの制約がモデル設計に与える影響を明らかにし、効率的なAIシステム構築のための洞察を提供することです。 📝</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-server"></i> 4.1 Current Hardware Architecture</h3>
+<div class="content-box">
+<p>私たちが現在使用しているのは、<span class="keyword">NVIDIA H800 GPU SXMアーキテクチャ</span>です。これは、H100 GPUと同様に<span class="highlight">Hopperアーキテクチャ</span>をベースに構築されています。しかし、H800は規制遵守のため、いくつかの点でH100とは異なります。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-microchip"></i></div>
+<p><strong>FP64計算性能の削減:</strong> 科学技術計算などで用いられる倍精度浮動小数点演算 (FP64) の性能がH100に比べて低く抑えられています。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-exchange-alt"></i></div>
+<p><strong>NVLink帯域幅の削減:</strong> GPU間の高速インターコネクトであるNVLinkの帯域幅が、H100の <span class="keyword">900 GB/s</span> から H800 SXMノードでは <span class="keyword">400 GB/s</span> へと大幅に削減されています。</p>
+<div style="text-align: center; margin-top:10px;">
+<span class="badge orange">H100: 900 GB/s</span> <i class="fas fa-arrow-right" style="color: var(--color-secondary); margin: 0 5px;"></i> <span class="badge blue">H800: 400 GB/s</span>
+</div>
+</div>
+</div>
+<div class="challenge-box" style="margin-top:15px;">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 帯域幅削減の課題</div>
+<p>このノード内スケールアップ帯域幅の大幅な削減は、特に高い性能を要求されるワークロードにおいて大きな課題となります。GPU間のデータ転送速度が遅くなるため、計算の待ち時間が増加し、全体の処理効率が低下する可能性があります。</p>
+</div>
+<p style="margin-top:15px;">この帯域幅不足を補うため、各H800ノードには<span class="highlight">8基の400G Infiniband (IB) CX7 NIC (Network Interface Card)</span> が搭載されています。これにより、<span class="keyword">スケールアウト (ノード間通信) 能力</span>が強化され、NVLinkの帯域幅制限による影響を緩和しようとしています。</p>
+<img alt="Figure 2: H800 node interconnection" src="H800_node_interconnection.jpg" style="width: 60%; display: block; margin-left: auto; margin-right: auto; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px;"/>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-image"></i> 図2: H800ノードの相互接続</div>
+<p>この図は、H800ノードの内部構造と接続を示しています。</p>
+<ul>
+<li><span class="badge blue">CPU 1, CPU 2:</span> 中央処理装置。システム全体の制御や、GPUとのデータ連携を行います。</li>
+<li><span class="badge" style="background-color: #a3cca3;">PCIe Switch:</span> CPUとGPU (CX7 NIC経由) を接続する高速バス。</li>
+<li><span class="badge orange">CX7 NIC:</span> 8基搭載されたInfinibandネットワークカード。ノード間通信 (スケールアウト) を担当します。</li>
+<li><span class="badge purple">H800 SXM5 (1-8):</span> 8基のGPU。実際の計算処理を行います。</li>
+<li><span class="badge" style="background-color: #90ee90;">NVLink Switch Chip (1-4):</span> GPU間を高速に接続するNVLinkスイッチ。ノード内通信 (スケールアップ) を担当しますが、H800ではこの帯域がH100より削減されています。</li>
+<li><span class="badge orange" style="float: right;">Storage NIC:</span> ストレージアクセス用のネットワークカード。</li>
+</ul>
+<p>図から分かるように、各GPUはCX7 NICを介して外部ネットワークに接続され、NVLinkスイッチを介してノード内の他のGPUと接続されています。DeepSeek-V3モデルは、これらのハードウェアの強みと限界に合わせて、いくつかの設計上の考慮事項を取り入れています。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 4.2 Hardware-Aware Parallelism</h3>
+<div class="content-box">
+<p>H800アーキテクチャの制約、特に<span class="keyword">NVLink帯域幅の制限</span>に対応するため、DeepSeek-V3の性能を最適化するために以下の並列化戦略が検討されました。</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-ban" style="color:var(--color-secondary)"></i></div>
+<h4><span class="keyword">テンソル並列 (TP) の回避</span> (トレーニング時)</h4>
+</div>
+<p>トレーニング中は、NVLinkの帯域幅が限られているため、テンソル並列は非効率です。そのため、トレーニングではTPを避ける方針を取りました。</p>
+<p><i class="fas fa-info-circle" style="color:var(--color-accent1)"></i> ただし、<span class="highlight">推論時</span>には、レイテンシ削減やTPOT (Time Per Output Token、出力トークンあたりの時間) 性能向上のために、TPを選択的に使用することは可能です。</p>
+</div>
+<div class="info-card">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-project-diagram" style="color:var(--color-accent2)"></i></div>
+<h4><span class="keyword">パイプライン並列 (PP) の強化</span></h4>
+</div>
+<p><span class="highlight">DualPipe [29]</span> という手法を採用し、アテンション計算やMoE (Mixture of Experts) の計算と、MoEの通信を<span class="keyword">オーバーラップ</span>させます。これにより、以下のような効果があります。</p>
+<ul>
+<li><i class="fas fa-hourglass-half" style="color:var(--color-primary)"></i> パイプラインバブル (処理の空き時間) の削減</li>
+<li><i class="fas fa-balance-scale" style="color:var(--color-primary)"></i> GPU間のメモリ使用量の均等化</li>
+<li><i class="fas fa-chart-line" style="color:var(--color-primary)"></i> 全体的なスループットの向上</li>
+</ul>
+<p class="reference">詳細は技術レポート [26] を参照してください。</p>
+</div>
+<div class="info-card">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-rocket" style="color:var(--color-accent3)"></i></div>
+<h4><span class="keyword">エキスパート並列 (EP) の高速化</span></h4>
+</div>
+<p>各ノードに搭載された8基の400Gbps InfiniBand (IB) NICにより、システムは<span class="highlight">40GB/sを超える速度でのAll-to-all通信</span>を実現できます。</p>
+<p>特に、私たちが実装したAll-to-all EPの実装である <span class="keyword">DeepEP [78]</span> はオープンソース化されており、これにより非常に効率的なエキスパート並列処理が可能になります。これについては次のサブセクションで詳しく説明します。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-link"></i> 4.3 Model Co-Design: Node-Limited Routing</h3>
+<div class="content-box">
+<p>H800アーキテクチャでは、<span class="keyword">スケールアップ (ノード内) 通信</span>と<span class="keyword">スケールアウト (ノード間) 通信</span>の間に顕著な帯域幅の差があります。</p>
+<div class="two-column">
+<div class="column glass-card" style="padding:15px;">
+<h4 style="text-align:center; color: var(--color-primary);"> <i class="fas fa-building"></i> ノード内 (NVLink)</h4>
+<p>公称帯域幅: <span class="badge blue">200 GB/s</span></p>
+<p>実効帯域幅: 約 <span class="badge light-blue">160 GB/s</span></p>
+</div>
+<div class="column glass-card" style="padding:15px;">
+<h4 style="text-align:center; color: var(--color-secondary);"><i class="fas fa-globe-americas"></i> ノード間 (IB NIC)</h4>
+<p>公称帯域幅 (1基): 400Gbps = <span class="badge orange">50 GB/s</span></p>
+<p>実効帯域幅 (1基): 約 <span class="badge light-orange">40 GB/s</span> (小メッセージサイズとレイテンシの影響を考慮)</p>
+</div>
+</div>
+<p style="text-align:center; margin-top:10px;">👉 この帯域幅の比率は、ノード内がノード間の約 <span class="highlight">4倍高速</span>であることを意味します。(160 GB/s vs 40 GB/s)</p>
+<p>このノード内の高い帯域幅をバランス良く、最大限に活用するために、モデルアーキテクチャ、特に<span class="keyword">TopK Expert Selection Strategy (上位K個のエキスパート選択戦略)</span>において、ハードウェアとの協調設計 (Co-Design) を行いました。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-calculator"></i> 具体例: エキスパートルーティングの通信コスト</div>
+<p>設定: <span class="badge">8ノード</span> (合計64 GPU)、<span class="badge">256ルーテッドエキスパート</span> (GPUあたり4エキスパート)</p>
+<p>DeepSeek-V3では、各トークンは<span class="highlight">1つの共有エキスパート</span>と<span class="highlight">8つのルーテッドエキスパート</span>にルーティングされます。</p>
+<div class="two-column">
+<div class="column">
+<div class="bubble-box">
+<p><strong>シナリオ1: エキスパートが全ノードに分散</strong></p>
+<p>もし、あるトークンのターゲットとなる8つのルーテッドエキスパートが、全8ノードに散らばっていた場合...</p>
+<p>IB経由の通信時間 = <span class="keyword">8𝑡</span></p>
+<p class="reference">(𝑡 はIB経由で1トークンを送信する時間)</p>
+<div style="text-align:center; font-size: 30px; margin-top:10px;">
+                         Node1 <i class="fas fa-long-arrow-alt-right"></i> Exp1 ... Node8 <i class="fas fa-long-arrow-alt-right"></i> Exp8 
+                        </div>
+</div>
+</div>
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p style="border-bottom-color: var(--color-accent1);"><strong>シナリオ2: NVLinkを活用した重複排除</strong></p>
+<p>NVLinkの高い帯域幅を活用し、同じノード宛のトークンはIB経由で一度だけ送信し、その後NVLinkを介してノード内の他のGPUに転送します。</p>
+<p>これにより、IBトラフィックの<span class="keyword">重複排除 (deduplication)</span> が可能になります。</p>
+<p>ターゲットエキスパートが <span class="keyword">𝑀</span> 個のノードに分散している場合 (𝑀 &lt; 8):</p>
+<p>重複排除後のIB通信コスト = <span class="keyword">𝑀𝑡</span></p>
+<div style="text-align:center; font-size: 24px; margin-top:10px;">
+                         Token <i class="fas fa-long-arrow-alt-right"></i> Node A (IB) <br/>
+<span style="margin-left:50px; display:inline-block;"> <i class="fas fa-level-down-alt fa-rotate-90" style="color:var(--color-primary);"></i> GPU_A1 (NVLink) </span><br/>
+<span style="margin-left:50px; display:inline-block;"> <i class="fas fa-level-down-alt fa-rotate-90" style="color:var(--color-primary);"></i> GPU_A2 (NVLink) </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="note-box" style="margin-top:15px;">
+<div class="note-title"><i class="fas fa-lightbulb"></i> Node-Limited Routingの導入</div>
+<p>IBトラフィックがエキスパートの存在するノード数 <span class="keyword">𝑀</span> のみに依存するため、DeepSeek-V3ではTopKエキスパート選択戦略に<span class="highlight">Node-Limited Routing (ノード制限ルーティング)</span>を導入しました。</p>
+<p>具体的には、以下の通りです。</p>
+<ol class="unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">256個のルーテッドエキスパートを<span class="keyword">8つのグループ</span>に分けます (各グループ32エキスパート)。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">各グループを<span class="keyword">単一のノード</span>にデプロイします。</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">このデプロイメントの上で、アルゴリズム的に各トークンが最大でも<span class="highlight">4つのノード</span>にしかルーティングされないように保証します。</div>
+</li>
+</ol>
+<p><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> このアプローチにより、IB通信のボトルネックが緩和され、トレーニング中の実効通信帯域幅が向上します。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-compress-arrows-alt"></i> 4.4 Scale-Up and Scale-Out Convergence</h3>
+<div class="content-box">
+<h4 class="subsection-title" style="font-size:16px; color: var(--color-dark); border-left-color: var(--color-dark);"><i class="fas fa-tools"></i> 4.4.1 Limitations of Current Implementations</h4>
+<p>Node-Limited Routing戦略は通信帯域幅の要件を削減しますが、ノード内 (NVLink) とノード間 (IB) のインターコネクト間の帯域幅の差により、通信パイプラインカーネルの実装が複雑になります。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-microchip"></i> GPU SMリソースの消費</div>
+<p>実際には、GPUの<span class="keyword">ストリーミングマルチプロセッサ (SM)</span> のスレッドが、ネットワークメッセージ処理 (例: QPやWQEの充填) とNVLink経由のデータ転送の両方に使用され、計算リソースを消費してしまいます。</p>
+<p>例: トレーニング中、H800 GPUのSMのうち最大<span class="highlight">20基</span>が通信関連操作に割り当てられ、実際の計算に利用できるリソースが減少します。</p>
+</div>
+<p style="margin-top:15px;">オンライン推論でスループットを最大化するため、私たちはEPのAll-to-all通信を<span class="highlight">完全にNIC RDMA (Remote Direct Memory Access)</span> を通じて実行します。これにより、SMリソースの競合を避け、計算効率を向上させます。これは、RDMAの非同期通信モデルが計算と通信をオーバーラップさせる上で有利であることを示しています。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-tasks"></i> SMが現在EP通信で実行している主要タスク (特にcombineステージのreduce操作とデータ型変換)</div>
+<p>これらのタスクを専用の通信ハードウェアにオフロードできれば、SMを計算カーネル用に解放し、全体効率を大幅に向上させることができます。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">データ転送 (Forwarding Data):</span> IBとNVLinkドメイン間で、同じノード内の複数のGPU宛のIBトラフィックを集約する。</li>
+<li><span class="badge blue">データ輸送 (Data Transport):</span> RDMAバッファ (登録済みGPUメモリ領域) と入出力バッファ間でデータを移動する。</li>
+<li><span class="badge blue">リデュース操作 (Reduce Operations):</span> EPのAll-to-all combine通信に必要なリデュース操作を実行する。</li>
+<li><span class="badge blue">メモリレイアウト管理 (Managing Memory Layouts):</span> IBとNVLinkドメインをまたぐチャンク化データ転送のための、きめ細かいメモリレイアウトを処理する。</li>
+<li><span class="badge blue">データ型キャスト (Data Type Cast):</span> All-to-all通信の前後でデータ型を変換する。</li>
+</ul>
+</div>
+</div>
+<div class="content-box" style="margin-top: -10px;">
+<h4 class="subsection-title" style="font-size:16px; color: var(--color-dark); border-left-color: var(--color-dark);"><i class="fas fa-lightbulb"></i> 4.4.2 Suggestions:</h4>
+<p>これらの非効率性に対処するため、将来のハードウェアでは<span class="keyword">ノード内 (スケールアップ) とノード間 (スケールアウト) の通信を統一されたフレームワークに統合する</span>ことを強く推奨します。</p>
+<p>ネットワークトラフィック管理とNVLink・IBドメイン間のシームレスな転送のための専用コプロセッサを組み込むことで、ソフトウェアの複雑さを軽減し、帯域幅利用率を最大化できます。例えば、DeepSeek-V3で採用されているノード制限ルーティング戦略は、動的なトラフィック重複排除のハードウェアサポートによってさらに最適化できます。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-road"></i> 新しいインターコネクトプロトコル</div>
+<p>私たちは、<span class="highlight">Ultra Ethernet Consortium (UEC) [17, 18]</span> や <span class="highlight">Ultra Accelerator Link (UALink) [16]</span> といった新しいインターコネクトプロトコルが、スケールアップおよびスケールアウト通信の進展を促進すると認識しています。最近では、<span class="highlight">Unified Bus (UB) [49]</span> がスケールアップとスケールアウトの統合に向けた新しいアプローチを導入しました。</p>
+<p class="reference">セクション6ではUECとUALinkによって提案されたいくつかの技術革新をさらに探求しますが、このセクションでは主にプログラミングフレームワークレベルでのスケールアップとスケールアウトの統合達成に焦点を当てています。</p>
+</div>
+<p style="margin-top:15px;">具体的な提案は以下の通りです。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-network-wired"></i></div>
+<p><strong>(1) 統一ネットワークアダプタ (Unified Network Adapter):</strong></p>
+<p>統一されたスケールアップ/アウトネットワークに接続されるNICやI/Oダイを設計します。これらのアダプタは、スケールアウトネットワークからのパケットをスケールアップネットワーク内の特定のGPUに転送するような基本的なスイッチ機能もサポートすべきです。これは単一のLID (Local Identifier) やIPアドレスとポリシーベースルーティングを用いて実現可能です。</p>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-microchip"></i></div>
+<p><strong>(2) 専用通信コプロセッサ (Dedicated Communication Co-Processor):</strong></p>
+<p>ネットワークトラフィック処理専用のコプロセッサまたはプログラム可能なコンポーネント (I/Oダイなど) を導入します。これにより、GPU SMからのパケット処理をオフロードし、性能低下を防ぎます。また、効率的なバッファ管理のためのハードウェアアクセラレーションによるメモリコピー機能も含むべきです。</p>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-random"></i></div>
+<p><strong>(3) 柔軟な転送、ブロードキャスト、リデュース機構 (Flexible Forwarding, Broadcast and Reduce Mechanisms):</strong></p>
+<p>ハードウェアは、現在のGPU SMベースの実装を反映し、スケールアップ/アウトネットワーク間での柔軟な転送、ブロードキャスト操作 (EPディスパッチ用)、リデュース操作 (EPコンバイン用) をサポートすべきです。これにより、実効帯域幅が向上するだけでなく、ネットワーク固有操作の計算複雑性も低減されます。</p>
+</div>
+<div class="feature-item glass-card">
+<div class="icon-item"><i class="fas fa-sync-alt"></i></div>
+<p><strong>(4) ハードウェア同期プリミティブ (Hardware Synchronization Primitives):</strong></p>
+<p>ハードウェアレベルでメモリ一貫性の問題や順序不同のパケット到着を処理するための、きめ細かいハードウェア同期命令を提供します。これにより、RDMA完了イベントのようなソフトウェアベースの同期メカニズムが不要になり、追加のレイテンシやプログラミングの複雑さを排除できます。Acquire/Releaseメカニズムを備えたメモリセマンティック通信が有望な実装です。</p>
+</div>
+</div>
+<p style="margin-top:15px;"><i class="fas fa-thumbs-up" style="color:var(--color-accent1);"></i> これらの提言を実施することで、将来のハードウェア設計は、大規模分散AIシステムの効率を大幅に向上させると同時に、ソフトウェア開発を簡素化することができます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-traffic-light"></i> 4.5 Bandwidth Contention and Latency</h3>
+<div class="content-box">
+<h4 class="subsection-title" style="font-size:16px; color: var(--color-dark); border-left-color: var(--color-dark);"><i class="fas fa-tools"></i> 4.5.1 Limitations:</h4>
+<p>現在のハードウェアには、NVLinkやPCIe上で異なる種類のトラフィック間で帯域幅を<span class="keyword">動的に割り当てる柔軟性</span>が欠けています。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-circle"></i> 帯域幅の競合例</div>
+<p>例えば、推論中にCPUメモリからGPUへ<span class="highlight">KVキャッシュデータ</span>を転送すると、数十GB/sを消費し、PCIe帯域幅を飽和させることがあります。もしGPUが同時にEP通信のためにIBを使用している場合、このKVキャッシュ転送とEP通信間の<span class="keyword">競合</span>が発生し、全体のパフォーマンスを低下させ、レイテンシの急増を引き起こす可能性があります。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="badge orange">KV Cache (CPU <i class="fas fa-arrow-right"></i> GPU via PCIe)</span>
+<i class="fas fa-times" style="color: red; margin: 0 10px; font-size:20px;"></i>
+<span class="badge blue">EP Communication (GPU <i class="fas fa-exchange-alt"></i> IB)</span>
+<p style="margin-top:5px; font-size:12px;">🚨 これらが同時に発生すると性能劣化・遅延発生！ 🚨</p>
+</div>
+</div>
+</div>
+<div class="content-box" style="margin-top: -10px;">
+<h4 class="subsection-title" style="font-size:16px; color: var(--color-dark); border-left-color: var(--color-dark);"><i class="fas fa-lightbulb"></i> 4.5.2 Suggestions:</h4>
+<p>帯域幅の競合とレイテンシの問題に対処するための提案は以下の通りです。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-sort-amount-down"></i></div>
+<p><strong>動的なNVLink/PCIeトラフィック優先順位付け (Dynamic NVLink/PCIe Traffic Prioritization):</strong></p>
+<p>ハードウェアは、トラフィックの種類に基づいて<span class="highlight">動的に優先順位付け</span>をサポートすべきです。例えば、EP、TP、KVキャッシュ転送に関連するトラフィックには、インターコネクト効率を最大化するために異なる優先度を割り当てるべきです。PCIeについては、トラフィッククラス (TC) をユーザーレベルプログラミングに公開するだけで十分です。</p>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-puzzle-piece"></i></div>
+<p><strong>I/Oダイ チップレット統合 (I/O Die Chiplet Integration):</strong></p>
+<p>従来のPCIe経由ではなく、NICを<span class="keyword">直接I/Oダイに統合</span>し、同じパッケージ内でコンピュートダイに接続することで、通信レイテンシを大幅に削減し、PCIe帯域幅の競合を緩和できます。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-microchip"></i> (NIC) + <i class="fas fa-microchip"></i> (I/O Die) <i class="fas fa-link"></i> <i class="fas fa-microchip"></i> (Compute Die) <br/> <span class="badge green">同一パッケージ内</span>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-link"></i></div>
+<p><strong>スケールアップドメイン内のCPU-GPUインターコネクト (CPU–GPU Interconnects within the Scale-Up Domain):</strong></p>
+<p>ノード内通信をさらに最適化するため、CPUとGPUはPCIeだけに依存するのではなく、<span class="highlight">NVLinkや類似の専用高帯域幅ファブリック</span>を使用して相互接続されるべきです。NICをI/Oダイに統合することによる利点と同様に、このアプローチは、トレーニングや推論中にGPUとCPUメモリ間でパラメータやKVキャッシュをオフロードするようなシナリオを大幅に改善できます。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="5_Large_Scale_Network_Driven_Design">
+<h2 class="section-title"><i class="fas fa-project-diagram"></i> 5 Large Scale Network Driven Design</h2>
+<div class="content-box">
+<p>このセクションでは、DeepSeek-V3のような超大規模言語モデルの学習と推論を効率的に行うために、いかにネットワーク設計が重要であるか、そしてどのようなネットワークアーキテクチャが採用されたのかについて掘り下げていきます。主な目的は、<span class="highlight">コスト効率と高いパフォーマンスを両立させるネットワークトポロジー</span>を明らかにすることです。特に、<span class="keyword">Multi-Plane Fat-Tree (MPFT)</span> というネットワーク構成の採用とその利点、さらに<span class="highlight">低遅延ネットワークの実現</span>に向けた課題と提案について詳しく解説します。大規模AIシステムを支えるネットワーク基盤の設計思想を理解していきましょう。 ✏️</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-network-wired"></i> 5.1 Network Co-Design: Multi-Plane Fat-Tree</h3>
+<div class="content-box">
+<p>DeepSeek-V3の学習では、<span class="keyword">Multi-Plane Fat-Tree (MPFT)</span> と呼ばれるスケールアウトネットワークアーキテクチャが採用されました。これは、多数のGPUを効率的に接続し、大規模な並列処理を実現するための重要な設計です。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説: Multi-Plane Fat-Tree (MPFT)</div>
+<p>MPFTは、Fat-Treeトポロジーをベースに、複数の独立したネットワークプレーン（通信経路の層）を持たせたネットワーク構成です。各プレーンが独立しているため、障害耐性や負荷分散に優れ、大規模なシステムへの拡張が容易になります。</p>
+</div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4><i class="fas fa-server"></i> ノード構成 🖥️</h4>
+<ul class="unstyled-list">
+<li><i class="fas fa-microchip"></i> 各計算ノードには、<strong>8基のGPU</strong>と<strong>8つのInfiniBand (IB) NIC</strong>（ネットワークインターフェースカード）が搭載されています。</li>
+<li><i class="fas fa-link"></i> 各GPUとNICのペアは、それぞれ異なる<strong>独立したネットワークプレーン</strong>に割り当てられます。つまり、8つのプレーンが存在することになります。</li>
+<li><i class="fas fa-hdd"></i> さらに、各ノードは<strong>400 GbpsのEthernet RoCE NIC</strong>を1つ持ち、これは独立したストレージネットワークプレーンに接続され、<span class="keyword">3FS</span> [30]という分散ファイルシステムへのアクセスに使用されます。</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h4><i class="fas fa-sitemap"></i> スケールアウトネットワーク 🕸️</h4>
+<ul class="unstyled-list">
+<li><i class="fas fa-random"></i> スケールアウトネットワークには、<strong>64ポートの400G InfiniBandスイッチ</strong>が使用されています。</li>
+<li><i class="fas fa-expand-arrows-alt"></i> このトポロジーは、理論上は最大<strong>16,384基のGPU</strong>までサポート可能でありながら、2層ネットワークのコストと遅延の利点を維持できます。</li>
+<li><i class="fas fa-users-cog"></i> ただし、実際の運用ではポリシーや規制の制約により、最終的に展開されたのは2000基強のGPUでした。</li>
+</ul>
+</div>
+</div>
+<img alt="Figure 3: Eight-plane two-layer fat-tree scale-out network" class="section-image" src="multi_plane_fat_tree_network.jpg"/>
+<div class="caption bubble-box">
+<p><strong>図3: 8プレーン2層ファットツリー スケールアウトネットワーク</strong> 🎨</p>
+<p>この図は、論文で説明されているMPFTネットワークの構造を示しています。各ノード（Node）には複数のGPUとNICがあり、各GPU-NICペアが異なるプレーン（NIC 0 GPU 0がプレーン0、NIC 1 GPU 1がプレーン1...など）に接続されている様子が描かれています。これらのプレーンはそれぞれ独立した2層のFat-Treeネットワーク（Leaf SW - Spine SW）を構成します。異なるプレーン間の通信が必要な場合（例えば、あるGPUが別のプレーンに接続されたGPUと通信する場合）、ノード内でPCIeやNVLinkを介して別のNICへデータを転送する必要があります。これにより、プレーン間のトラフィック分離が実現されます。</p>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-exclamation-circle"></i> 現状の制約と理想的なアーキテクチャ</div>
+<p>現在使用されているInfiniBand ConnectX-7の制限により、展開されたMPFTネットワークは、論文が描く理想的なアーキテクチャを完全には実現できていません。</p>
+</div>
+<img alt="Figure 4: Ideal Multi-Plane Network" class="section-image" src="multi_plane_network_ports.jpg"/>
+<div class="caption bubble-box">
+<p><strong>図4: 理想的なマルチプレーンネットワーク</strong> 💡</p>
+<p>この図は、将来的に実現が期待される理想的なマルチプレーンネットワークの概念を示しています。各NIC（NIC1, NIC2など）が複数の物理ポート（P1, P2, P3, P4）を持ち、それぞれのポートが異なるネットワークプレーン（Plane1, Plane2など、色分けで表現）に接続されます。重要なのは、これらの複数の物理ポートが、<span class="keyword">ポートボンディング</span>技術によってユーザーからは単一の論理インターフェースとして見える点です。これにより、アプリケーション（ユーザー視点）は、単一の<span class="keyword">Queue Pair (QP)</span> を使って、利用可能な全ての物理ポートを通じてシームレスにメッセージを送受信できます。これは、あたかもパケットを複数の経路に同時に「スプレー」するように動作します（<span class="keyword">パケットスプレイング</span>）。</p>
+<p>このアーキテクチャの結果として、同じQPから送信されたパケットが異なるネットワークパスを経由し、受信側には順序がバラバラで到着する可能性があります。そのため、NIC内部で<span class="keyword">ネイティブな順序不同配置 (out-of-order placement)</span> をサポートし、メッセージの一貫性を保証し、正しい順序セマンティクスを維持する機能が不可欠になります。例えば、InfiniBand ConnectX-8は4プレーンをネイティブサポートしており、このような機能の実現に向けた一歩と言えます。将来のNICがこのような高度なマルチプレーン機能を完全にサポートすることで、2層ファットツリーネットワークは、より大規模なAIクラスタへと効果的にスケールアップできるようになると期待されます。</p>
+</div>
+<p>全体として、マルチプレーンアーキテクチャは、<span class="highlight">障害分離</span>、<span class="highlight">堅牢性</span>、<span class="highlight">負荷分散</span>、そして<span class="highlight">大規模システムの詳細なスケーラビリティ</span>において大きな利点を提供します。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-star"></i> 5.1.1 Advantages of Multi-Plane Fat-Tree Network.</h4>
+<div class="content-box">
+<p>MPFTネットワークには、いくつかの重要な利点があります。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-puzzle-piece fa-2x" style="color:var(--color-primary);"></i>
+<p class="keyword">MRFTのサブセット</p>
+<p>MPFTトポロジーは、より広範な<span class="keyword">Multi-Rail Fat-Tree (MRFT)</span> アーキテクチャの特定のサブセットです。そのため、NVIDIAやNCCL（NVIDIA Collective Communications Library）によってMRFT向けに開発された既存の最適化手法を、MPFT環境でもシームレスに活用できます。さらに、NCCLがサポートする<span class="keyword">PXN (Proximal Network eXchange)</span> [54]技術は、プレーン間の直接的な相互接続がない場合でも効率的な通信を可能にし、プレーン間分離という固有の課題に対処します。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-dollar-sign fa-2x" style="color:var(--color-accent1);"></i>
+<p class="keyword">コスト効率 💸</p>
+<p>表3に示すように、MPFTは2層ファットツリー（FT2）トポロジーを用いて1万以上のエンドポイント（接続点、この場合はGPUなど）をサポートできます。これは、3層ファットツリー（FT3）トポロジーと比較してネットワークコストを大幅に削減します。エンドポイントあたりのコストは、コスト効率が高いとされる<span class="keyword">Slim Fly (SF)</span> [12]トポロジーよりもわずかに競争力があります。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-traffic-light fa-2x" style="color:var(--color-secondary);"></i>
+<p class="keyword">トラフィック分離 🚦</p>
+<p>各プレーンは独立して動作するため、あるプレーンでの輻輳（混雑）が他のプレーンに影響を与えません。この分離により、ネットワーク全体の安定性が向上し、パフォーマンス低下の連鎖を防ぎます。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-tachometer-alt fa-2x" style="color:var(--color-accent2);"></i>
+<p class="keyword">遅延削減 ⏱️</p>
+<p>2層トポロジーは、3層ファットツリーよりも低い遅延を実現します。これは、実験でも示されており、MoEベースの学習や推論など、遅延に敏感なアプリケーションに特に適しています。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-shield-alt fa-2x" style="color:var(--color-accent3);"></i>
+<p class="keyword">堅牢性 (Robustness) 💪</p>
+<p>図4（理想的なマルチプレーンネットワークの図）で示されるように、マルチポートNICは複数のアップリンク（上位スイッチへの接続経路）を提供します。そのため、単一のポートで障害が発生しても接続性が失われず、迅速かつ透過的な障害回復が可能です。</p>
+</div>
+</div>
+<img alt="Table 3: Network topology comparison" class="section-image" src="table3.png"/>
+<div class="caption bubble-box">
+<p><strong>表3: ネットワークトポロジー比較</strong> 📊</p>
+<p>この表は、様々なネットワークトポロジー（MPFT、MRFT、FT2、FT3、SF、DF）のコストと特性を比較しています。コスト評価はSlim Fly (SF)論文[12]の方法論に基づいています。DFは標準的なDragonflyトポロジー[22, 46, 65]を指します。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-network-wired"></i> <strong>Topology</strong>: ネットワークの構成方式。</li>
+<li><i class="fas fa-microchip"></i> <strong># Endpoints</strong>: ネットワークに接続できるエンドポイント（GPUなど）の最大数。</li>
+<li><i class="fas fa-layer-group"></i> <strong># Tiers</strong>: ネットワークの階層数。</li>
+<li><i class="fas fa-random"></i> <strong># Switches</strong>: 必要なスイッチの総数。</li>
+<li><i class="fas fa-ethernet"></i> <strong># Cables</strong>: 必要なケーブルの総数。</li>
+<li><i class="fas fa-dollar-sign"></i> <strong>Cost / Endpoint</strong>: エンドポイントあたりの相対的なコスト。低いほど良い。</li>
+</ul>
+<p>MPFT (Multi-Plane Fat-Tree) は、<span class="highlight">16,384エンドポイント</span>を2層でサポートでき、コスト/エンドポイントが<span class="highlight">1.00</span>と非常に効率的です。これは3層のFat-Tree (FT3) が同じエンドポイント数でコスト2.00になるのと比較して大幅な改善です。また、Slim Fly (SF) 2D (コスト1.02) やDragonfly (DF) (コスト1.33-1.66) と比較しても競争力があることがわかります。</p>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-exclamation-triangle"></i> 注意点: 現状のInfiniBandの制約</div>
+<p>重要な点として、現在の400G NDR InfiniBandの制約により、プレーン間の通信にはノード内転送（intra-node forwarding）が必要です。これは、例えばGPU A（プレーン0に接続）がGPU B（プレーン1に接続、ただし同じ物理ノード内）と通信する場合、一度データをCPUメモリやNVLink経由でNIC1に送り、そこからプレーン1のネットワークに出す、といった経路を通ることを意味します。このノード内転送は、特に推論時において追加の遅延を引き起こします。もし将来のハードウェアが、以前議論されたスケールアップネットワークとスケールアウトネットワークの融合（convergence）を実現できれば、この遅延は大幅に削減され、マルチプレーンネットワークの実用性がさらに向上するでしょう。</p>
+</div>
+</div>
+<div class="content-box">
+<h4 class="subsection-title"><i class="fas fa-chart-line"></i> 5.1.2 Performance Analysis.</h4>
+<p>Multi-Plane Network設計の有効性を検証するために、実際のクラスタ上で実験が行われました。クラスタのネットワークトポロジーを変更し、<span class="keyword">Multi-Plane Two-Layer Fat Tree (MPFT)</span> と <span class="keyword">Single-Plane Multi-Rail Fat Tree (MRFT)</span> のパフォーマンスが比較されました。以下が主な実験結果です。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge blue">1</span> <strong>All-to-All通信とEPシナリオ</strong></p>
+<p>図5に示すように、MPFTのAll-to-All通信性能は、単一プレーンのMRFTと非常に近いです。この性能の同等性は、NCCLの<span class="keyword">PXN (Proximal Network eXchange)</span> [54]メカニズムによるものと考えられます。PXNは、マルチレイルトポロジーにおいてNVLink経由のトラフィック転送を最適化する技術であり、MPFTもこの恩恵を受けています。</p>
+<img alt="Figure 6: Latency comparison between MPFT and MRFT networks" class="section-image" src="mpft_vs_mrft_latency.jpg"/>
+<div class="caption bubble-box">
+<p><strong>図6: MPFTとMRFTネットワークにおけるNCCL All-to-Allテストでの遅延比較</strong> 📊</p>
+<p>このグラフは、異なるメッセージサイズ（横軸、バイト単位、対数スケール）におけるMPFT（青色の棒）とMRFT（オレンジ色の棒）の遅延（左縦軸、マイクロ秒、対数スケール）を比較しています。黄色い線は両者の相対的な差異（右縦軸、パーセンテージ）を示しています。メッセージサイズが小さい領域（64バイトから約262KB）では、両者の遅延はほぼ同じで、相対差も非常に小さいです。メッセージサイズが大きくなるにつれて遅延は増加しますが、MPFTとMRFTの間に大きな差は見られず、性能がほぼ同等であることが示されています。</p>
+</div>
+<p>実践的な学習シナリオにおけるMPFTのAll-to-All通信性能を評価するため、学習中に一般的に使用されるEP（Expert Parallelism）通信パターンがテストされました。図7に示すように、MPFTネットワークにおいて各GPUは<span class="highlight">40 GB/sを超える高い帯域幅</span>を達成しており、学習の要求を満たす信頼性の高いパフォーマンスを提供しています。</p>
+<img alt="Figure 7: DeepEP performance on MPFT" class="section-image" src="deepep_mpft_performance.jpg"/>
+<div class="caption bubble-box">
+<p><strong>図7: MPFTにおけるDeepEPパフォーマンス</strong> 🚀</p>
+<p>このグラフは、GPU数（横軸: 16, 32, 64, 128）に対するアルゴリズム帯域幅（縦軸、GB/s）を示しています。青い線がDispatch（送信側処理）、オレンジの線がCombine（集約側処理）の帯域幅です。DeepEP（論文著者の開発したEP通信ライブラリ）は、16から128GPUにわたるAll-to-All通信を実行し、各GPUは4096トークンを処理します。観測されたスループットは、GPU数が増加しても高いレベルを維持し、ほぼ400Gbps NICの帯域幅を飽和させていることが分かります。例えば32 GPUの時、Dispatchで58.02 GB/s、Combineで56.96 GB/sと非常に高い帯域幅を達成しています。これはMPFTネットワークがEPのような複雑な通信パターンでも効率的に動作することを示しています。</p>
+</div>
+<img alt="Figure 5: NCCL all-to-all performance from 32 to 128 GPUs for MRFT and MPFT networks." class="section-image" src="figure5_placeholder.png" style="display:none;"/> <!-- 図5の参照はあるが、画像提供なし -->
+<div class="caption bubble-box" style="background-color: #ffe0b2;">
+<p>📝 <strong>図5についての補足</strong> (画像提供なし)</p>
+<p>論文中では図5が参照されていますが、提供された画像には含まれていませんでした。図5は、32GPUから128GPUの範囲で、MRFTネットワークとMPFTネットワークにおけるNCCLのAll-to-All通信性能を比較するもので、両者の性能が非常に近いことを示す内容と推察されます。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<p><span class="badge blue">2</span> <strong>DeepSeek-V3モデルの学習スループット</strong></p>
+<p>表4では、DeepSeek-V3モデルの学習メトリクスがMPFTとMRFTで比較されています。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-calculator"></i> 用語解説: MFU (Model Flops Utilization)</div>
+<p>モデルの浮動小数点演算性能利用率。BF16のピーク性能に基づいて計算されます。<br/>
+                    - <span class="keyword">Causal MFU</span>: アテンション行列の下三角部分のFLOPsのみを考慮（FlashAttention[19, 20]に準拠）。<br/>
+                    - <span class="keyword">Non-causal MFU</span>: アテンション行列全体のFLOPsを考慮（Megatron[47]に準拠）。</p>
+</div>
+<p>1F, 1B, 1Wはそれぞれ、フォワードパス時間、入力側のバックワードパス時間、重み側のバックワードパス時間を意味します。2048GPUでV3モデルを学習させた場合、MPFTのパフォーマンスはMRFTとほぼ同等であり、観測された差は通常の変動および測定誤差の範囲内でした。</p>
+<img alt="Table 4: Training metric comparison between MPFT and MRFT networks." class="section-image" src="table4.png"/>
+<div class="caption bubble-box">
+<p><strong>表4: MPFTとMRFTネットワークにおける学習メトリクス比較</strong> 📈</p>
+<p>この表は、DeepSeek-V3モデル（おそらく特定のバリアントや設定）を2048 GPUで学習させた際の、MPFTとMRFTのパフォーマンスを比較しています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-cogs"></i> <strong>Network</strong>: 使用したネットワークトポロジー (MPFTまたはMRFT)。</li>
+<li><i class="fas fa-forward"></i> <strong>1F (ms)</strong>: 1回のフォワードパスにかかる時間（ミリ秒）。</li>
+<li><i class="fas fa-backward"></i> <strong>1B (ms)</strong>: 1回の入力データに関するバックワードパスにかかる時間（ミリ秒）。</li>
+<li><i class="fas fa-weight-hanging"></i> <strong>1W (ms)</strong>: 1回の重み更新に関するバックワードパスにかかる時間（ミリ秒）。</li>
+<li><i class="fas fa-stopwatch"></i> <strong>Iter time (ms)</strong>: 1イテレーションにかかる合計時間（ミリ秒）。</li>
+<li><i class="fas fa-calculator"></i> <strong>Causal MFU (%)</strong>: Causal MFUのパーセンテージ。</li>
+<li><i class="fas fa-calculator"></i> <strong>Non-Causal MFU (%)</strong>: Non-Causal MFUのパーセンテージ。</li>
+</ul>
+<p>MPFTとMRFTを比較すると、すべてのメトリクス（1F, 1B, 1W, Iter time, Causal MFU, Non-Causal MFU）において、値が非常に近いことがわかります。例えば、Iter timeはMPFTで1745.3ms、MRFTで1731.5msと、その差は1%未満です。これは、大規模な学習においてもMPFTがMRFTと同等の優れた性能を発揮することを示唆しています。</p>
+</div>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-shipping-fast"></i> 5.2 Low Latency Networks</h3>
+<div class="content-box">
+<p>モデル推論において、特に大規模なEP（Expert Parallelism）はAll-to-All通信に大きく依存し、この通信は<span class="highlight">帯域幅と遅延の両方に非常に敏感</span>です。セクション2.3.2で議論された典型的なシナリオを考えてみましょう。ネットワーク帯域幅が \(50 \mathrm{GB/s}\) の場合、データ転送は理想的には約 \(120 \mu s\) かかるはずです。したがって、マイクロ秒オーダーの固有ネットワーク遅延がシステム性能に致命的な影響を与える可能性があり、その影響は無視できません。</p>
+<div class="formula">
+<p>データ転送時間（理想値）: \( \text{Data Transfer Time} \approx 120 \mu s \)</p>
+<p><small>（これはセクション2.3.2の計算式 \(\mathrm { Comm. } \mathrm { T i m e } = \left( 1 \mathrm { B y t e } + 2 \mathrm { B y t e s } \right) \times 3 2 \times 9 \times 7 \mathrm { K } / 5 0 \mathrm { G B } / \mathrm { s } = 1 2 0 . 9 6 \mu s\) に基づく値です。）</small></p>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-stopwatch-20"></i> 遅延の重要性</div>
+<p>マイクロ秒単位の遅延であっても、積み重なると全体のパフォーマンスに大きな影響を与えます。特にAll-to-All通信のように多数のノードが関与する処理では、わずかな遅延の蓄積がボトルネックとなり得ます。</p>
+</div>
+</div>
+<div class="content-box">
+<h4 class="subsection-title"><i class="fas fa-balance-scale"></i> 5.2.1 IB or RoCE.</h4>
+<p>表5に示すように、<span class="keyword">InfiniBand (IB)</span> は一貫して<span class="highlight">低い遅延</span>を達成しており、分散学習や推論といった遅延に敏感なワークロードにとって好ましい選択肢です。RDMA over Converged Ethernet (RoCE) と比較してIBは優れた遅延性能を持ちますが、いくつかの制限もあります。</p>
+<img alt="Table 5: CPU side end-to-end latency comparison between IB, RoCE, and intra-node NVLink for 64B data transmission." class="section-image" src="table5.png"/>
+<div class="caption bubble-box">
+<p><strong>表5: 64バイトデータ送信におけるIB、RoCE、ノード内NVLinkのCPU側エンドツーエンド遅延比較</strong> ⏱️</p>
+<p>この表は、非常に小さなデータ（64バイト）を送信した際の、異なる通信技術間のCPUから見たエンドツーエンドの遅延を比較しています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-network-wired"></i> <strong>Network Type</strong>: 通信技術の種類。</li>
+<li><i class="fas fa-stopwatch"></i> <strong>Latency (µs)</strong>: 遅延（マイクロ秒）。</li>
+</ul>
+<p>結果を見ると、ノード内のNVLinkが最も低遅延（0.6 µs）であり、これは予想通りです。次にInfiniBand (IB) が1.4 µsと非常に低い遅延を示しています。一方、RoCEは5.2 µsと、IBの約3.7倍の遅延となっています。この結果は、低遅延が求められる場面ではIBがRoCEよりも優位であることを明確に示しています。</p>
+</div>
+<div class="two-column">
+<div class="column">
+<div class="info-card glass-card">
+<h5><i class="fas fa-hand-holding-usd"></i> コスト 💰</h5>
+<p>IBハードウェアはRoCEソリューションよりも大幅に高価であり、これが広範な採用を制限しています。</p>
+</div>
+</div>
+<div class="column">
+<div class="info-card glass-card">
+<h5><i class="fas fa-expand-alt"></i> スケーラビリティ 🧩</h5>
+<p>IBスイッチは通常、スイッチあたり64ポートしかサポートしません。これに対し、RoCEスイッチでは一般的に128ポートが見られます。この差は、特に大規模な展開において、IBベースのクラスタのスケーラビリティを制限します。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="content-box">
+<h4 class="subsection-title"><i class="fas fa-tools"></i> 5.2.2 Recommendations for RoCE Improvements.</h4>
+<p>RoCEはIBのコスト効率の高い代替となる可能性を秘めていますが、現在の遅延とスケーラビリティの制限により、大規模AIシステムの要求を完全には満たせていません。以下にRoCEを改善するための具体的な提言を示します。</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<p class="keyword">専用の低遅延RoCEスイッチの開発</p>
+<p>Ethernetベンダーに対し、不要なEthernet機能を取り除くことでRDMAワークロードに特化して最適化されたRoCEスイッチを開発することを推奨します。<span class="highlight">Slingshotアーキテクチャ</span> [22]は、Ethernetベースの設計がIBに匹敵する遅延性能を達成できる方法を示しています。同様に、Broadcom [13]による最近のイノベーション（AI Forwarding Header (AIFH) や今後の低遅延Ethernetスイッチなど）は、AI向けに調整された高性能Ethernetファブリックの実現可能性を示しています。この方向での継続的なイノベーションに期待しています。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<p class="keyword">最適化されたルートポリシー</p>
+<p>図8（論文内では言及されているが、提供画像なし）で示されるように、RoCEのデフォルトの<span class="keyword">Equal-Cost Multi-Path (ECMP)</span>ルーティングポリシーは、インターコネクト間でトラフィックを効率的に分散するのに苦労し、NCCL集団通信テストで深刻な輻輳性能低下を引き起こします。LLM学習トラフィック（DP（データ並列処理）など）はランダム性に欠ける傾向があり、複数のフローが同じインターコネクトリンクに集中する原因となります。対照的に、<span class="keyword">Adaptive Routing (AR)</span> [34]は、パケットを複数のパスに動的にスプレーすることでネットワーク性能を大幅に向上させることができます。手動で設定されたルートテーブルに基づく静的ルーティングは、特定の宛先に対するリンク衝突を回避できますが、柔軟性に欠けます。大規模なAll-to-All通信には、適応型ルーティングが優れた性能とスケーラビリティを提供します。</p>
+<img alt="Figure 8: Performance of different routing policies" class="section-image" src="figure8_placeholder.png" style="display:none;"/> <!-- 図8の参照はあるが、画像提供なし -->
+<div class="caption bubble-box" style="background-color: #ffe0b2;">
+<p>📝 <strong>図8についての補足</strong> (画像提供なし)</p>
+<p>論文では図8が参照され、ECMP、AR、Static Routingの性能比較を示す内容と推測されます。Reduce ScatterやAll Gatherといった集団通信操作において、ARや適切に設定されたStatic RoutingがECMPよりも優れた帯域幅を示すと考えられます。</p>
+</div>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<p class="keyword">改善されたトラフィック分離または輻輳制御メカニズム</p>
+<p>現在のRoCEスイッチは限られた数の優先度キューしかサポートしておらず、EPのAll-to-AllやDPのAll-Reduceのような同時通信パターンを含む複雑なAIワークロードには不十分です。このような混合ワークロードでは、All-to-Allトラフィックがバースト的な多対1転送により<span class="keyword">インキャスト輻輳</span>を引き起こし、ネットワーク全体の性能を低下させる可能性があります。</p>
+<p>インキャストが他のトラフィックに与える影響に対処するための一つのアプローチは、各QPに専用の仮想キューを割り当ててトラフィックフローを分離する<span class="keyword">Virtual Output Queuing (VOQ)</span>を採用することです。あるいは、RTTベースのCC (<span class="keyword">RTTCC</span>)やユーザープログラマブルCC (<span class="keyword">PCC</span>)のような、より効果的な輻輳制御(CC)メカニズムを採用し、NICとスイッチの協調最適化により、動的なトラフィック条件下で低遅延と高スループットを維持することができます。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-traffic-jam"></i> 用語解説: インキャスト輻輳 (Incast Congestion)</div>
+<p>多数の送信元から単一または少数の受信先に同時に大量のデータが送信されることで発生するネットワークの輻輳状態。特にAll-to-All通信の集約フェーズなどで問題となりやすい。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="content-box">
+<h4 class="subsection-title"><i class="fas fa-rocket"></i> 5.2.3 InfiniBand GPUDirect Async (IBGDA).</h4>
+<p>ネットワーク通信の遅延を削減するために、<span class="keyword">InfiniBand GPUDirect Async (IBGDA)</span> [2, 57] を利用します。従来、ネットワーク通信にはCPUプロキシスレッドの作成が伴いました。GPUがデータを準備した後、CPUプロキシに通知し、プロキシがワークリクエスト（WR）の制御情報を入力し、ドアベルメカニズムを介してNICに信号を送りデータ送信を開始します。このプロセスは追加の通信オーバーヘッドを引き起こします。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-exchange-alt"></i> IBGDAの仕組み</div>
+<p>IBGDAは、GPUが直接WRの内容を充填し、RDMAドアベルのMMIOアドレスに書き込むことを可能にすることでこの問題に対処します。GPU内で制御プレーン全体を管理することにより、IBGDAはGPU-CPU間通信に関連する大幅な遅延オーバーヘッドを排除します。</p>
+<p>さらに、多数の小さなパケットを送信する場合、制御プレーンプロセッサは容易にボトルネックになり得ます。GPUには複数の並列スレッドがあるため、送信側はこれらのスレッドを利用してワークロードを分散し、そのようなボトルネックを回避できます。</p>
+</div>
+<p>私たちの<span class="highlight">DeepEP [78]</span>を含む多くの研究[1, 15, 79]がIBGDAを活用し、大幅なパフォーマンス向上を報告しています。したがって、このような機能がアクセラレータデバイス全体で広くサポートされることを提唱します。</p>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <strong>キーポイント: IBGDAのメリット</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-tachometer-alt"></i> GPU-CPU間の通信オーバーヘッドを削減し、遅延を短縮。</li>
+<li><i class="fas fa-tasks"></i> GPUの並列処理能力を活用し、制御プレーンのボトルネックを回避。</li>
+<li><i class="fas fa-cogs"></i> ネットワーク通信の効率を大幅に向上。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section-card" id="6_Discussion_and_Insights_for_Future_Hardware_Architecture_Design">
+<h2 class="section-title"><i class="fas fa-cogs"></i> 6 Discussion and Insights for Future Hardware Architecture Design</h2>
+<div class="content-box">
+<p>📝 このセクションでは、これまでの議論を踏まえ、大規模AIワークロードに特化した将来のハードウェア設計に関する重要なアーキテクチャ上の洞察をまとめ、今後の方向性を示します。</p>
+<div class="glass-card">
+<p>以前のセクションでの議論のポイント：</p>
+<ul>
+<li>📌 <strong>セクション2.3.2</strong>: モデル推論を加速するための大規模スケールアップネットワークの重要性。</li>
+<li>📌 <strong>セクション3</strong>: 低精度計算と通信の効率的なサポートの必要性。</li>
+<li>📌 <strong>セクション4</strong>: スケールアップとスケールアウトアーキテクチャの収束、および提案されたいくつかの機能強化。</li>
+<li>📌 <strong>セクション5</strong>: マルチプレーンネットワークトポロジと、イーサネットベースのインターコネクトに必要な主要な改善点。</li>
+</ul>
+<p>これらのセクションでは、具体的な応用コンテキストにおけるハードウェアの限界を特定し、対応する提案を行いました。この基盤の上に、本セクションでは議論をより広範な考慮事項に拡大し、将来のハードウェアアーキテクチャ設計のための先進的な方向性を提案します。 <i class="fas fa-lightbulb" style="color: #ffd54f;"></i></p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-shield-alt"></i> 6.1 Robustness Challenges (堅牢性の課題)</h3>
+<div class="content-box">
+<p>大規模AIシステムでは、システムの<span class="keyword">堅牢性</span>、つまり障害発生時にも安定して動作し続ける能力が極めて重要です。ここでは、その堅牢性に関するいくつかの主要な課題について掘り下げます。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-exclamation-triangle" style="color: #ff7e5f;"></i> 6.1.1 Limitations: (現在の限界)</h4>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-network-wired" style="color: #ff7e5f;"></i> <i class="fas fa-unlink" style="color: #ff7e5f;"></i></div>
+<p class="keyword">インターコネクト障害 (Interconnect Failures)</p>
+<p>InfiniBand (IB) や NVLink のような高性能インターコネクトは、時折、断続的な接続断が発生しやすいです。これは、特に <span class="highlight">EP (Expert Parallelism)</span> のような通信負荷が高いワークロードでは深刻な問題となります。</p>
+<div class="bubble-box" style="border-color: #ff7e5f;">
+                EP (Expert Parallelism) とは、Mixture of Experts (MoE) モデルにおいて、異なる専門家（エキスパート）の計算を複数のデバイスに分散して並列処理する技術です。これにより、巨大なモデルでも効率的に処理できますが、エキスパート間のデータ交換のために大量の通信が発生します。
+            </div>
+<p>これらの接続断は、たとえ短時間であっても、大幅なパフォーマンス低下やジョブの失敗を引き起こす可能性があります。</p>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-server" style="color: #ff7e5f;"></i> <i class="fas fa-fire" style="color: #ff7e5f;"></i></div>
+<p class="keyword">単一ハードウェア障害 (Single Hardware Failures)</p>
+<p>ノードのクラッシュ、GPUの故障、または <span class="highlight">ECC (Error-Correcting Code) メモリ</span>のエラーなどは、長時間の学習ジョブを危険にさらし、しばしばコストのかかる再起動を必要とします。</p>
+<div class="bubble-box" style="border-color: #ff7e5f;">
+                ECC (Error-Correcting Code) メモリとは、メモリ内で発生したデータのエラーを検出し、訂正する機能を持つメモリのことです。これによりデータの信頼性が向上します。
+            </div>
+<p>このような障害の影響は、特に大規模なデプロイメントでは深刻化します。なぜなら、単一点障害の発生確率はシステムサイズに比例して増加するからです。</p>
+<img alt="System Size vs Failure Probability" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgMzAwIDE1MCI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+CiAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTY4NGJlOyIgLz4KICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ZmN2U1ZjgiIC8+CiAgPC9saW5lYXJHcmFkaWVudD4KICA8cmVjdCB4PSIxMCIgeT0iNzAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI3MCIgcng9IjUiIHJ5PSI1IiBmaWxsPSIjY2NkZWY1IiAvPgogIDxyZWN0IHg9Ijc1IiB5PSI1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjkwIiByeD0iNSIgcnk9IjUiIGZpbGw9IiNjY2RlZjUiIC8+CiAgPHJlY3QgeD0iMTQwIiB5PSIyMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjEyMCIgcng9IjUiIHJ5PSI1IiBmaWxsPSIjY2NkZWY1IiAvPgogIDxwb2x5bGluZSBmaWxsPSJub25lIiBzdHJva2U9InVybCgjZ3JhZCkiIHN0cm9rZS13aWR0aD0iMyIgcG9pbnRzPSIyNSwxNDAgOTAsMTQwIDE2NSwxNDAiIC8+CiAgPHBvbHlsaW5lIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNncmFkKSIgc3Ryb2tlLXdpZHRoPSIzIiBwb2ludHM9IjMwLDUwIDYwLDQwIDkwLDMwIDEzMCwyMCAxNzAsMTAiIHN0cm9rZS1kYXNoYXJyYXk9IjUsNSIvPgogIDx0ZXh0IHg9IjEyMCIgeT0iMTUiIGZvbnQtZmFtaWx5PSJZb21vZ2kiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMyYzNlNTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuiZn+iLpeaWh+WtpuOBruWKoOiKsOOBhOaAquS/ruexjyI+PC90ZXh0PgogIDx0ZXh0IHg9IjI1MCIgeT0iODAiIGZvbnQtZmFtaWx5PSJZb21vZ2kiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiMyYzNlNTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZjdlNWMiPjxlbSBzdHlsZT0iZm9udC1zaXplOjIwcHg7Ij7iiJk8L2VtPuS6uuS6uuOBruiJgOOBhOeOqeWPoDwvdGV4dD4KICA8Y2lyY2xlIGN4PSIyMzUiIGN5PSI3NSIgcj0iMjUiIGZpbGw9InJnYmEoMjU1LCAxMjYsIDk1LCAwLjIpIiBzdHJva2U9IiNmZjdlNWMiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=" style="width: 300px; margin: 10px auto; display: block;"/>
+<figcaption class="reference" style="text-align: center;">図解: システム規模が大きくなるほど、単一障害のリスクが増加</figcaption>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-database" style="color: #ff7e5f;"></i> <i class="fas fa-bug" style="color: #ff7e5f;"></i></div>
+<p class="keyword">サイレントデータ破損 (Silent Data Corruption)</p>
+<p>ECCメカニズムで検出されないエラー、例えば<span class="highlight">複数ビットのメモリフリップ</span>や計算の不正確さなどは、モデルの品質に重大なリスクをもたらします。</p>
+<div class="bubble-box" style="border-color: #ff7e5f;">
+<span class="keyword">複数ビットのメモリフリップ</span>とは、メモリセル内のデータが、意図せず複数のビットが反転してしまう現象です。ECCは通常シングルビットエラーや一部のダブルビットエラーを訂正できますが、複雑なマルチビットエラーは検出・訂正できない場合があります。
+            </div>
+<p>これらのエラーは、特に長時間のタスクにおいて陰湿であり、検出されないまま伝播し、後続の計算を破損させる可能性があります。現在の緩和戦略はアプリケーションレベルのヒューリスティクスに依存しており、システム全体の堅牢性を確保するには不十分です。</p>
+<div style="text-align: center; margin-top: 10px;">
+<i class="fas fa-memory" style="font-size: 24px; color: #4a6fa5;"></i>
+<i class="fas fa-arrow-right" style="font-size: 20px; margin: 0 10px; color: #6c757d;"></i>
+<i class="fas fa-random" style="font-size: 24px; color: #ff7e5f;"></i>
+<i class="fas fa-arrow-right" style="font-size: 20px; margin: 0 10px; color: #6c757d;"></i>
+<i class="fas fa-brain" style="font-size: 24px; color: #ff7e5f;"></i>
+<p class="reference" style="font-size: 12px;">メモリ → 複数ビット反転 → モデル品質低下</p>
+</div>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-cogs" style="color: #5cb85c;"></i> 6.1.2 Suggestions for Advanced Error Detection and Correction (高度なエラー検出・訂正のための提案)</h4>
+<div class="content-box">
+<p>サイレントデータ破損に関連するリスクを軽減するために、ハードウェアは従来のECCを超える高度なエラー検出メカニズムを組み込む必要があります。例えば、</p>
+<ul class="unstyled-list">
+<li style="margin-bottom: 10px;"><span class="badge green"><i class="fas fa-check-double"></i> チェックサムベースの検証</span>: データブロックごとにチェックサムを計算し、転送後や読み出し時に再計算して比較することで、データの破損を検出します。</li>
+<li style="margin-bottom: 10px;"><span class="badge green"><i class="fas fa-copy"></i> ハードウェアアクセラレーションによる冗長性チェック</span>: 例えば、RAIDのような技術をハードウェアレベルで実装し、データの冗長コピーを保持・比較することで、エラーを検出・訂正します。</li>
+</ul>
+<p>これらの技術は、大規模デプロイメントにおいてより高い信頼性を提供できます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tools"></i> 診断ツールキットの提供</p>
+<p>さらに、ハードウェアベンダーは、エンドユーザーに包括的な<span class="keyword">診断ツールキット</span>を提供すべきです。これにより、ユーザーは自身のシステムの完全性を厳密に検証し、潜在的なサイレントデータ破損を積極的に特定できるようになります。</p>
+<p>このようなツールキットが標準のハードウェアパッケージの一部として組み込まれることで、透明性が促進され、運用ライフサイクル全体を通じて継続的な検証が可能となり、システム全体の信頼性が向上します。 🛠️</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microchip"></i><i class="fas fa-exclamation-circle" style="font-size: 0.7em; vertical-align: super; color: #ff7e5f;"></i> 6.2 CPU Bottlenecks and Interconnects (CPUのボトルネックとインターコネクト)</h3>
+<div class="content-box">
+<p>アクセラレータ（GPUなど）の設計が注目されがちですが、CPUは計算の調整、I/O管理、システムスループットの維持に不可欠です。しかし、現在のアーキテクチャはいくつかの重大なボトルネックに直面しています。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-thermometer-half"></i> CPU関連のボトルネック:</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: #ff7e5f;">1</div>
+<div class="step-content">
+<p><span class="keyword">PCIe帯域幅のボトルネック</span>: セクション4.5で議論したように、CPUとGPU間のPCIeインターフェースは、特に大規模なパラメータ、勾配、またはKVキャッシュ転送中に帯域幅のボトルネックになることがよくあります。</p>
+<div style="text-align: center; margin: 10px 0;">
+<span style="font-family: 'Yomogi'; font-size: 16px;">CPU</span> <i class="fas fa-exchange-alt" style="color: #ff7e5f; margin: 0 5px;"></i> <span style="font-family: 'Yomogi'; font-size: 16px;">GPU</span>
+<div style="width: 100px; height: 10px; background: repeating-linear-gradient(45deg, #ff7e5f, #ff7e5f 3px, #fff3cd 3px, #fff3cd 6px); margin: 5px auto;"></div>
+<p class="reference" style="font-size: 12px;">PCIe: 帯域幅不足 <i class="fas fa-traffic-light" style="color: red;"></i></p>
+</div>
+<p>これを緩和するために、将来のシステムでは、<span class="highlight">NVLink</span>や<span class="highlight">Infinity Fabric</span>のような直接CPU-GPUインターコネクトを採用するか、CPUとGPUの両方をスケールアップドメインに統合し、ノード内ボトルネックを排除すべきです。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-link"></i> 用語解説</p>
+<p><span class="keyword">NVLink</span>: NVIDIA社が開発したGPU間およびGPU-CPU間の高速インターコネクト技術。</p>
+<p><span class="keyword">Infinity Fabric</span>: AMD社が開発したCPU間、GPU間、およびCPU-GPU間の高速インターコネクト技術。</p>
+<p><span class="keyword">スケールアップドメイン</span>: 単一ノード内で、複数のプロセッサやメモリを緊密に結合し、高性能を実現する範囲。NVLinkなどで接続されたGPU群などが該当します。</p>
+</div>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: #ff7e5f;">2</div>
+<div class="step-content">
+<p><span class="keyword">メモリ帯域幅の要求</span>: PCIeの限界に加えて、このような高いデータ転送速度を維持するには、非常に高いメモリ帯域幅も必要です。例えば、PCIe 5.0の160レーンを飽和させるには、ノードあたり <span class="highlight">640 GB/s以上</span>の転送速度が必要となり、これはノードあたり約 <span class="highlight">1 TB/s</span> のメモリ帯域幅要求に相当します。これは従来のDRAMアーキテクチャにとって大きな課題です。</p>
+<div style="text-align: center; margin: 15px 0;">
+<div style="display: flex; align-items: center; justify-content: center;">
+<i class="fas fa-memory fa-2x" style="color: #4a6fa5;"></i>
+<div style="margin: 0 10px; font-family: 'Yomogi';">
+<div style="font-size: 18px;">160レーン PCIe 5.0</div>
+<div style="font-size: 12px; color: #6c757d;">飽和には...</div>
+</div>
+<i class="fas fa-long-arrow-alt-right fa-2x" style="color: #ff7e5f;"></i>
+<div style="margin: 0 10px; font-family: 'Yomogi';">
+<div style="font-size: 18px;">&gt; 640 GB/s</div>
+<div style="font-size: 12px; color: #6c757d;">(ノードあたり転送速度)</div>
+</div>
+<i class="fas fa-long-arrow-alt-right fa-2x" style="color: #ff7e5f;"></i>
+<div style="margin-left: 10px; font-family: 'Yomogi';">
+<div style="font-size: 18px;">~ 1 TB/s</div>
+<div style="font-size: 12px; color: #6c757d;">(ノードあたりメモリ帯域)</div>
+</div>
+</div>
+</div>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: #ff7e5f;">3</div>
+<div class="step-content">
+<p><span class="keyword">CPU性能とコア数</span>: カーネルの起動やネットワーク処理などのレイテンシに敏感なタスクは、高いシングルコアCPU性能を要求し、通常、<span class="highlight">4 GHz以上</span>のベース周波数が必要です。さらに、現代のAIワークロードでは、制御側のボトルネックを防ぐために、GPUあたり十分なCPUコア数が必要です。チップレットベースのアーキテクチャの場合、キャッシュを意識したワークロードの分割と分離をサポートするために追加のコアが必要になります。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-puzzle-piece"></i> チップレットベースアーキテクチャ</p>
+<p>複数の小さな半導体チップ（チップレット）を1つのパッケージ内に集積する設計手法。各チップレットは特定の機能（コンピューティング、I/O、メモリ制御など）に特化でき、製造コストの削減や歩留まり向上、設計の柔軟性向上などの利点があります。</p>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i> 6.3 Toward Intelligent Networks for AI (AIのためのインテリジェントネットワークに向けて)</h3>
+<div class="content-box">
+<p>レイテンシに敏感なワークロードの要求を満たすために、将来のインターコネクトは<span class="keyword">低レイテンシ</span>と<span class="keyword">インテリジェントなネットワーク機能</span>の両方を優先する必要があります。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-shipping-fast" style="color: #4a6fa5;"></i></div>
+<p class="keyword">Co-Packaged Optics (CPO)</p>
+<p>シリコンフォトニクスを組み込むことで、スケーラブルな高帯域幅とエネルギー効率の向上が可能になります。これらは大規模分散システムにとって不可欠です。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-lightbulb"></i> シリコンフォトニクス</p>
+<p>シリコンベースの半導体技術を用いて光デバイス（光導波路、変調器、検出器など）を作製し、光で情報を伝送・処理する技術。電気配線に比べて高速・大容量・低消費電力な通信が期待されます。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-shield-virus" style="color: #4a6fa5;"></i></div>
+<p class="keyword">Lossless Network (無損失ネットワーク)</p>
+<p><span class="highlight">Credit-Based Flow Control (CBFC)</span> メカニズムは無損失データ伝送を保証しますが、単純にフロー制御をトリガーすると深刻な<span class="highlight">ヘッドオブラインブロッキング (Head-of-Line Blocking)</span> を引き起こす可能性があります。そのため、注入レートを積極的に調整し、病的な輻輳シナリオを回避する、高度なエンドポイント駆動型の<span class="keyword">輻輳制御 (Congestion Control, CC)</span> アルゴリズムを展開することが不可欠です。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-traffic-light"></i> 用語解説</p>
+<p><span class="keyword">Credit-Based Flow Control (CBFC)</span>: 受信側が送信側に対して送信可能なデータ量を「クレジット（許可）」として通知し、送信側はそのクレジットの範囲内でのみデータを送信するフロー制御方式。これにより、受信バッファのオーバーフローを防ぎ、パケットロスを回避します。</p>
+<p><span class="keyword">ヘッドオブラインブロッキング (Head-of-Line Blocking, HOLブロッキング)</span>: キューの先頭にあるパケットが何らかの理由（例：宛先の輻輳）で処理をブロックされると、その後ろに続く、問題のない宛先へのパケットも待たされてしまう現象。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-route" style="color: #4a6fa5;"></i></div>
+<p class="keyword">Adaptive Routing (適応型ルーティング)</p>
+<p>セクション5.2.2で強調されたように、将来のネットワークは、リアルタイムのネットワーク状態を継続的に監視し、トラフィックをインテリジェントに再分配する<span class="highlight">パケットスプレーイング</span>や<span class="highlight">輻輳認識型経路選択</span>などの動的ルーティング方式の採用を標準化すべきです。これらの適応戦略は、特にAll-to-AllやReduce-Scatter操作を含む集団通信ワークロード中のホットスポット緩和やボトルネック軽減に効果的です。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-random"></i> 用語解説</p>
+<p><span class="keyword">パケットスプレーイング</span>: パケットを複数の利用可能な経路に分散して送信する技術。負荷分散や耐障害性の向上に寄与します。</p>
+<p><span class="keyword">輻輳認識型経路選択</span>: ネットワークの輻輳状況を考慮して、最適な通信経路を選択するルーティング手法。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-medkit" style="color: #4a6fa5;"></i></div>
+<p class="keyword">Efficient Fault-Tolerant Protocols (効率的なフォールトトレラントプロトコル)</p>
+<p>障害に対する堅牢性は、自己修復プロトコル、冗長ポート、迅速なフェイルオーバー技術の展開を通じて大幅に向上できます。例えば、リンク層リトライメカニズムや選択的再送信プロトコルは、大規模ネットワーク全体で信頼性をスケーリングし、ダウンタイムを最小限に抑え、断続的な障害にもかかわらずシームレスな運用を保証するのに不可欠です。</p>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-sliders-h" style="color: #4a6fa5;"></i></div>
+<p class="keyword">Dynamic Resource Management (動的リソース管理)</p>
+<p>混合ワークロードを効果的に処理するために、将来のハードウェアは動的な帯域幅割り当てとトラフィック優先順位付けを可能にすべきです。例えば、推論タスクは統合クラスタ内の学習トラフィックから分離し、レイテンシに敏感なアプリケーションの応答性を確保する必要があります。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-memory"></i><i class="fas fa-sort-amount-down" style="font-size: 0.7em; vertical-align: super; color: #ff7e5f;"></i> 6.4 Discussion on Memory-Semantic Communication and Ordering Issue (メモリセマンティック通信と順序付け問題に関する議論)</h3>
+<div class="content-box">
+<p><span class="keyword">メモリセマンティック通信</span> (load/store命令によるノード間通信) は効率的でプログラマにも優しいですが、現在の実装は<span class="keyword">メモリ順序付け</span>の課題に悩まされています。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> メモリセマンティック通信 vs メッセージセマンティック通信</p>
+<p><span class="keyword">メモリセマンティック通信</span>: 共有メモリモデルのように、リモートノードのメモリをローカルメモリと同様に<code>load</code> (読み込み) や <code>store</code> (書き込み) 命令で直接アクセスする通信方式。プログラマにとっては直感的で扱いやすいが、データの一貫性や順序性の保証が複雑になることがある。</p>
+<p><span class="keyword">メッセージセマンティック通信</span>: <code>send</code> (送信) や <code>receive</code> (受信) といった明示的なメッセージパッシング操作によってノード間でデータを交換する通信方式。RDMA (Remote Direct Memory Access) もこの一種。データの送受信が明確だが、プログラミングがやや煩雑になることがある。</p>
+</div>
+<p>例えば、データを書き込んだ後、送信側は受信側に通知するためにフラグを更新する前に、明示的な<span class="keyword">メモリバリア (フェンス)</span> を発行してデータの一貫性を保証する必要があります。この厳密な順序付けは、追加の<span class="keyword">ラウンドトリップタイム (RTT)</span> レイテンシを導入し、発行スレッドを停止させ、進行中のストアを妨げ、スループットを低下させる可能性があります。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-stream"></i> 順序付け問題の具体例 (メモリセマンティック)</p>
+<div class="pipeline">
+<div class="pipeline-step" style="border-color: #ff7e5f;">
+<strong>送信側:</strong>
+<ol>
+<li>データAをリモートメモリに書き込む (Store)</li>
+<li><span class="highlight">メモリバリア (フェンス)</span> を発行 <i class="fas fa-hand-paper" style="color: red;"></i> (データAの書き込み完了を保証)</li>
+<li>通知フラグBをリモートメモリに書き込む (Store)</li>
+</ol>
+</div>
+<div class="pipeline-step" style="border-color: #ff7e5f;">
+<strong>受信側:</strong>
+<ol>
+<li>通知フラグBをポーリング</li>
+<li>フラグBがセットされたらデータAを読み込む (Load)</li>
+</ol>
+</div>
+</div>
+<p>このメモリバリアが追加のRTTを引き起こし、遅延の原因となります。</p>
+</div>
+<p>同様の順序外同期問題は、メッセージセマンティックRDMAでも発生します。例えば、InfiniBandやNVIDIA BlueField-3上で通常のRDMA書き込みの後にパケットスプレーイングを伴うRDMAアトミック加算操作を実行すると、追加のRTTレイテンシが発生する可能性があります。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-check-circle"></i> 提案: ハードウェアによる順序保証</p>
+<p>これらの問題に対処するため、メモリセマンティック通信のための<span class="keyword">組み込みの順序保証</span>を提供するハードウェアサポートを提唱します。このような一貫性は、プログラミングレベル (例: <span class="highlight">acquire/releaseセマンティクス</span>) と受信側のハードウェアの両方で強制され、追加のオーバーヘッドなしで順序通りの配信を可能にするべきです。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-sync-alt"></i> Acquire/Release セマンティクス</p>
+<p>並行プログラミングにおけるメモリ操作の順序付けに関する概念。
+                    <ul>
+<li><span class="keyword">Acquire (取得) 操作</span>: この操作以降のメモリ読み書きは、Acquire操作以前の他のスレッドによるRelease操作以前のメモリ書き込みよりも後に実行されることが保証される。つまり、他のスレッドが書き込んだデータが「見える」ようになる。</li>
+<li><span class="keyword">Release (解放) 操作</span>: この操作以前のメモリ書き込みは、他のスレッドが対応するAcquire操作を実行した際に、それらの書き込みが「見える」ようになることが保証される。</li>
+</ul>
+                    これらを用いることで、明示的なフェンス命令なしにメモリ操作の順序を制御できる。
+                </p>
+</div>
+</div>
+<p>いくつかのアプローチが可能です。例えば、受信側がアトミックメッセージをバッファリングし、パケットシーケンス番号を使用して順序通りの処理を行うことができます。しかし、acquire/releaseメカニズムはより洗練されており効率的です。</p>
+<p>我々は、<span class="keyword">Region Acquire/Release (RAR) メカニズム</span>という単純な概念的メカニズムを提案します。このメカニズムでは、受信側ハードウェアがビットマップを維持してRNR (Remote Network Region) メモリ領域の状態を追跡し、acquire/release操作はそのRARアドレス範囲にスコープされます。最小限のビットマップオーバーヘッドで、これにより効率的なハードウェア強制の順序付けが可能になり、送信側の明示的なフェンスが不要になり、順序付けがハードウェア（理想的にはNICまたはI/Oダイ上）に委任されます。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-map-marked-alt"></i> Region Acquire/Release (RAR) メカニズムの概念</p>
+<div style="display: flex; align-items: center; justify-content: space-around; margin: 15px 0;">
+<div style="text-align: center;">
+<i class="fas fa-network-wired fa-2x" style="color: #4a6fa5;"></i>
+<p>受信NIC/IOダイ</p>
+</div>
+<i class="fas fa-arrow-right fa-2x" style="color: #6c757d;"></i>
+<div style="text-align: center;">
+<i class="fas fa-tasks fa-2x" style="color: #5cb85c;"></i>
+<p>RARビットマップ<br/>(メモリ領域の状態追跡)</p>
+</div>
+<i class="fas fa-arrow-right fa-2x" style="color: #6c757d;"></i>
+<div style="text-align: center;">
+<i class="fas fa-layer-group fa-2x" style="color: #ff7e5f;"></i>
+<p>順序保証された<br/>メモリアクセス</p>
+</div>
+</div>
+<p>重要なことに、RARメカニズムはメモリセマンティック操作だけでなく、メッセージセマンティックRDMAプリミティブにも利益をもたらし、その実用的な適用可能性を広げます。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-network-wired"></i><i class="fas fa-compress-arrows-alt" style="font-size: 0.7em; vertical-align: super; color: #5cb85c;"></i> 6.5 In-Network Computation and Compression (ネットワーク内計算と圧縮)</h3>
+<div class="content-box">
+<p>EP (Expert Parallelism) には、<span class="keyword">ディスパッチ (dispatch)</span> と <span class="keyword">コンバイン (combine)</span> という2つの重要なAll-to-Allステージが含まれており、これらはネットワーク内最適化の大きな機会を提供します。</p>
+<div class="two-column">
+<div class="column">
+<div class="bubble-box">
+<p class="bubble-title" style="font-weight: bold; color: var(--color-primary);"><i class="fas fa-share-square"></i> ディスパッチ段階 (Dispatch Stage)</p>
+<p>ディスパッチ段階は、小規模な<span class="highlight">マルチキャスト操作</span>に似ています。単一のメッセージを複数のターゲットデバイスに転送する必要があります。自動的なパケット複製と複数宛先への転送を可能にするハードウェアレベルのプロトコルは、通信オーバーヘッドを大幅に削減し、効率を向上させることができます。</p>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-envelope" style="color: #4a6fa5;"></i>
+<i class="fas fa-arrow-right" style="margin: 0 5px; color: #6c757d;"></i>
+<i class="fas fa-network-wired" style="color: #5cb85c;"></i>
+<i class="fas fa-arrow-right" style="margin: 0 5px; color: #6c757d;"></i>
+<span>
+<i class="fas fa-desktop" style="color: #ff7e5f;"></i>
+<i class="fas fa-desktop" style="color: #ff7e5f;"></i>
+<i class="fas fa-desktop" style="color: #ff7e5f;"></i>
+</span>
+<p class="reference" style="font-size: 12px;">1メッセージ → ネットワーク内複製 → 複数デバイス</p>
+</div>
+</div>
+</div>
+<div class="column">
+<div class="bubble-box">
+<p class="bubble-title" style="font-weight: bold; color: var(--color-primary);"><i class="fas fa-object-group"></i> コンバイン段階 (Combine Stage)</p>
+<p>コンバイン段階は、小規模な<span class="highlight">リダクション操作</span>として機能し、ネットワーク内集約技術の恩恵を受ける可能性があります。しかし、EPコンバインにおけるリダクション範囲が小さく、ワークロードが不均衡であるため、ネットワーク内集約を柔軟に実装することは困難です。</p>
+<div style="text-align: center; margin-top:10px;">
+<span>
+<i class="fas fa-desktop" style="color: #ff7e5f;"></i>
+<i class="fas fa-desktop" style="color: #ff7e5f;"></i>
+<i class="fas fa-desktop" style="color: #ff7e5f;"></i>
+</span>
+<i class="fas fa-arrow-right" style="margin: 0 5px; color: #6c757d;"></i>
+<i class="fas fa-network-wired" style="color: #5cb85c;"></i>
+<i class="fas fa-arrow-right" style="margin: 0 5px; color: #6c757d;"></i>
+<i class="fas fa-calculator" style="color: #4a6fa5;"></i> (集約)
+                        <p class="reference" style="font-size: 12px;">複数デバイスデータ → ネットワーク内集約 → 結果</p>
+</div>
+</div>
+</div>
+</div>
+<p>さらに、セクション3.2で強調されたように、<span class="keyword">LogFMT</span>はモデル性能への影響を最小限に抑えつつ、低精度トークン伝送を可能にします。LogFMTをネットワークハードウェアにネイティブに組み込むことで、エントロピー密度を高め、帯域幅使用量を削減することにより、通信をさらに最適化できます。ハードウェアアクセラレーションによる圧縮・解凍は、LogFMTを分散システムにシームレスに統合し、全体のスループットを向上させるでしょう。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-wave-square"></i> LogFMT (Logarithmic Floating-Point Formats)</p>
+<p>対数空間で値を表現する浮動小数点形式。セクション3.2で詳細に説明されています。活性化関数の出力などを、線形空間から対数空間にマッピングすることで、値の分布をより均一にし、同じビット数でもFP8などの標準的な形式よりも高い精度や広いダイナミックレンジを実現できる可能性があります。ネットワーク転送時のデータ圧縮に利用することで、帯域幅を節約する効果が期待されます。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-memory"></i><i class="fas fa-rocket" style="font-size: 0.7em; vertical-align: super; color: #5cb85c;"></i> 6.6 Memory-Centric Innovations (メモリ中心のイノベーション)</h3>
+<div class="content-box">
+<p class="keyword" style="font-size: 16px; margin-bottom: 10px;">6.6.1 Limitations of Memory Bandwidth (メモリ帯域幅の限界)</p>
+<p>モデルサイズの指数関数的な増加は、<span class="keyword">HBM (High-Bandwidth Memory)</span> 技術の進歩を上回っています。この不均衡は、特にTransformerのようなアテンションを多用するアーキテクチャにおいて、メモリボトルネックを生み出します。</p>
+<div style="text-align:center; margin: 15px 0;">
+<canvas height="200" id="memoryGrowthChart" width="400"></canvas>
+<figcaption class="reference" style="text-align: center;">図解: モデルサイズ vs HBM容量の成長率の差</figcaption>
+</div>
+<script>
+            const ctx = document.getElementById('memoryGrowthChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['過去', '現在', '未来予測'],
+                    datasets: [{
+                        label: 'モデルサイズ (指数関数的増加)',
+                        data: [1, 10, 100],
+                        borderColor: '#ff7e5f',
+                        tension: 0.1,
+                        fill: false
+                    }, {
+                        label: 'HBM容量 (線形的増加)',
+                        data: [1, 1.5, 2.25],
+                        borderColor: '#4a6fa5',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                fontFamily: 'Yomogi'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '相対的サイズ/容量', font: { family: 'Yomogi' } },
+                            ticks: { font: { family: 'Yomogi' } }
+                        },
+                        x: {
+                            ticks: { font: { family: 'Yomogi' } }
+                        }
+                    }
+                }
+            });
+        </script>
+</div>
+<h4 class="subsection-title"><i class="fas fa-lightbulb" style="color: #5cb85c;"></i> 6.6.2 Suggestions: (提案)</h4>
+<div class="info-grid">
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-layer-group" style="color: #5cb85c;"></i></div>
+<p class="keyword">DRAM-Stacked Accelerators (DRAM積層アクセラレータ)</p>
+<p>高度な3D積層技術を活用し、DRAMダイをロジックダイの上に垂直に統合することで、非常に高いメモリ帯域幅、超低レイテンシ、そして実用的なメモリ容量（ただしスタック制限あり）を実現します。このアーキテクチャパラダイムは、メモリ スループットが重要なボトルネックとなるMoEモデルでの超高速推論に非常に有利です。 <span class="highlight">SeDRAM[72]</span>のようなアーキテクチャは、このアプローチの可能性を例証し、メモリバウンドなワークロードに対して前例のないパフォーマンスを提供します。</p>
+<div style="text-align: center; margin: 10px 0;">
+<div style="border: 2px dashed #5cb85c; padding: 10px; border-radius: 5px; display: inline-block;">
+<div style="background-color: #9575cd; color: white; padding: 5px; font-family: 'Yomogi';">DRAMダイ</div>
+<div style="background-color: #5cb85c; color: white; padding: 5px; font-family: 'Yomogi';">DRAMダイ</div>
+<div style="background-color: #4a6fa5; color: white; padding: 5px; font-family: 'Yomogi';">ロジックダイ (アクセラレータ)</div>
+</div>
+<p class="reference" style="font-size: 12px;">DRAMダイをロジックダイに積層</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-cogs"></i> SeDRAM [72]</p>
+<p>論文で引用されている[72]は、"A 135 GBps/Gbit 0.66 pJ/bit Stacked Embedded DRAM with Multilayer Arrays by Fine Pitch Hybrid Bonding and Mini-TSV" という論文で、微細ピッチのハイブリッドボンディングとミニTSV（Through-Silicon Via: シリコン貫通ビア）を用いた多層アレイによる積層型eDRAM（組み込みDRAM）について述べています。非常に高い帯域幅と優れたエネルギー効率を達成した例として挙げられています。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item"><i class="fas fa-expand-arrows-alt" style="color: #5cb85c;"></i></div>
+<p class="keyword">System-on-Wafer (SoW)</p>
+<p>ウェーハスケール統合 [50] は、計算密度とメモリ帯域幅を最大化し、超大規模モデルのニーズに対応できます。</p>
+<div style="text-align: center; margin: 10px 0;">
+<i class="fas fa-circle-notch fa-3x fa-spin" style="color: #5cb85c;"></i>
+<p class="reference" style="font-size: 12px;">ウェーハ全体を一つの巨大なチップとして利用</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-industry"></i> ウェーハスケール統合 [50]</p>
+<p>論文で引用されている[50]は、Cerebras Systems社のウェーハスケールエンジンに関する発表を指している可能性が高いです。これは、シリコンウェーハを個別のチップにダイシング（切り出し）せず、ウェーハ全体をほぼ1つの巨大なプロセッサとして利用する技術です。これにより、チップ間の通信遅延を排除し、膨大な数のコアとオンチップメモリを搭載することで、AI計算に特化した非常に高い計算能力とメモリ帯域幅を実現します。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="7_Conclusion">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i> 7 Conclusion <span class="badge yellow">結論</span></h2>
+<div class="content-box">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; text-align: center; margin-bottom: 25px;">
+<i class="fas fa-feather-alt"></i> この論文の締めくくりとして、DeepSeek-V3プロジェクトがAI分野にもたらした重要な成果と、将来の展望について解説します。
+        </p>
+<div class="glass-card" style="border: 2px dashed var(--color-accent1); background: rgba(92, 184, 92, 0.05); margin-bottom:25px;">
+<h3 class="subsection-title" style="justify-content: center; border-left: none; color: var(--color-accent1); font-size:20px;">
+<i class="fas fa-hands-helping" style="color: var(--color-accent1); font-size: 22px;"></i> DeepSeek-V3の核心：ハードウェアとソフトウェアの協調設計
+            </h3>
+<p style="text-align: center; font-size: 15px; padding: 0 10px;">
+                DeepSeek-V3は、<span class="keyword">ハードウェアとソフトウェアの協調設計</span>が、大規模AIシステムの進化においていかに強力な変革をもたらす可能性を秘めているかを具体的に示した、画期的なプロジェクトです。
+            </p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-pie"></i> <i class="fas fa-rocket"></i>AIシステムにおける3つの大きな進歩</h3>
+<p>この協調設計アプローチにより、DeepSeek-V3は特に以下の3つの側面で大規模AIシステムの能力を大きく前進させました。</p>
+<div class="feature-card-grid" style="margin-top:15px; margin-bottom:25px;">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.05); border-top: 5px solid var(--color-primary);">
+<i class="fas fa-arrows-alt-h fa-2x" style="color: var(--color-primary); margin-bottom:10px;"></i>
+<h4 style="color:var(--color-primary); font-family: 'Yomogi', cursive;">スケーラビリティ <span class="badge blue">大規模化</span></h4>
+<p>より大きなモデル、より多くのデータを扱えるように、システムの<span class="highlight">拡張能力</span>が向上しました。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.05); border-top: 5px solid var(--color-secondary);">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-secondary); margin-bottom:10px;"></i>
+<h4 style="color:var(--color-secondary); font-family: 'Yomogi', cursive;">効率性 <span class="badge orange">最適化</span></h4>
+<p>計算資源やエネルギーを無駄なく使い、<span class="highlight">コストパフォーマンス</span>を高めました。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.05); border-top: 5px solid var(--color-accent1);">
+<i class="fas fa-shield-alt fa-2x" style="color: var(--color-accent1); margin-bottom:10px;"></i>
+<h4 style="color:var(--color-accent1); font-family: 'Yomogi', cursive;">堅牢性 <span class="badge green">安定性</span></h4>
+<p>システムがエラーや障害に対して強く、<span class="highlight">安定して動作</span>する能力が強化されました。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-map-signs"></i> <i class="fas fa-road"></i> 現状の課題への挑戦と未来への道しるべ</h3>
+<div class="two-column">
+<div class="column">
+<div class="challenge-box" style="padding: 15px;">
+<p class="challenge-title" style="font-family: 'Yomogi', cursive; font-size:16px;"><i class="fas fa-exclamation-triangle"></i> 現在のハードウェアの限界</p>
+<p>論文では、既存のAIハードウェアアーキテクチャが直面しているメモリ容量の制約、計算効率の頭打ち、通信帯域幅の不足といった<span class="keyword">限界点</span>を詳細に分析しました。</p>
+</div>
+</div>
+<div class="column">
+<div class="note-box" style="background-color: rgba(149, 117, 205, 0.08); border-left-color: var(--color-accent2); padding: 15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive; font-size:16px; color: var(--color-accent2);"><i class="fas fa-lightbulb" style="color: var(--color-accent2);"></i> DeepSeek-V3による解決策と提言</p>
+<p>DeepSeek-V3はこれらの課題に対処し、さらにその知見を基に、<span class="highlight">実用的で実行可能な推奨事項</span>を提案しています。</p>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top: 20px; margin-bottom: 20px;">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 17px; color: var(--color-primary); text-align:center; font-weight:bold;">
+<i class="fas fa-scroll"></i> この論文は、次世代のAI最適化ハードウェア開発のための「ロードマップ」を提供します！
+            </p>
+<p style="font-size: 13px; text-align:center; color: var(--color-gray); margin-top:5px;">
+                設計者や研究者が進むべき方向性を示す、具体的な指針となるでしょう。
+            </p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-brain"></i> <i class="fas fa-chart-line"></i> AIワークロードの進化とインテリジェントシステムの未来</h3>
+<p>AI技術がますます高度化し、応用範囲も広がる中で、AIが処理すべきタスク（<span class="keyword">AIワークロード</span>）は、その<span class="highlight">複雑さ</span>と<span class="highlight">規模</span>の両方で、かつてないスピードで増大し続けています。</p>
+<div style="display: flex; align-items: center; justify-content: space-around; margin: 25px 0; padding: 15px; background-color: rgba(255, 213, 79, 0.1); border-radius: 8px;">
+<div style="text-align:center;">
+<i class="fas fa-cubes fa-3x" style="color: var(--color-accent3);"></i>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-dark); margin-top:5px;">複雑性の増大</p>
+</div>
+<div style="font-size: 30px; color: var(--color-gray);">+</div>
+<div style="text-align:center;">
+<i class="fas fa-expand-arrows-alt fa-3x" style="color: var(--color-accent3);"></i>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-dark); margin-top:5px;">規模の拡大</p>
+</div>
+<div style="font-size: 30px; color: var(--color-gray);">→</div>
+<div style="text-align:center;">
+<i class="fas fa-tachometer-alt fa-3x" style="color: var(--color-secondary);"></i>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-dark); margin-top:5px;">より高性能なシステムが必須</p>
+</div>
+</div>
+<p>このような状況において、DeepSeek-V3で示されたようなハードウェアとソフトウェア両面からの<span class="keyword">革新的なアプローチ</span>は不可欠です。これらのイノベーションこそが、増え続けるAIワークロードの要求に応え、より高度な<strong style="color: var(--color-accent1); border-bottom: 2px solid var(--color-accent1); padding-bottom:1px;">インテリジェントシステム（知的なシステム）の未来を切り拓き、駆動していく</strong>力となるでしょう。</p>
+<div class="framework-box" style="margin-top:25px; border-color: var(--color-accent2); background-color: rgba(149, 117, 205, 0.05);">
+<p class="framework-title" style="font-family: 'Kaisei Decol', serif; font-size:18px; color:var(--color-accent2); border-bottom-color: var(--color-accent2); text-align:center;">
+<i class="fas fa-star"></i> 未来への展望 <i class="fas fa-star"></i>
+</p>
+<p style="text-align:center; font-size:15px;">
+                DeepSeek-V3のような取り組みは、AI技術が社会の様々な場面で活用され、私たちの生活を豊かにする<span class="highlight" style="background-color: rgba(149, 117, 205, 0.2);">賢い未来の実現</span>に向けた重要な一歩と言えます。
+            </p>
+</div>
+</div>
+</div>
+<div class="section-card" id="3579371.3589350">
+<h2 class="section-title"><i class="fas fa-book-reader"></i> 3579371.3589350 参考文献リスト</h2>
+<div class="note-box" style="background-color: rgba(74, 111, 165, 0.05); border-left-color: var(--color-primary); margin-bottom: 25px;">
+<p class="note-title" style="color: var(--color-primary); font-family: 'Yomogi', cursive;"><i class="fas fa-info-circle"></i> このセクションの目的と読み方</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">
+            この「3579371.3589350」セクションは、本論文「Insights into DeepSeek-V3: Scaling Challenges and Reflections on Hardware for AI Architectures」で引用されている全ての<span class="keyword">参考文献</span>をまとめたリストです。学術論文において、参考文献リストは非常に重要な役割を担います。
+        </p>
+<div class="two-column">
+<div class="column">
+<p style="font-family: 'Zen Kurenaido', sans-serif;">
+<strong><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 主な役割:</strong>
+</p>
+<ul style="font-family: 'Zen Kurenaido', sans-serif; list-style-type: none; padding-left: 0;">
+<li style="margin-bottom: 8px;"><span class="badge yellow">典拠の明示</span> 論文中の記述、データ、アイディアの出所を示します。</li>
+<li style="margin-bottom: 8px;"><span class="badge yellow">追跡可能性</span> 読者が元文献を辿り、より深く学習することを可能にします。</li>
+<li style="margin-bottom: 8px;"><span class="badge yellow">学術的文脈</span> 研究が既存の知識体系の中でどう位置づけられるかを示します。</li>
+<li style="margin-bottom: 8px;"><span class="badge yellow">貢献の明確化</span> 先行研究との関連性から、本研究の独自性や貢献を明らかにします。</li>
+</ul>
+</div>
+<div class="column">
+<div class="glass-card" style="padding: 15px;">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-primary); font-size: 16px; text-align: center;">
+<i class="fas fa-lightbulb"></i> 読者の皆さんへ
+                    </p>
+<p style="font-family: 'Zen Kurenaido', sans-serif; font-size: 13px;">
+                        各文献には著者名、発行年、タイトル、掲載誌や会議名などが記載されています。多くの場合、DOI（Digital Object Identifier）やURLが含まれており、クリックすることで直接文献にアクセスできます。興味を持ったトピックや技術について、これらの文献を辿ることで、理解を一層深めることができます。
+                    </p>
+</div>
+</div>
+</div>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<p><span class="badge blue">[44]</span></p>
+<p><strong>Kang, H., Zhang, Q., Kundu, S., Jeong, G., Liu, Z., Krishna, T., &amp; Zhao, T. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>GEAR: An Efficient KV Cache Compression Recipe for Near-Lossless Generative Inference of LLM.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2403.05527 [cs.LG]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2403.05527" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2403.05527</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">KV Cache</span><span class="tag">Compression</span><span class="tag">LLM Inference</span><span class="tag">Generative AI</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[45]</span></p>
+<p><strong>Kaplan, J., McCandlish, S., Henighan, T., Brown, T. B., Chess, B., Child, R., Gray, S., Radford, A., Wu, J., &amp; Amodei, D. (2020).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Scaling Laws for Neural Language Models.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">CoRR abs/2001.08361. arXiv:2001.08361</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2001.08361" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2001.08361</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Scaling Laws</span><span class="tag">Neural Language Models</span><span class="tag">LLM</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[46]</span></p>
+<p><strong>Kim, J., Dally, W. J., Scott, S., &amp; Abts, D. (2008).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>TechnologyDriven, Highly-Scalable Dragonfly Topology.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In 2008 International Symposium on Computer Architecture, 77–88.</p>
+<p><a class="reference-link" href="https://doi.org/10.1109/ISCA.2008.19" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> DOI:10.1109/ISCA.2008.19</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Dragonfly Topology</span><span class="tag">Network Topology</span><span class="tag">Scalable Systems</span><span class="tag">HPC</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[47]</span></p>
+<p><strong>Korthikanti, V. A., Casper, J., Lym, S., McAfee, L., Andersch, M., Shoeybi, M., &amp; Catanzaro, B. (2023).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Reducing activation recomputation in large transformer models.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">Proceedings of Machine Learning and Systems 5.</p>
+<!-- No direct link in markdown, but typically found on MLSys proceedings site -->
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Activation Recomputation</span><span class="tag">Transformer Models</span><span class="tag">Memory Efficiency</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[48]</span></p>
+<p><strong>Li, Y., Wei, F., Zhang, C., &amp; Zhang, H. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In Forty-first International Conference on Machine Learning, ICML 2024. OpenReview.net.</p>
+<p><a class="reference-link" href="https://openreview.net/forum?id=1NdN7eXyb4" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> OpenReview:1NdN7eXyb4</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Speculative Sampling</span><span class="tag">LLM Inference</span><span class="tag">Feature Uncertainty</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[49]</span></p>
+<p><strong>Liao, H., Liu, B., Chen, X., et al. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>UB-Mesh: a Hierarchically Localized nD-FullMesh Datacenter Network Architecture.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2503.20377 [cs.AR]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2503.20377" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2503.20377</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">UB-Mesh</span><span class="tag">Datacenter Network</span><span class="tag">Network Architecture</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[50]</span></p>
+<p><strong>Lie, S. (2022).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Cerebras Architecture Deep Dive: First Look Inside the HW/SW Co-Design for Deep Learning.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In 2022 IEEE Hot Chips 34 Symposium (HCS), 1–34.</p>
+<p><a class="reference-link" href="https://doi.org/10.1109/HCS55958.2022.9895479" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> DOI:10.1109/HCS55958.2022.9895479</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Cerebras</span><span class="tag">HW/SW Co-Design</span><span class="tag">Deep Learning Hardware</span><span class="tag">Wafer-Scale</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[51]</span></p>
+<p><strong>Lin, J., Tang, J., Tang, H., Yang, S., Chen, W.-M., Wang, W.-C., Xiao, G., Dang, X., Gan, C., &amp; Han, S. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In MLSys.</p>
+<!-- No direct link in markdown, but typically found on MLSys proceedings site -->
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">AWQ</span><span class="tag">Weight Quantization</span><span class="tag">LLM Compression</span><span class="tag">Model Acceleration</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[52]</span></p>
+<p><strong>Liu, Z., Yuan, J., Jin, H., Zhong, S., Xu, Z., Braverman, V., Chen, B., &amp; Hu, X. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv preprint arXiv:2402.02750.</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2402.02750" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2402.02750</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">KIVI</span><span class="tag">KV Cache Quantization</span><span class="tag">2-bit Quantization</span><span class="tag">LLM</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[53]</span></p>
+<p><strong>Luo, J., Zhang, W., Yuan, Y., et al. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Large Language Model Agent: A Survey on Methodology, Applications and Challenges.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv preprint arXiv:2503.21460.</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2503.21460" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2503.21460</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">LLM Agent</span><span class="tag">Survey</span><span class="tag">AI Agents</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[54]</span></p>
+<p><strong>Mandakolathur, K., &amp; Jeaugey, S. (2022).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Doubling all2all Performance with NVIDIA Collective Communication Library 2.12.</em></p>
+<p><a class="reference-link" href="https://developer.nvidia.com/blog/doubling-all2all-performance-withnvidia-collective-communication-library-2-12/" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> NVIDIA Developer Blog</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">NCCL</span><span class="tag">All-to-All</span><span class="tag">Collective Communication</span><span class="tag">NVIDIA</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[55]</span></p>
+<p><strong>Mistral. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Cheaper, Better, Faster, Stronger: Continuing to push the frontier of AI and making it accessible to all.</em></p>
+<p><a class="reference-link" href="https://mistral.ai/news/mixtral-8x22b" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> Mistral AI News</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Mistral AI</span><span class="tag">Mixtral</span><span class="tag">LLM</span><span class="tag">MoE</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[56]</span></p>
+<p><strong>Mudigere, D., Hao, Y., Huang, J., et al. (2023).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Software-Hardware Co-design for Fast and Scalable Training of Deep Learning Recommendation Models.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2104.05158 [cs].</p>
+<p><a class="reference-link" href="http://arxiv.org/abs/2104.05158" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2104.05158</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Software-Hardware Co-design</span><span class="tag">Recommendation Models</span><span class="tag">Scalable Training</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[57]</span></p>
+<p><strong>NVIDIA. (2022).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Improving Network Performance of HPC Systems Using NVIDIA Magnum IO NVSHMEM and GPUDirect Async.</em></p>
+<p><a class="reference-link" href="https://developer.nvidia.com/blog/improving-network-performance-ofhpc-systems-using-nvidia-magnum-io-nvshmem-and-gpudirect-async/" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> NVIDIA Developer Blog</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">NVIDIA</span><span class="tag">NVSHMEM</span><span class="tag">GPUDirect Async</span><span class="tag">HPC Network</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[58]</span></p>
+<p><strong>NVIDIA. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>NVIDIA DGX Spark: A Grace Blackwell AI supercomputer on your desk.</em></p>
+<p><a class="reference-link" href="https://www.nvidia.com/en-us/products/workstations/dgx-spark/" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> NVIDIA DGX Spark</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">NVIDIA</span><span class="tag">DGX Spark</span><span class="tag">Grace Blackwell</span><span class="tag">AI Supercomputer</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[59]</span></p>
+<p><strong>OpenAI. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Hello GPT-4o.</em></p>
+<p><a class="reference-link" href="https://openai.com/index/hello-gpt-4o/" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> OpenAI Blog</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">OpenAI</span><span class="tag">GPT-4o</span><span class="tag">LLM</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[60]</span></p>
+<p><strong>OpenAI. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Introducing OpenAI o1.</em></p>
+<p><a class="reference-link" href="https://openai.com/o1/" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> OpenAI Blog</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">OpenAI</span><span class="tag">o1</span><span class="tag">Reasoning Model</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[61]</span></p>
+<p><strong>OpenAI. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Introducing OpenAI o3 and o4-mini.</em></p>
+<p><a class="reference-link" href="https://openai.com/index/introducing-o3-and-o4-mini/" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> OpenAI Blog</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">OpenAI</span><span class="tag">o3</span><span class="tag">o4-mini</span><span class="tag">Reasoning Model</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[62]</span></p>
+<p><strong>Qian, K., Xi, Y., Cao, J., et al. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Alibaba HPN: A Data Center Network for Large Language Model Training.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In Proceedings of the ACM SIGCOMM 2024 Conference, 691–706.</p>
+<p><a class="reference-link" href="https://doi.org/10.1145/3651890.3672265" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> DOI:10.1145/3651890.3672265</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Alibaba HPN</span><span class="tag">Datacenter Network</span><span class="tag">LLM Training</span><span class="tag">SIGCOMM</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[63]</span></p>
+<p><strong>Qin, Z., Sun, W., Li, D., Shen, X., Sun, W., &amp; Zhong, Y. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Various lengths, constant speed: efficient language modeling with lightning attention.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In Proceedings of the 41st International Conference on Machine Learning (ICML’24), Article 1688.</p>
+<!-- JMLR.org link -->
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Lightning Attention</span><span class="tag">Efficient Language Modeling</span><span class="tag">ICML</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[64]</span></p>
+<p><strong>Rafailov, R., Sharma, A., Mitchell, E., Ermon, S., Manning, C. D., &amp; Finn, C. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Direct Preference Optimization: Your Language Model is Secretly a Reward Model.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2305.18290 [cs.LG]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2305.18290" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2305.18290</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">DPO</span><span class="tag">Preference Optimization</span><span class="tag">Reward Model</span><span class="tag">LLM Alignment</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[65]</span></p>
+<p><strong>Rahman, M. S., Bhowmik, S., Ryasnianskiy, Y., Yuan, X., &amp; Lang, M. (2019).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Topology-custom UGAL routing on dragonfly.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC ’19), Article 17.</p>
+<p><a class="reference-link" href="https://doi.org/10.1145/3295500.3356208" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> DOI:10.1145/3295500.3356208</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">UGAL Routing</span><span class="tag">Dragonfly Topology</span><span class="tag">HPC Networking</span><span class="tag">SC</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[66]</span></p>
+<p><strong>Rouhani, B. D., Zhao, R., More, A., et al. (2023).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Microscaling Data Formats for Deep Learning.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2310.10537 [cs.LG]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2310.10537" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2310.10537</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Microscaling</span><span class="tag">Data Formats</span><span class="tag">Deep Learning</span><span class="tag">Low Precision</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[67]</span></p>
+<p><strong>Schulman, J., Wolski, F., Dhariwal, P., Radford, A., &amp; Klimov, O. (2017).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Proximal Policy Optimization Algorithms.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:1707.06347 [cs.LG]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/1707.06347" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:1707.06347</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">PPO</span><span class="tag">Reinforcement Learning</span><span class="tag">Policy Optimization</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[68]</span></p>
+<p><strong>ByteDance Seed. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Seed1.5-Thinking: Advancing Superb Reasoning Models with Reinforcement Learning.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2504.13914 [cs.CL]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2504.13914" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2504.13914</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Seed1.5-Thinking</span><span class="tag">Reasoning Models</span><span class="tag">Reinforcement Learning</span><span class="tag">ByteDance</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[69]</span></p>
+<p><strong>Shao, Z., Wang, P., Zhu, Q., et al. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2402.03300 [cs.CL]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2402.03300" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2402.03300</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">DeepSeekMath</span><span class="tag">Mathematical Reasoning</span><span class="tag">Open Language Models</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[70]</span></p>
+<p><strong>Shazeer, N. (2019).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Fast Transformer Decoding: One Write-Head is All You Need.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">CoRR abs/1911.02150.</p>
+<p><a class="reference-link" href="http://arxiv.org/abs/1911.02150" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:1911.02150</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Multi-Query Attention (MQA)</span><span class="tag">Transformer Decoding</span><span class="tag">Efficient Inference</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[71]</span></p>
+<p><strong>Qwen Team. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Qwen3: Think Deeper, Act Faster.</em></p>
+<p><a class="reference-link" href="https://github.com/QwenLM/Qwen3" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> GitHub: QwenLM/Qwen3</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Qwen3</span><span class="tag">LLM</span><span class="tag">Reasoning Model</span><span class="tag">Alibaba</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[72]</span></p>
+<p><strong>Wang, S., Yu, B., Xiao, W., et al. (2023).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>A 135 GBps/Gbit $0 . 6 6 { \mathrm { ~ p J } }$ /bit Stacked Embedded DRAM with Multilayer Arrays by Fine Pitch Hybrid Bonding and Mini-TSV.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In 2023 IEEE Symposium on VLSI Technology and Circuits, 1–2.</p>
+<p><a class="reference-link" href="https://doi.org/10.23919/VLSITechnologyandCir57934.2023.10185427" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> DOI:10.23919/VLSITechnologyandCir57934.2023.10185427</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Stacked DRAM</span><span class="tag">Embedded DRAM</span><span class="tag">Hybrid Bonding</span><span class="tag">VLSI</span><span class="tag">SeDRAM</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[73]</span></p>
+<p><strong>xAI. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Grok-2 Beta Release.</em></p>
+<p><a class="reference-link" href="https://x.ai/news/grok-2" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> xAI News</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">xAI</span><span class="tag">Grok-2</span><span class="tag">LLM</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[74]</span></p>
+<p><strong>xAI. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Our Gigafactory of Compute:Colossus.</em></p>
+<p><a class="reference-link" href="https://x.ai/colossus" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> xAI Colossus</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">xAI</span><span class="tag">Colossus</span><span class="tag">AI Supercomputer</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[75]</span></p>
+<p><strong>Yang, A., Yang, B., Zhang, B., et al. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Qwen2.5 Technical Report.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv preprint arXiv:2412.15115.</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2412.15115" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2412.15115</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Qwen2.5</span><span class="tag">LLM</span><span class="tag">Technical Report</span><span class="tag">Alibaba</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[76]</span></p>
+<p><strong>Yuan, J., Gao, H., Dai, D., et al. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>Native Sparse Attention: Hardware-Aligned and Natively Trainable Sparse Attention.</em></p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2502.11089" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2502.11089</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">Sparse Attention</span><span class="tag">Hardware-Aligned</span><span class="tag">Efficient Attention</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[77]</span></p>
+<p><strong>Zhao, C., Zhao, L., Li, J., &amp; Xu, Z. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>DeepGEMM: clean and efficient FP8 GEMM kernels with fine-grained scaling.</em></p>
+<p><a class="reference-link" href="https://github.com/deepseek-ai/DeepGEMM" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> GitHub: deepseek-ai/DeepGEMM</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">DeepGEMM</span><span class="tag">FP8</span><span class="tag">GEMM Kernels</span><span class="tag">Fine-grained Scaling</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[78]</span></p>
+<p><strong>Zhao, C., Zhou, S., Zhang, L., et al. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>DeepEP: an efficient expert-parallel communication library.</em></p>
+<p><a class="reference-link" href="https://github.com/deepseek-ai/DeepEP" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> GitHub: deepseek-ai/DeepEP</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">DeepEP</span><span class="tag">Expert Parallelism</span><span class="tag">Communication Library</span><span class="tag">MoE</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[79]</span></p>
+<p><strong>Zheng, S., Fang, J., Zheng, X., et al. (2025).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>TileLink: Generating Efficient Compute-Communication Overlapping Kernels using Tile-Centric Primitives.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">arXiv:2503.20313 [cs.DC]</p>
+<p><a class="reference-link" href="https://arxiv.org/abs/2503.20313" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> arXiv:2503.20313</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">TileLink</span><span class="tag">Compute-Communication Overlap</span><span class="tag">Kernel Generation</span>
+</div>
+</div>
+<div class="info-card">
+<p><span class="badge blue">[80]</span></p>
+<p><strong>Zhong, Y., Liu, S., Chen, J., Hu, J., Zhu, Y., Liu, X., Jin, X., &amp; Zhang, H. (2024).</strong></p>
+<p><i class="fas fa-file-alt" style="color: var(--color-secondary);"></i> <em>DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving.</em></p>
+<p style="font-size: 0.9em; color: var(--color-gray);">In 18th USENIX Symposium on Operating Systems Design and Implementation (OSDI 24), 193–210.</p>
+<p><a class="reference-link" href="https://www.usenix.org/conference/osdi24/presentation/zhong-yinmin" style="color: var(--color-primary); text-decoration: none; font-weight: bold;" target="_blank"><i class="fas fa-link"></i> USENIX OSDI 24</a></p>
+<div class="tag-list" style="margin-top: 10px;">
+<span class="tag">DistServe</span><span class="tag">LLM Serving</span><span class="tag">Prefill-Decoding Disaggregation</span><span class="tag">OSDI</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>
