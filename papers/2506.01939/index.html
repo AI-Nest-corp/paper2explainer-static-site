@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-flask"></i> Abstract：論文の要旨 📌</h2>
+<p style="margin-bottom: 20px;">この論文は、大規模言語モデル（LLM）の推論能力を向上させるための強力なアプローチである<span class="keyword">検証可能な報酬を用いた強化学習（RLVR: Reinforcement Learning with Verifiable Rewards）</span>のメカニズムを解明しようとする研究です。これまでRLVRがなぜうまく機能するのかは、実はまだよく分かっていませんでした。そこで、本研究では<span class="highlight">「トークンエントロピーのパターン」</span>という新しい視点から、RLVRを先駆的に探求しています。</p>
+<div class="bubble-box" style="margin-bottom: 25px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px;">💡 <b>この論文の核心的な問い：</b> LLMが複雑な問題を解くとき（推論するとき）、文章を構成する一つ一つの「トークン」（単語や文字の一部のようなもの）のうち、特にどのトークンが重要なのでしょうか？ そして、強化学習（RLVR）は、これらのトークンにどう作用して推論能力を高めているのでしょうか？</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> 📝 発見１：思考の分岐点となる「高エントロピートークン」</h3>
+<p>まず、LLMが段階的に思考を組み立てる<span class="keyword">思考の連鎖（CoT: Chain-of-Thought）</span>におけるトークンエントロピーのパターンを詳細に分析しました。</p>
+<div class="definition-box" style="margin-bottom: 15px;">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説：トークンエントロピーとは？</p>
+<p><span class="keyword">トークン</span>とは、LLMがテキストを処理する際の最小単位です（例：単語、サブワード）。LLMが次にどのトークンを生成するかは確率的に決まります。<span class="keyword">エントロピー</span>とは、この「次にどのトークンが来るか」という確率分布の不確かさ・曖昧さの度合いを示す指標です。</p>
+<ul>
+<li><span class="highlight">高エントロピー</span>：次に生成される可能性のあるトークンの選択肢が多く、モデルが「迷っている」状態。予測が難しい。</li>
+<li><span class="highlight">低エントロピー</span>：次に生成されるトークンがほぼ一意に決まっており、モデルが「確信を持っている」状態。予測が易しい。</li>
+</ul>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-brain" style="color: var(--color-primary); font-size: 20px;"></i> <span style="font-family: 'Yomogi', cursive;">モデルの「迷い度」</span> <i class="fas fa-arrows-alt-h" style="color: var(--color-gray); margin: 0 10px;"></i> <i class="fas fa-dice-three" style="color: var(--color-accent2); font-size: 20px;"></i> <span style="font-family: 'Yomogi', cursive;">選択肢の多さ</span>
+</div>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<h4><i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> CoT推論での観察結果</h4>
+<p>分析の結果、以下のパターンが明らかになりました。</p>
+<ul>
+<li>大部分のトークンは<span class="highlight">低エントロピー</span>（例：「です」「ます」、定型的なフレーズ）。</li>
+<li>しかし、ごく一部のトークンだけが<span class="highlight keyword">高エントロピー</span>を示す。</li>
+</ul>
+<p>そして、この<span class="keyword">高エントロピートークン</span>こそが、モデルを多様な推論経路へと導く<span class="highlight">「重要な分岐点（forks）」</span>として機能していることが分かりました。これらを<span class="keyword">分岐トークン（forking tokens）</span>と名付けます。</p>
+<div style="text-align:center; margin-top:15px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 14px;">推論の道筋 🛤️</span><br/>
+<i class="fas fa-road" style="font-size: 20px; color: var(--color-gray);"></i> ... <i class="fas fa-circle" style="font-size: 10px; color: var(--color-primary);"></i> ... 
+                <i class="fas fa-code-branch fa-rotate-90 fa-2x" style="color: var(--color-accent2); position: relative; top: 5px;"></i> <span style="font-family: 'Yomogi', cursive; color: var(--color-accent2); font-weight: bold;">分岐点!</span> ... 
+                <i class="fas fa-circle" style="font-size: 10px; color: var(--color-primary);"></i> ... <i class="fas fa-flag-checkered" style="font-size: 20px; color: var(--color-gray);"></i>
+</div>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-cogs" style="color: var(--color-secondary);"></i> RLVR訓練中の変化</h4>
+<p>さらに、RLVRによる訓練中にエントロピーパターンがどう進化するかを調査したところ…</p>
+<ul>
+<li>RLVRは、元となる<span class="keyword">ベースモデル</span>のエントロピーパターンを<span class="highlight">ほぼそのまま維持</span>する。</li>
+<li>そして驚くべきことに、RLVRは主に<span class="keyword">高エントロピートークン（つまり分岐トークン）のエントロピーを選択的に調整</span>していることが判明しました。</li>
+</ul>
+<p>これらの発見は、RLVRの学習効果において、<span class="highlight keyword">高エントロピーの分岐トークンが極めて重要</span>であることを強く示唆しています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-rocket"></i> 🚀 発見２：「80/20ルール」を超える効率的な学習法</h3>
+<p>これらの知見に基づき、研究チームはRLVRの学習方法を改善する仮説を立てました。「もし分岐トークンがそんなに重要なら、<span class="highlight">学習の焦点を分岐トークンだけに絞ったらどうなるだろう？</span>」</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i> 提案：分岐トークン限定の勾配更新</p>
+<p>具体的には、強化学習における方策の更新（<span class="keyword">方策勾配更新</span>）を、<span class="highlight">エントロピーが高い上位20%の分岐トークンのみに限定</span>する手法を試みました。</p>
+<p>その結果は目覚ましいものでした！ 📊</p>
+<div class="info-grid">
+<div class="info-card" style="background-color: rgba(92, 184, 92, 0.1);">
+<h4 style="color: var(--color-accent1);"><i class="fas fa-equals"></i> Qwen3-8Bモデル</h4>
+<p>全てのトークンを使って学習した場合（フル勾配更新）と<span class="highlight keyword">同等の性能を維持</span>しました。</p>
+</div>
+<div class="info-card" style="background-color: rgba(255, 126, 95, 0.1);">
+<h4 style="color: var(--color-secondary);"><i class="fas fa-chart-line"></i> Qwen3-14B &amp; Qwen3-32Bモデル</h4>
+<p>なんと、フル勾配更新の場合を<span class="highlight keyword">大幅に上回る性能</span>を達成！</p>
+<ul>
+<li>Qwen3-32B: AIME’25で <span class="badge orange">+11.04ポイント</span>, AIME’24で <span class="badge orange">+7.71ポイント</span></li>
+<li>Qwen3-14B: AIME’25で <span class="badge orange">+4.79ポイント</span>, AIME’24で <span class="badge orange">+5.21ポイント</span></li>
+</ul>
+<p>この性能向上は、モデルサイズが大きくなるほど顕著になる<span class="keyword">強力なスケーリングトレンド</span>を示しています。</p>
+</div>
+</div>
+<div class="note-box" style="margin-top: 15px; border-left-color: var(--color-accent3);">
+<p class="note-title" style="color: var(--color-accent3);"><i class="fas fa-star"></i> 「80/20ルール」越え！</p>
+<p>これは、一般的に言われる「結果の80%は20%の原因から生じる」というパレートの法則（80/20ルール）をさらに超える発見です。<span class="highlight">わずか20%のトークンを利用するだけで、100%のトークンを利用した場合と同等かそれ以上の性能</span>を引き出せたのです！</p>
+</div>
+<div class="challenge-box" style="margin-top: 15px;">
+<p class="challenge-title"><i class="fas fa-thumbs-down"></i> 対照実験の結果</p>
+<p>逆に、エントロピーが最も低い80%のトークンのみで訓練した場合、<span class="highlight">性能は著しく低下</span>しました。</p>
+</div>
+<p style="margin-top: 15px;">これらの結果は、RLVRの有効性が主に<span class="keyword">推論の方向性を決定する高エントロピートークンを最適化することによって生まれる</span>ことを明確に示しています。</p>
+</div>
+<img alt="Figure 1 from the paper" src="forking_tokens_performance_scaling.jpg"/>
+<div class="glass-card" style="margin-top: 5px; padding: 15px;">
+<h4 class="subsection-title" style="margin-top:0; padding-left:0; border-left:0; color:var(--color-dark);"><i class="fas fa-image"></i> 図1の解説</h4>
+<p>この図は論文の主要な発見を視覚的にまとめたものです。</p>
+<div class="two-column">
+<div class="column" style="border-right: 1px dashed var(--color-gray); padding-right: 10px;">
+<p style="text-align:center; font-family: 'Yomogi', cursive; font-size:16px;"><strong>(a) トークンの役割分担 🗺️</strong></p>
+<p>左側の図は、LLMが思考の連鎖（CoT）を生成する際のトークンの役割を示しています。</p>
+<ul>
+<li><span class="badge purple">高エントロピーの少数トークン (High-entropy minority tokens)</span>：
+                        赤い点で示され、人が分岐路に立っているイラストで表現されています。これらは推論経路における「分岐点（forks）」であり、モデルが次にどの方向に進むかを選択する重要な箇所です。不確実性が高い（エントロピーが高い）ため、様々な可能性を秘めています。
+                        <span style="display:block; text-align:center; margin-top:5px;">
+<i class="fas fa-random" style="color:var(--color-accent2);"></i> どの道を選ぶ？
+                        </span>
+</li>
+<li><span class="badge blue">低エントロピーの多数トークン (Low-entropy majority tokens)</span>：
+                        青い点で示され、人が一本道を進んでいるイラストで表現されています。これらは既に選択された経路を補完したり、文法的に自然な続きを生成したりする役割を担います。不確実性が低い（エントロピーが低い）ため、ほぼ決まった道筋を辿ります。
+                        <span style="display:block; text-align:center; margin-top:5px;">
+<i class="fas fa-shoe-prints" style="color:var(--color-primary);"></i> 道なりに進む
+                        </span>
+</li>
+</ul>
+<p>下のテキスト例「What is 1 + 1 in base 2? In decimal, 1 + 1 = 2. <span style="color:red; font-weight:bold;">But</span> how does that translate to base 2? <span style="color:red; font-weight:bold;">Well</span>, in binary [...]」では、"But" や "Well" のような接続詞が高エントロピートークン（分岐点）の例として挙げられています。</p>
+</div>
+<div class="column" style="padding-left: 10px;">
+<p style="text-align:center; font-family: 'Yomogi', cursive; font-size:16px;"><strong>(b) 分岐トークン限定学習の効果 🚀</strong></p>
+<p>右側の棒グラフは、AIME24およびAIME25という数学推論ベンチマークにおける性能を示しています。</p>
+<ul>
+<li><span class="badge blue">水色の棒 (all tokens)</span>：全てのトークンを使ってRLVRで学習した場合の性能。</li>
+<li><span class="badge orange">ピンク色の棒 (fork only)</span>：高エントロピーの分岐トークンのみを使ってRLVRで学習した場合の性能。</li>
+</ul>
+<p>モデルサイズ（8B, 14B, 32B）が大きくなるにつれて、<span class="highlight keyword">分岐トークンのみで学習した方が性能が大幅に向上する</span>傾向が見られます（特に32Bモデル）。</p>
+<p>点線は性能のトレンドを示しており、分岐トークンのみの学習（赤の破線）の方が、全トークン学習（青の破線）よりも急峻な右肩上がりになっています。</p>
+<p>下部のイラストは、全トークン学習では全てのトークン（青と赤）に学習の重みが分散するのに対し、分岐トークン学習では分岐点となるトークン（赤）に集中的に学習が行われるイメージを示しています。</p>
+<p style="margin-top: 10px;"><strong>🏆 SoTA達成！</strong><br/>
+                最大応答長20kの場合、提案手法を用いた32Bモデルは、パラメータ数600B未満のベースモデルに対するRLVRにおいて、AIME’24で63.5点、AIME’25で56.7点という<span class="highlight keyword">新たな最高性能（SoTA: State-of-the-Art）</span>を達成しました。さらに、最大応答長を29kに拡張することで、AIME’24のスコアは68.1点にまで向上しました。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-bullseye"></i> 🎯 結論と展望</h3>
+<p>総じて、本研究の結果は以下の重要な点を示しています。</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">RLVRを<span class="keyword">トークンエントロピー</span>という新しい切り口から理解する可能性。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content"><span class="keyword">高エントロピーの少数派トークン（分岐トークン）</span>を活用することで、RLVRを最適化し、LLMの推論能力をさらに向上させられる可能性。</div>
+</li>
+</ul>
+<div class="note-box" style="margin-top: 20px; background-color: rgba(74, 111, 165, 0.05); border-left-color: var(--color-primary);">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-paper-plane"></i> この研究の意義</p>
+<p>この研究は、LLMの「思考」のメカニズム解明に一歩近づくとともに、より効率的で高性能なLLM開発のための新たな道筋を示したと言えるでしょう。特に、学習対象を絞ることで計算コストを削減しつつ性能を向上できる可能性は、実用上非常に大きな意味を持ちます。</p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-scroll"></i> 1 Introduction</h2>
+<div class="content-box">
+<p>このセクションでは、大規模言語モデル (LLM) の推論能力の進化、特にその中核技術である<span class="keyword">強化学習 (RL)</span> の役割と、本論文が提案する新たな視点について解説します。LLMがどのようにして複雑な問題を解決する能力を獲得するのか、そのメカニズムの一端を明らかにすることを目指します。</p>
+</div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-brain"></i> LLM推論能力の飛躍的進歩とRLVRの役割</h3>
+<p>近年、<span class="keyword">大規模言語モデル (LLMs: Large Language Models)</span> の推論能力は、数学やプログラミングといった専門的な領域で目覚ましい進歩を遂げています。この背景には、OpenAI o1、Claude 3.7、DeepSeek R1、Kimi K1.5、Qwen3といった最先端モデルで採用されている<span class="keyword">テスト時スケーリング手法 (test-time scaling methodologies)</span> があります。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-cogs"></i> 中核技術: RLVR</p>
+<p>これらの改善を牽引する極めて重要な技術の一つが、<span class="keyword">検証可能な報酬を用いた強化学習 (RLVR: Reinforcement Learning with Verifiable Rewards)</span> です。RLVRでは、モデルは自動化された正しさの検証に基づいて与えられるRLの目的関数を通じて出力を最適化します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：RLVR</p>
+<ul>
+<li><strong>強化学習 (RL)</strong>: エージェントが環境と相互作用しながら、試行錯誤を通じて最適な行動戦略を学習する機械学習の一分野です。</li>
+<li><strong>検証可能な報酬</strong>: 生成された出力が正しいかどうかを自動的に（例えば、数学問題の答えが一致するか、コードが正しく実行されるかなどで）検証し、その結果に基づいて報酬を与える仕組みです。</li>
+</ul>
+</div>
+</div>
+<p>最近のRLVRの進歩は、アルゴリズムの革新、分野横断的な応用、そして直感に反する経験的な洞察からもたらされています。しかし、既存のRLVRの実装の多くは、<span class="highlight">どのトークンが実際に推論を促進するのか</span>という点を深く理解しないまま、単純に全てのトークンに対して直接訓練を行っています。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 既存のRLVR実装の課題点</p>
+<p>これらのアプローチは、トークンが推論プロセスで果たす<span class="keyword">機能的な役割の多様性 (heterogeneous functional roles)</span> を見過ごしており、連続的な推論の軌道における重要な決定点を優先的に扱えていないため、さらなる性能向上の妨げになっている可能性があります。</p>
+<p>📌 <strong>例えるなら…</strong><br/>
+            チームでプロジェクトを進める際、全員に同じ指示を出すのではなく、各メンバーの得意分野や重要な役割を理解し、それに合わせた指示を出す方が効率的ですよね。同様に、LLMの推論も、全てのトークンを同じように扱うのではなく、特に重要な役割を果たすトークンに注目する必要があるかもしれません。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-search-plus"></i> 本論文の革新的アプローチ：トークンエントロピーに着目</h3>
+<p>本論文では、RLVRの根底にあるメカニズムを<span class="keyword">トークンエントロピーのパターン</span>という新しい視点から分析し、エントロピーが異なるトークンが推論性能にどのように影響を与えるかを調査します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：トークンエントロピー</p>
+<p><span class="keyword">トークンエントロピー</span>とは、LLMが次のトークンを生成する際の「不確かさ」や「予測の難しさ」の度合いを示す指標です。エントロピーが高いトークンは、次に続く可能性のある選択肢が多く、モデルがあまり確信を持てていないことを意味します。逆にエントロピーが低いトークンは、次に来るべきトークンがほぼ一意に定まっているような、予測しやすい状況を示します。</p>
+<p>📊 <strong>エントロピーのイメージ:</strong></p>
+<ul>
+<li><strong>高エントロピー</strong>: 「さて、次はどうしようかな… 🤔」（選択肢が多い、重要な分岐点）</li>
+<li><strong>低エントロピー</strong>: 「これはこう続くのが自然だよね 😊」（ほぼ決まった言い回し、自明な続き）</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-stream"></i> 思考連鎖 (CoT) におけるトークンエントロピーの発見</h3>
+<p>私たちはまず、LLMの<span class="keyword">思考連鎖 (CoT: Chain-of-Thought)</span> プロセスにおいて、トークンエントロピーの分布が特徴的なパターンを示すことを指摘します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：思考連鎖 (CoT)</p>
+<p><span class="keyword">思考連鎖 (CoT)</span> とは、LLMが複雑な問題に対して、最終的な答えだけでなく、そこに至るまでの中間的な推論ステップを明示的に生成するプロセスのことです。これにより、LLMはより複雑な推論タスクをこなせるようになります。</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<h4><i class="fas fa-chart-pie"></i> エントロピー分布の特徴</h4>
+<p>CoTプロセスで生成されるトークンの大多数は<span class="highlight">低エントロピー</span>（予測しやすい、確実性が高い）であるのに対し、ごく一部の重要なトークン群が<span class="highlight">高エントロピー</span>（予測しにくい、不確実性が高い）で出現することが分かりました。</p>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-tasks"></i> トークンの機能的役割</h4>
+<p>これら2種類のトークンのテキスト上の意味を比較すると、以下の傾向が見られました。</p>
+<ul>
+<li><span class="badge blue">平均エントロピーが最も低いトークン群</span>: 主に進行中の<span class="keyword">言語構造を完成させる</span>役割（例: 文末の句読点、助詞、定型的なフレーズの続きなど）。</li>
+<li><span class="badge orange">平均エントロピーが最も高いトークン群</span>: 複数の潜在的な経路の中から推論の軌道を決定する<span class="keyword">極めて重要な決定点（フォーク）</span>として機能します。これらは推論が複数の方向に分岐しうる「分かれ道」のようなものです。（図1(a)参照）</li>
+</ul>
+</div>
+</div>
+<img alt="Figure 1: (a) CoTにおける高エントロピー少数派トークンと低エントロピー多数派トークン。(b) フォークトークンのみを用いたRLVRの性能スケーリング。" src="forking_tokens_performance_scaling.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-image"></i> 図1 の解説</p>
+<p><strong>(a) CoTにおけるトークンエントロピーの役割 (左図):</strong> この図は、思考連鎖 (CoT) プロセスにおけるトークンの役割を視覚化したものです。黒い線が推論の主要な経路を表し、その上に点が連なっています。</p>
+<ul>
+<li><span style="color: red; font-weight: bold;">赤い点 (高エントロピー少数派トークン)</span>: これらは「フォーク・ザ・パス (道を分岐させる)」トークンと呼ばれ、推論の方向性を決定する重要な分岐点を示します。イラストでは、旅人が複数の道が分かれる岐路に立っているイメージで表現されています。これらのトークンでは、LLMは次に何を生成すべきかについて不確実性が高く、多様な選択肢を検討しています。</li>
+<li><span style="color: blue;">青い点 (低エントロピー多数派トークン)</span>: これらは「フォロー・ザ・パス (道に従う)」トークンと呼ばれ、既に決定された推論の経路に沿って、文脈を補完したり、既存の構造を完成させたりする役割を果たします。イラストでは、旅人が一本道を着実に進んでいるイメージです。これらのトークンでは、次に生成すべき内容は比較的明確です。</li>
+</ul>
+<p>下のテキスト例 "What is 1 + 1 in base 2? In decimal, 1 + 1 = 2. <span style="text-decoration: underline wavy red;">But how</span> does that translate to base 2? <span style="text-decoration: underline wavy red;">Well, in binary</span> [...]" では、"But how" や "Well, in binary" のような部分が、話題を転換したり新しい情報を導入したりする重要な箇所であり、高エントロピーを持つ可能性が高い「フォークトークン」の例です。</p>
+<p><strong>(b) フォークトークンを用いたRLVRの性能 (右図):</strong> この2つの棒グラフは、AIME24およびAIME25という数学推論ベンチマークにおけるRLVRの性能を示しています。横軸はモデルのパラメータサイズ (8B, 14B, 32B)、縦軸はAcc@16 (16回試行した場合の正解率) です。</p>
+<ul>
+<li><span style="color: lightblue; background-color: #007bff; padding: 2px; border-radius: 3px; color: white;">青い棒 (all tokens)</span>: 全てのトークンを使用してRL訓練を行った場合の性能。</li>
+<li><span style="color: lightpink; background-color: #dc3545; padding: 2px; border-radius: 3px; color: white;">赤い棒 (fork only)</span>: <span class="highlight">フォークトークン（高エントロピートークン）のみ</span>を使用してRL訓練を行った場合の性能。</li>
+</ul>
+<p>モデルサイズが大きくなるにつれて（8B → 14B → 32B）、フォークトークンのみを用いた訓練（赤い棒）が、全トークンを用いた訓練（青い棒）と比較して、同等以上の、あるいは大幅に優れた性能向上を示していることがわかります。特に32Bモデルではその差が顕著です。これは、<span class="keyword">高エントロピートークンに集中した訓練が、特に大規模モデルにおいて非常に効果的である</span>ことを示唆しています。</p>
+</div>
+<p>📝 さらに、この「フォーク」としての役割を検証するため、デコーディング中にこれらの高エントロピーなフォークトークンのエントロピーを手動で調整する制御実験を行いました。その結果、</p>
+<ul>
+<li>フォークトークンのエントロピーを適度に<span style="color: green;">増加させる</span>と、推論性能が<span class="highlight">測定可能なほど向上</span>しました。</li>
+<li>逆に、フォークトークンのエントロピーを人為的に<span style="color: red;">減少させる</span>と、性能が<span class="highlight">低下</span>しました。</li>
+</ul>
+<p>これらの実験結果は、これらの高エントロピートークンが高いエントロピーを維持することの重要性と、「フォーク」としての役割を裏付けています。</p>
+<p>🔍 また、RLVR訓練中にトークンエントロピーがどのように変化するかを分析したところ、以下のことが明らかになりました。</p>
+<ul>
+<li>推論モデルは、訓練の進行に伴い、<span class="keyword">ベースモデル（訓練前の初期モデル）のエントロピーパターンを大部分保持</span>し、変化は徐々にかつ比較的小規模なものでした。</li>
+<li>RLVRは主に<span class="highlight">高エントロピートークンのエントロピーを変化</span>させ、低エントロピートークンのエントロピーはごくわずかな範囲でしか変動しませんでした。</li>
+</ul>
+<p>これらの観察結果は、高エントロピーの少数派トークンがCoTおよびRLVR訓練において極めて重要な役割を果たしている可能性を示唆しています。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box">
+<h3 class="subsection-title"><i class="fas fa-rocket"></i> フォークトークンに基づくRLVRの改良と驚くべき成果</h3>
+<p>「フォークトークン」の発見に基づき、本論文ではRLVRをさらに改良しました。具体的には、<span class="keyword">ポリシー勾配更新 (policy gradient updates)</span> を、エントロピーが最も高い上位<span class="highlight">20%のトークン</span>にのみ保持し、残りの80%のトークンの勾配を<span class="keyword">マスク (masking gradients)</span> する（つまり、学習に利用しない）という手法を提案します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：ポリシー勾配更新と勾配マスク</p>
+<ul>
+<li><strong>ポリシー勾配更新</strong>: 強化学習において、モデルの「ポリシー」（ある状態でどのような行動を取るかの方針）を改善するために、報酬に基づいて勾配（パラメータをどちらの方向に調整すれば良いかを示す指標）を計算し、モデルのパラメータを更新することです。</li>
+<li><strong>勾配マスク</strong>: 特定のトークンについては、計算された勾配を学習に使わないようにすることです。これにより、学習の影響を特定のトークンに集中させることができます。</li>
+</ul>
+</div>
+<p>驚くべきことに、このアプローチは、わずか20%のトークンしか利用しないにもかかわらず、Qwen3-8Bベースモデルにおいて、全勾配更新（全てのトークンを学習に利用する従来手法）と比較して<span class="highlight">競争力のある推論性能</span>を達成できました。</p>
+<p>さらに、この手法の有効性はモデルサイズが大きくなるにつれて増し、</p>
+<ul>
+<li>Qwen3-32Bベースモデルでは、AIME'25で<span style="color: green; font-weight: bold;">+11.04ポイント</span>、AIME'24で<span style="color: green; font-weight: bold;">+7.71ポイント</span>の性能向上。</li>
+<li>Qwen3-14Bベースモデルでは、AIME'25で<span style="color: green; font-weight: bold;">+4.79ポイント</span>、AIME'24で<span style="color: green; font-weight: bold;">+5.21ポイント</span>の性能向上。</li>
+</ul>
+<p>という結果が得られました (図1(b)参照)。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-trophy"></i> 新記録樹立！</p>
+<p>特筆すべきは、わずか20%の高エントロピートークンで訓練された32Bモデルが、AIME'24でスコア63.5、AIME'25でスコア56.7を達成し、600Bパラメータ未満のベースモデルから直接訓練された推論モデルとして<span class="keyword">新たな最高性能 (SoTA: State-of-the-Art)</span> を樹立したことです。最大応答長を20kから29kに延長することで、この32BモデルのAIME'24スコアは63.5からさらに68.1へと向上しました。</p>
+</div>
+<p>対照的に、エントロピーが最も低い80%のトークンのみで訓練すると、<span class="highlight">深刻な性能低下</span>が見られました。</p>
+<div class="bubble-box">
+<p>💡 これらの観察結果は、<span class="keyword">80/20ルール（パレートの法則）</span>さえも超える可能性を示唆しています。つまり、全体の20%のトークンが、100%のトークンを使用した場合と同等かそれ以上の性能を達成するだけでなく、場合によってはそれを大幅に上回るということです。これは、推論の軌道における重要な決定点として機能する高エントロピーの少数派トークンが、RLVRにおける性能向上のほぼ全てを担っていることを示しています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-question-circle"></i> なぜ少数の高エントロピートークンで高い性能が出るのか？</h3>
+<p>最後に、なぜ高エントロピートークンのごく一部を保持するだけでRLVRで高い性能が得られるのかを、一連の<span class="keyword">アブレーションスタディ (ablation studies)</span> を通じて探求しました。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：アブレーションスタディ</p>
+<p><span class="keyword">アブレーションスタディ</span>とは、モデルや手法の構成要素を一つずつ取り除いたり変更したりすることで、各要素が全体の性能にどの程度貢献しているかを調べる分析手法です。</p>
+</div>
+<p>具体的には、選択するフォークトークンの割合を20%から10%に減らしたり、逆に50%や100%に増やしたりして、それぞれの推論メトリクスと訓練プロセス中の全体的なエントロピーを報告しました。</p>
+<p>実験結果から、以下のことが明らかになりました。</p>
+<ul>
+<li>高エントロピートークンのうち<span class="highlight">約20%</span>を保持することが、<span class="keyword">探索 (exploration)</span> と性能の最適なバランスをもたらす。</li>
+<li>この20%から逸脱すると、全体的なエントロピーが減少し、探索が弱まり、性能が悪化する。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas -lightbulb"></i> 考察</p>
+<p>これは、高エントロピートークンのうち、<span class="keyword">重要な一部のサブセットのみがRL中の探索に有益に寄与</span>し、他のトークンは中立的であるか、あるいは有害でさえある可能性を示唆しています。</p>
+<ul>
+<li>割合を<span class="highlight">10%に減らす</span>と、いくつかの有用なトークンが除外され、探索が弱まる。</li>
+<li>割合を<span class="highlight">50%や100%に増やす</span>と、低エントロピートークンが追加され、これもまた探索の有効性を低下させる。</li>
+</ul>
+</div>
+<p>また、興味深いことに、高エントロピートークンの上位20%を保持する戦略は、</p>
+<ul>
+<li>32Bモデルで最大の性能向上をもたらし、</li>
+<li>次に14Bモデル、</li>
+<li>8Bモデルでは最も小さな向上、</li>
+</ul>
+<p>という結果になりました。これは、モデルサイズが小さい場合、その<span class="keyword">容量 (capacity)</span> が不十分であるため、探索の増加から得られる恩恵が制限されるためかもしれません。これらの発見は、RLVRにおいて適切な割合の高エントロピートークンを保持することの重要性を強調しています。モデルサイズが大きくなるにつれて、高エントロピートークンを選択する戦略は効果的にスケールするようです。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="section-card" style="background-color: var(--color-light); border-left: 5px solid var(--color-accent1);">
+<h3 class="subsection-title" style="color: var(--color-accent1);"><i class="fas fa-bullseye"></i> まとめと本論文の貢献</h3>
+<p>まとめると、本研究の発見は、LLMの推論能力を形成する上で、<span class="keyword">高エントロピーの少数派トークン</span>が極めて重要な役割を果たしていることを強調するものです。</p>
+<p>私たちは、この研究がトークンエントロピーの観点からのさらなる分析を促し、これらのトークンを戦略的に活用して推論性能を向上させる、より効果的なRLVRアルゴリズムの開発に繋がることを期待しています。</p>
+<div class="framework-box" style="border-color: var(--color-accent1);">
+<p class="framework-title" style="color: var(--color-accent1); border-bottom-color: var(--color-accent1);"><i class="fas fa-key"></i> 本論文の主なポイント (Key Takeaways)</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">1</div>
+<div class="step-content">📌 <strong>CoTにおけるエントロピーパターン (§3):</strong>
+<br/>思考連鎖 (CoT) では、トークンの大部分は低エントロピーで生成されますが、ごく一部のサブセットが高エントロピーを示します。これらの高エントロピー少数派トークンは、しばしば推論プロセスにおける「<span class="keyword">フォーク（分岐点）</span>」として機能し、モデルを多様な推論経路へと導きます。これらの重要なフォークトークンで高いエントロピーを維持することは、推論性能にとって有益です。
+                    </div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">2</div>
+<div class="step-content">📌 <strong>RLVR訓練中のエントロピー変化 (§4):</strong>
+<br/>RLVR訓練中、推論モデルはベースモデルのエントロピーパターンを大部分保持し、変化は徐々にかつ小規模です。RLVRは主に高エントロピートークンのエントロピーを調整し、低エントロピートークンのエントロピーは狭い範囲でしか変動しません。
+                    </div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">3</div>
+<div class="step-content">📌 <strong>高エントロピートークンが性能向上を牽引 (§5):</strong>
+<br/>RLVR中の推論性能向上のほぼ全ては、高エントロピーの少数派トークンによってもたらされます。一方、低エントロピーの多数派トークンはほとんど貢献しないか、あるいは性能を妨げる可能性さえあります。一つの可能な説明は、性能が収束する前に、高エントロピートークンの一部（本実験では約20%）が探索を促進するのに対し、低エントロピートークンは最小限の利益しか提供しないか、探索を妨げる可能性があるということです。
+                    </div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">4</div>
+<div class="step-content">📌 <strong>さらなる考察 (§6):</strong>
+<br/>上記の洞察に基づき、(i) 監視付きファインチューニング (SFT) が記憶に頼りがちなのに対し、RLが汎化する理由としての高エントロピー少数派トークン、(ii) LLMのCoTと従来のRL軌道で見られる異なるエントロピーパターンを形成する事前知識と可読性の要件、(iii) RLVRにおけるエントロピーボーナスに対するクリップハイヤーの利点についてさらに議論します。
+                    </div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section-card" id="2_Preliminaries">
+<h2 class="section-title"><i class="fas fa-book-open"></i>2 Preliminaries</h2>
+<div class="content-box">
+<p>このセクションでは、本論文の中心的な議論を理解するために不可欠な基礎知識を準備します。特に、大規模言語モデル (LLM) の推論プロセスを分析する上で重要な<span class="keyword">トークンエントロピー</span>の計算方法と、LLMの推論能力を強化学習で向上させるための主要なアルゴリズムである<span class="keyword">RLVR (Reinforcement Learning with Verifiable Rewards)</span>について、その基本的な仕組みを解説します。これらの知識は、後のセクションで展開される本論文の提案手法や実験結果を深く理解するための土台となります。</p>
+</div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 class="subsection-title-custom"><i class="fas fa-calculator"></i> このセクションの学びポイント１</h4>
+<p><strong>トークンエントロピー計算:</strong> LLMが次にどの単語（トークン）を生成するかの「不確かさ」を測る指標。その定義と計算方法を理解します。</p>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title-custom"><i class="fas fa-cogs"></i> このセクションの学びポイント２</h4>
+<p><strong>RLVRアルゴリズム:</strong> LLMの出力を検証可能な報酬で強化学習する手法群。PPO、GRPO、DAPOといった代表的なアルゴリズムの概要を把握します。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-pie"></i>2.1 Token entropy calculation</h3>
+<div class="content-box">
+<p>✏️ まず、この論文で頻繁に登場する「トークンエントロピー」とは何か、そしてそれがどのように計算されるのかを見ていきましょう。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-feather-alt"></i>トークンレベル生成エントロピー (Token-level generation entropy)</div>
+<p>時刻 <span class="keyword">t</span> におけるトークン <span class="keyword">t</span> のトークンレベル生成エントロピー（論文中では簡潔に<span class="highlight">トークンエントロピー</span>と呼ばれます）は、次のように定義されます。</p>
+<div class="formula">
+                $$ H _ { t } : = - \sum _ { j = 1 } ^ { V } p _ { t , j } \log p _ { t , j } $$
+            </div>
+<p>ここで、各記号の意味は以下の通りです。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-lightbulb"></i> <span class="keyword">\( H_t \)</span>: 時刻 <span class="keyword">t</span> における<strong class="highlight">トークンエントロピー</strong>。LLMが次にどのトークンを生成するかについての不確かさの度合いを示します。値が大きいほど、次に生成されるトークンの予測が難しい（多様なトークンが生成されうる）ことを意味します。</li>
+<li><i class="fas fa-list-ol"></i> <span class="keyword">\( V \)</span>: <strong class="highlight">語彙サイズ (vocabulary size)</strong>。LLMが扱うことができるトークン（単語やサブワード）の総種類数です。</li>
+<li><i class="fas fa-percentage"></i> <span class="keyword">\( p_{t,j} \)</span>: 時刻 <span class="keyword">t</span> において、語彙内の <span class="keyword">j</span> 番目のトークンが生成される<strong class="highlight">確率</strong>。</li>
+<li><i class="fas fa-calculator"></i> <span class="keyword">\( \sum_{j=1}^{V} \)</span>: 語彙内の全てのトークン（1番目からV番目まで）について和を取ることを意味します。</li>
+<li><i class="fas fa-square-root-alt"></i> <span class="keyword">\( \log \)</span>: 対数関数。通常、情報理論では底2の対数（ビット単位）や自然対数（ナット単位）が使われます。</li>
+</ul>
+<p>そして、この確率分布 <span class="keyword">\( (p_{t,1}, \cdots, p_{t,V}) = \pmb{p}_t \)</span> は、次のように計算されます。</p>
+<div class="formula">
+                $$ \pmb{p}_t = \pi_{\theta}(\cdot \mid q, \pmb{o}_{<t}) $$="" <="" =="" \mathrm{softmax}\left(\frac{\pmb{z}_t}{t}\right)="" div="">
+<div class="bubble-box">
+<p>📝 <strong>確率分布の計算ステップ</strong></p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">LLM（パラメータ <span class="keyword">\(\theta\)</span> で特徴づけられる <span class="keyword">\(\pi_{\theta}\)</span>）が、入力クエリ <span class="keyword">\(q\)</span> と、それ以前に生成されたトークン列 <span class="keyword">\(\pmb{o}_{<t} (o_1,="" =="" \ldots,="" o_2,="" o_{t-1})\)<="" span=""> を受け取ります。</t}></span></div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">LLMは、次に生成されうる各トークンに対する生のスコアである<strong class="highlight">事前ソフトマックスロジット (pre-softmax logits)</strong> <span class="keyword">\(\pmb{z}_t \in \mathbb{R}^V\)</span> を出力します。これは<span class="keyword">V</span>次元のベクトルで、各要素が語彙内の対応するトークンの「生成しやすさ」のようなものを表します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">このロジット <span class="keyword">\(\pmb{z}_t\)</span> を<strong class="highlight">デコーディング温度 (decoding temperature)</strong> <span class="keyword">\(T \in \mathbb{R}\)</span> で割ります。温度 <span class="keyword">\(T\)</span> は生成されるトークンのランダム性を調整するパラメータです。
+                        <ul>
+<li><i class="fas fa-thermometer-quarter"></i> <span class="keyword">\(T &lt; 1\)</span>: より確率の高いトークンが選ばれやすくなり、決定的・保守的な出力になります。</li>
+<li><i class="fas fa-thermometer-three-quarters"></i> <span class="keyword">\(T &gt; 1\)</span>: 確率の低いトークンも選ばれやすくなり、多様で創造的な出力になります。</li>
+<li><i class="fas fa-thermometer-full"></i> <span class="keyword">\(T = 1\)</span>: ロジットをそのまま使います。</li>
+</ul>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">最後に、温度調整されたロジットに<strong class="highlight">Softmax関数</strong>を適用し、語彙全体にわたる<strong class="highlight">確率分布 (probability distribution)</strong> <span class="keyword">\(\pmb{p}_t\)</span> を得ます。この分布の各要素 <span class="keyword">\(p_{t,j}\)</span> が、次に <span class="keyword">j</span> 番目のトークンが生成される確率です。</div>
+</div>
+</div>
+</t})></div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-exchange-alt"></i>オフポリシー設定 (Off-policy settings) について</div>
+<p>強化学習の文脈では、<strong class="highlight">オフポリシー設定</strong>という状況があります。これは、実際にシーケンス（一連のトークン）を生成する方策（ポリシー）である<strong class="highlight">ロールアウト方策 (rollout policy)</strong> <span class="keyword">\(\pi_{\phi}\)</span> と、学習対象の方策である<strong class="highlight">学習方策 (training policy)</strong> <span class="keyword">\(\pi_{\theta}\)</span> が異なる場合（つまり <span class="keyword">\(\phi \neq \theta\)</span>）を指します。このような状況でも、トークンエントロピー <span class="keyword">\(H_t\)</span> は、常に<span class="highlight">学習方策 \(\pi_{\theta}\) を用いて式(1)に従って計算</span>されます。これは、学習方策自身の不確かさを測るためです。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title-custom"><i class="fas fa-puzzle-piece"></i>トークンエントロピーは「分布」に対するもの</h4>
+<p>📌 重要な注意点として、「トークンエントロピー」は、<strong class="highlight">特定のあるトークンそのものの性質ではなく、そのトークンが生成される際の「トークン生成分布」\(\pmb{p}_t\) に対応する</strong>という点です。</p>
+<p>論文全体を通して、トークンエントロピー <span class="keyword">\(H_t\)</span> は、インデックス <span class="keyword">t</span> におけるエントロピーを指します。これは、そのインデックスで実際にサンプリングされた特定のトークン <span class="keyword">\(o_t\)</span> によって決まるのではなく、そのトークンを生成した確率分布 <span class="keyword">\(\pmb{p}_t\)</span> によって決まります。</p>
+<p>便宜上、分布 <span class="keyword">\(\pmb{p}_t\)</span> からサンプリングされたトークン <span class="keyword">\(o_t\)</span> について議論する際に、それに関連するエントロピーを <span class="keyword">\(H_t\)</span> と表現し、<span class="keyword">\(o_t\)</span> のトークンエントロピーとして言及することがあります。しかし、これはあくまで表記の簡略化です。</p>
+<p>🔍 例えば、もしインデックス <span class="keyword">t</span> とは異なる別のインデックス <span class="keyword">\(t'\)</span>（<span class="keyword">\(t' \neq t\)</span>）があり、そこで生成されたトークン <span class="keyword">\(o_{t'}\)</span> がたまたま <span class="keyword">\(o_t\)</span> と同じであったとしても（つまり <span class="keyword">\(o_{t'} = o_t\)</span>）、<span class="keyword">\(o_{t'}\)</span> のトークンエントロピー <span class="keyword">\(H_{t'}\)</span> は、必ずしも <span class="keyword">\(H_t\)</span> と等しいとは限りません。なぜなら、それぞれのトークンが生成された文脈（それまでのトークン列）が異なるため、確率分布 <span class="keyword">\(\pmb{p}_t\)</span> と <span class="keyword">\(\pmb{p}_{t'}\)</span> が異なる可能性があるからです。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<i class="fas fa-brain fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>文脈A:</strong> "An apple a day..."</p>
+<p>トークン "keeps" の生成時</p>
+<p>\(\pmb{p}_{\text{keeps (A)}}\) <i class="fas fa-arrow-right"></i> \(H_{\text{keeps (A)}}\)</p>
+<p>(エントロピー低めかも？)</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-lightbulb fa-2x" style="color: var(--color-accent2);"></i>
+<p><strong>文脈B:</strong> "She carefully keeps..."</p>
+<p>トークン "keeps" の生成時</p>
+<p>\(\pmb{p}_{\text{keeps (B)}}\) <i class="fas fa-arrow-right"></i> \(H_{\text{keeps (B)}}\)</p>
+<p>(エントロピー高めかも？)</p>
+</div>
+</div>
+<p style="text-align: center; margin-top: 10px;">同じ "keeps" というトークンでも、文脈によって生成確率分布が変わり、エントロピーも変わる可能性があります。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-robot"></i>2.2 RLVR Algorithms</h3>
+<div class="content-box">
+<p>🤖 次に、LLMの推論能力を向上させるために用いられる強化学習の手法群、<span class="keyword">RLVR (Reinforcement Learning with Verifiable Rewards)</span> の中で、この論文と関連の深いアルゴリズムを見ていきましょう。RLVRは、生成された出力の正しさを自動的に検証し、その結果を報酬として強化学習を行うアプローチです。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-shield-alt"></i>Proximal Policy Optimization (PPO)</div>
+<p>PPO (Schulman et al., 2017) は、RLVRで広く採用されている<strong class="highlight">方策勾配アルゴリズム (policy gradient algorithm)</strong>の一つです。学習を安定させるために、方策（ポリシー）の更新を、更新前の古い方策 <span class="keyword">\(\pi_{\theta_{\mathrm{old}}}\)</span> から大きく離れないように制限します。これは、以下の<strong class="highlight">クリップされた代理目的関数 (clipped surrogate objective)</strong>を最大化することで達成されます。</p>
+<div class="formula">
+            $$ J _ { \mathrm { PPO } } ( \theta ) = \mathbb { E } _ { ( q , a ) \sim \mathcal { D } , o \sim \pi _ { \theta _ { \mathrm { o l d } } } ( \cdot | q ) } \left[ \operatorname* { m i n } \big ( r _ { t } ( \theta ) \hat { A } _ { t } , \mathrm { c l i p } ( r _ { t } ( \theta ) , 1 - \epsilon , 1 + \epsilon ) \hat { A } _ { t } \big ) \right] $$
+            <p>ここで、</p>
+            $$ r _ { t } ( \theta ) = \frac { \pi _ { \theta } \big ( o _ { t } \big | q , o _ { &lt; t } \big ) } { \pi _ { \theta _ { \mathrm { o l d } } } \big ( o _ { t } | q , o _ { &lt; t } \big ) } $$
+            </div>
+<p>各要素の説明：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-bullseye"></i> <span class="keyword">\(J_{\mathrm{PPO}}(\theta)\)</span>: PPOの目的関数。これを最大化するように方策パラメータ <span class="keyword">\(\theta\)</span> を更新します。</li>
+<li><i class="fas fa-dice"></i> <span class="keyword">\(\mathbb{E}_{ (q,a) \sim \mathcal{D}, o \sim \pi_{\theta_{\mathrm{old}}}(\cdot|q) }[\cdot]\)</span>: データセット <span class="keyword">\(\mathcal{D}\)</span> からサンプリングされた入力クエリ <span class="keyword">\(q\)</span> と対応する正解 <span class="keyword">\(a\)</span>、そして古い方策 <span class="keyword">\(\pi_{\theta_{\mathrm{old}}}\)</span> によって生成された応答 <span class="keyword">\(o\)</span> に対する期待値。</li>
+<li><i class="fas fa-compress-arrows-alt"></i> <span class="keyword">\(\mathrm{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)\)</span>: 確率比 <span class="keyword">\(r_t(\theta)\)</span> を <span class="keyword">\([1-\epsilon, 1+\epsilon]\)</span> の範囲にクリップ（制限）します。これにより、方策の更新が急激に大きくなるのを防ぎます。</li>
+<li><i class="fas fa-sliders-h"></i> <span class="keyword">\(\epsilon \in \mathbb{R}\)</span>: クリッピング範囲を決定するハイパーパラメータ。論文では通常2.0に設定されるとありますが、一般的なPPOでは0.1や0.2が多いです。この論文の文脈では2.0が使われている点に注意。</li>
+<li><i class="fas fa-balance-scale"></i> <span class="keyword">\(\hat{A}_t\)</span>: <strong class="highlight">推定されたアドバンテージ (estimated advantage)</strong>。<span class="keyword">\(t\)</span> ステップ目の行動が平均よりどれだけ良かったかを示します。通常、<strong class="highlight">価値ネットワーク (value network)</strong> を用いて計算されます。</li>
+<li><i class="fas fa-divide"></i> <span class="keyword">\(r_t(\theta)\)</span>: <strong class="highlight">確率比 (probability ratio)</strong>。新しい方策 <span class="keyword">\(\pi_{\theta}\)</span> と古い方策 <span class="keyword">\(\pi_{\theta_{\mathrm{old}}}\)</span> の下で、特定の行動（トークン <span class="keyword">\(o_t\)</span> の生成）が起こる確率の比です。</li>
+</ul>
+<div class="bubble-box">
+<p><i class="fas fa-info-circle"></i> <strong>PPOのクリッピングの役割</strong></p>
+<p>PPOの目的関数における <span class="keyword">min</span> と <span class="keyword">clip</span> の部分は、学習を安定させるための鍵です。</p>
+<ul>
+<li>もしアドバンテージ <span class="keyword">\(\hat{A}_t\)</span> が正（良い行動だった場合）：
+                        目的関数は <span class="keyword">\(r_t(\theta)\hat{A}_t\)</span> と <span class="keyword">\((1+\epsilon)\hat{A}_t\)</span> の小さい方を取ります。これにより、確率比 <span class="keyword">\(r_t(\theta)\)</span> が <span class="keyword">\(1+\epsilon\)</span> を超えて過度に大きくなる（方策が急激に変化する）のを防ぎます。
+                    </li>
+<li>もしアドバンテージ <span class="keyword">\(\hat{A}_t\)</span> が負（悪い行動だった場合）：
+                        目的関数は <span class="keyword">\(r_t(\theta)\hat{A}_t\)</span> と <span class="keyword">\((1-\epsilon)\hat{A}_t\)</span> の小さい方（実際には絶対値が大きい方、つまりよりペナルティが大きくなる方）を取ろうとしますが、<span class="keyword">\(r_t(\theta)\)</span> が <span class="keyword">\(1-\epsilon\)</span> より小さくなると、クリップされた項 <span class="keyword">\(\mathrm{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)\hat{A}_t\)</span> は <span class="keyword">\((1-\epsilon)\hat{A}_t\)</span> となります。
+                        この場合、<span class="keyword">\(r_t(\theta)\)</span> が小さくなる（新しい方策がその行動を取る確率が古い方策よりずっと低くなる）と、<span class="keyword">\(r_t(\theta)\hat{A}_t\)</span> の方が <span class="keyword">\((1-\epsilon)\hat{A}_t\)</span> よりも大きくなる（負の数が0に近づく）可能性があります。PPOの目的関数は最大化なので、<span class="keyword">\(\hat{A}_t &lt; 0\)</span> のときは、より小さい値（より大きなペナルティ）を選びます。つまり、<span class="keyword">\(r_t(\theta)\)</span> が <span class="keyword">\(1-\epsilon\)</span> を下回っても、ペナルティが過度に小さくならないように抑制します。
+                    </li>
+</ul>
+<p>これにより、新しい方策が古い方策から大きく逸脱することを防ぎ、学習プロセスを安定させます。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-users-cog"></i>Group Relative Policy Optimization (GRPO)</div>
+<p>GRPO (Shao et al., 2024) は、PPOの式(2)のクリップされた目的関数を基礎としつつ、<strong class="highlight">価値ネットワークを使用しない</strong>点が特徴です。代わりに、アドバンテージを<strong class="highlight">サンプリングされた応答グループ内の平均報酬</strong>を使って推定します。</p>
+<p>具体的には、各入力クエリ <span class="keyword">\(q\)</span> とその正解 <span class="keyword">\(a\)</span> に対して、ロールアウト方策 <span class="keyword">\(\pi_{\theta_{\mathrm{old}}}\)</span> が <span class="keyword">\(G\)</span> 個の応答のグループ <span class="keyword">\(\{\pmb{o}^i\}_{i=1}^G\)</span> を生成します。それぞれの応答には、対応する結果報酬 <span class="keyword">\(\{R^i\}_{i=1}^G\)</span> が与えられます（<span class="keyword">\(G \in \mathbb{R}\)</span> はグループサイズ）。</p>
+<p>そして、推定アドバンテージ <span class="keyword">\(\hat{A}_t^i\)</span> は次のように計算されます。</p>
+<div class="formula">
+            $$ \hat { A } _ { t } ^ { i } = \frac { R ^ { i } - \mathrm { mean } ( \{ R ^ { j } \} _ { j = 1 } ^ { G } ) } { \mathrm { std } ( \{ R ^ { j } \} _ { j = 1 } ^ { G } ) } $$
+            <p>ここで、報酬 <span class="keyword">\(R^i\)</span> は以下のように定義されます。</p>
+            $$ R ^ { i } = \left\{ \begin{array} { l l } { 1.0 \quad } &amp; { \mathrm { if } \quad \mathrm { is\_equivalent } ( a , o ^ { i } ) , } \\ { 0.0 \quad } &amp; { \mathrm { otherwise } . } \end{array} \right. $$
+            </div>
+<p>解説：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-medal"></i> <span class="keyword">\(\hat{A}_t^i\)</span>: <span class="keyword">i</span> 番目の応答における時刻 <span class="keyword">t</span> での推定アドバンテージ。</li>
+<li><i class="fas fa-star"></i> <span class="keyword">\(R^i\)</span>: <span class="keyword">i</span> 番目の応答 <span class="keyword">\(\pmb{o}^i\)</span> が正解 <span class="keyword">\(a\)</span> と等価であるか (<span class="keyword">\(\mathrm{is\_equivalent}(a, o^i)\)</span>) によって決定されるバイナリ報酬（1.0か0.0）。</li>
+<li><i class="fas fa-calculator"></i> <span class="keyword">\(\mathrm{mean}(\{R^j\}_{j=1}^G)\)</span>: グループ内の全応答の報酬の平均値。</li>
+<li><i class="fas fa-chart-line"></i> <span class="keyword">\(\mathrm{std}(\{R^j\}_{j=1}^G)\)</span>: グループ内の全応答の報酬の標準偏差。報酬を正規化するために使用されます。</li>
+</ul>
+<p>GRPOは、この変更されたアドバンテージ推定に加えて、PPOのクリップされた目的関数（式(2)）に<strong class="highlight">KLペナルティ項 (KL penalty term)</strong>を追加します。KLペナルティは、更新後の方策が古い方策から大きく逸脱しすぎないように制約をかける役割があります。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-lightbulb"></i> GRPOのポイント</div>
+<p>GRPOは価値ネットワークを不要とすることで、モデルの複雑さや学習コストを削減する可能性があります。アドバンテージの推定を、同一入力に対する複数の生成結果の相対的な良し悪しに基づいて行う点がユニークです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-rocket"></i>Dynamic sAmpling Policy Optimization (DAPO)</div>
+<p>DAPO (Yu et al., 2025) はGRPOをさらに発展させたアルゴリズムです。以下の変更点が特徴です：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-times-circle"></i> KLペナルティの削除</li>
+<li><i class="fas fa-arrow-alt-circle-up"></i> <strong class="highlight">クリップハイアーメカニズム (clip-higher mechanism)</strong>の導入（<span class="keyword">\(\epsilon_{\mathrm{high}}\)</span>）</li>
+<li><i class="fas fa-random"></i> <strong class="highlight">動的サンプリング (dynamic sampling)</strong>の組み込み</li>
+<li><i class="fas fa-tasks"></i> <strong class="highlight">トークンレベルの方策勾配損失 (token-level policy gradient loss)</strong>の適用</li>
+<li><i class="fas fa-ribbon"></i> <strong class="highlight">過長報酬シェーピング (overlong reward shaping)</strong>の採用</li>
+</ul>
+<p>これらの変更により、DAPOは以下の最大化目的関数を持ちます。ここで <span class="keyword">\(r_t^i(\theta)\)</span> は式(2)で定義されたものと同様で、<span class="keyword">\(\hat{A}_t^i\)</span> は式(3)で計算されます。</p>
+<div class="formula">
+            $$ \mathcal { J } _ { \mathrm { DAPO } } ( \theta ) = \mathbb { E } _ { ( q , a ) \sim \mathcal { D } , \{ o^i \} _ { i = 1 } ^ { G } \sim \pi _ { \theta _ { \mathrm { old } } } ( \cdot \vert q ) } \Bigg [ \frac { 1 } { \sum _ { i = 1 } ^ { G } \vert o ^ { i } \vert } \sum _ { i = 1 } ^ { G } \sum _ { t = 1 } ^ { \vert o ^ { i } \vert } \operatorname* { m i n } \left( r _ { t } ^ { i } ( \theta ) \hat { A } _ { t } ^ { i } , \mathrm { c l i p } \left( r _ { t } ^ { i } ( \theta ) , 1 - \epsilon _ { \mathrm { low } } , 1 + \epsilon _ { \mathrm { high } } \right) \hat { A } _ { t } ^ { i } \right) \Bigg ] $$
+            <p>制約条件: <span class="keyword">\( 0 &lt; \left| \left\{ o ^ { i } \vert \mathrm { ~is\_equivalent } ( a , o ^ { i } ) \right\} \right| &lt; G \)</span></p>
+</div>
+<p>解説：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-bullseye"></i> <span class="keyword">\(\mathcal{J}_{\mathrm{DAPO}}(\theta)\)</span>: DAPOの目的関数。</li>
+<li><i class="fas fa-stream"></i> <span class="keyword">\(\sum_{i=1}^G |o^i|\)</span>: グループ内の全応答の総トークン数。損失をトークンごとに正規化します。</li>
+<li><i class="fas fa-arrows-alt-h"></i> <span class="keyword">\(\epsilon_{\mathrm{low}}\)</span>, <span class="keyword">\(\epsilon_{\mathrm{high}}\)</span>: クリッピングのためのハイパーパラメータ。PPOの <span class="keyword">\(\epsilon\)</span> と似ていますが、DAPOでは上限と下限を個別に設定できる柔軟性があります（特に <span class="keyword">\(\epsilon_{\mathrm{high}}\)</span> によるクリップハイアー）。</li>
+<li><i class="fas fa-filter"></i> 制約条件: グループ <span class="keyword">\(G\)</span> 内の応答のうち、正解と等価な応答の数が0より大きく、かつ <span class="keyword">\(G\)</span> より小さいことを要求します。つまり、全てが不正解でも、全てが正解でもないグループのみを学習に使用します。これにより、学習信号がより有益になることを目指します。</li>
+</ul>
+<p>DAPOは、価値ネットワークを持たないRLVRアルゴリズムの中で<strong class="highlight">最先端 (state-of-the-art)</strong>の一つとされています。本論文では、この<span class="highlight">DAPOをRLVR実験のベースラインとして使用</span>します。</p>
+<div class="bubble-box">
+<p><i class="fas fas fa-cogs"></i> <strong>DAPOの主要な改善点（おさらい）</strong></p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<h5 class="icon-item"><i class="fas fa-arrow-alt-circle-up"></i> クリップハイアー</h5>
+<p>確率比の上限クリップ値 <span class="keyword">\(\epsilon_{\mathrm{high}}\)</span> を調整することで、特に良い行動に対する更新の大きさを制御し、学習の探索を促進する可能性があります。</p>
+</div>
+<div class="info-card">
+<h5 class="icon-item"><i class="fas fa-random"></i> 動的サンプリング</h5>
+<p>学習の進行度合いやモデルの性能に応じてサンプリング戦略を動的に変えることで、より効果的な学習データを得ようとします。</p>
+</div>
+<div class="info-card">
+<h5 class="icon-item"><i class="fas fa-tasks"></i> トークンレベル勾配</h5>
+<p>応答全体ではなく、個々のトークンレベルで方策勾配を計算し適用することで、より細かい粒度での学習を目指します。</p>
+</div>
+<div class="info-card">
+<h5 class="icon-item"><i class="fas fa-ribbon"></i> 過長報酬シェーピング</h5>
+<p>非常に長いシーケンスを扱う際に、報酬の割り当て方を工夫することで、学習の効率と安定性を向上させます。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<hr style="border: 1px dashed var(--color-primary); margin: 30px 0;"/>
+<p style="text-align: center; font-family: 'Yomogi', cursive; color: var(--color-gray);">これで、論文の核心部分を理解するための準備が整いました！ 🚀</p>
+</div>
+<div class="section-card" id="3_Analyzing_Token_Entropy_in_Chain-of-Thought_Reasoning">
+<h2 class="section-title"><i class="fas fa-microscope"></i>3 Analyzing Token Entropy in Chain-of-Thought Reasoning</h2>
+<div class="content-box">
+<p>このセクションでは、大規模言語モデル (LLM) が思考の連鎖 (Chain-of-Thought, CoT) と呼ばれるステップバイステップの推論を行う際に、各トークンが持つ「エントロピー」という情報量に着目し、そのパターンを詳細に分析します。これまでの研究 (Yang et al., 2025; Yu et al., 2025; Yue et al., 2025b) でもCoT推論における生成エントロピーの重要性は指摘されてきましたが、それらは主に全トークンのエントロピーをまとめて分析するものでした。</p>
+<p>ここでは、<span class="keyword">トークンレベル</span>でエントロピーを掘り下げ、個々のトークンが推論プロセスでどのような役割を果たしているのかを明らかにすることを目指します。🔑</p>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-cogs"></i> 実験のセットアップ</div>
+<p>この分析のために、以下の設定で実験を行いました。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-brain icon-item"></i> <strong>使用モデル:</strong> <span class="highlight">Qwen3-8B</span> (Yang et al., 2025)。これは、同程度のパラメータ数を持つモデルの中で、最新かつ非常に高い推論能力を持つものの一つです。</li>
+<li><i class="fas fa-book-open icon-item"></i> <strong>データセット:</strong> <span class="highlight">AIME’24</span> および <span class="highlight">AIME’25</span> の問題を使用しました。これらは数学の競技プログラミングの問題で、高度な推論能力が要求されます。</li>
+<li><i class="fas fa-thermometer-half icon-item"></i> <strong>デコーディング温度:</strong> <span class="highlight">T = 1.0</span> に設定しました。これは、モデルが多様な応答を生成しやすくするための一般的な設定です。</li>
+<li><i class="fas fa-comment-dots icon-item"></i> <strong>思考モード:</strong> 全ての質問に対して、モデルが思考プロセスを明示的に記述する「thinking mode」を強制的に使用させました。</li>
+<li><i class="fas fa-database icon-item"></i> <strong>収集データ:</strong> <span class="highlight">100万を超える応答トークン</span>を収集しました。</li>
+<li><i class="fas fa-calculator icon-item"></i> <strong>エントロピー計算:</strong> 各トークンのエントロピーは、以前のセクション (セクション2.1) で定義された<span class="keyword">Equation (1)</span>に従って計算しました。
+                <div class="note-box">
+<div class="note-title"><i class="fas fa-lightbulb"></i> トークンエントロピーとは？</div>
+<p>トークンエントロピー \(H_t\) は、ある文脈 (\(q, o_{<t}\)) (1)）。エントロピーが高いほど、次にどんなトークンが来るか予測しにくく（多様な選択肢がある）、低いほど予測しやすい（特定のトークンが来やすい）ことを意味します。<="" \(o_t\)="" \(p_t\)="" \log="" \sum_{j="1}^{V}" p="" p_{t,j}="" p_{t,j}\)="" が与えられたときに、次に生成されるトークン="" と計算されます（equation="" の不確かさを表す指標です。具体的には、\(h_t="-" の予測確率分布="">
+</t}\))></p></div>
+</li>
+</ul>
+<p>これらの収集された100万トークンのエントロピー値に関する統計分析結果は、論文中の<span class="keyword">Figure 2</span>に示されています。また、長いCoT応答全体におけるトークンエントロピーの視覚的な表現は、論文の付録にある<span class="keyword">Figures 12から17</span>で提供されています。</p>
+<p>これらの分析から、CoT推論における特徴的なエントロピーパターンが明らかになりました。✏️</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-pie"></i> Entropy Pattern 1 in CoTs: 少数の高エントロピートークンと多数の低エントロピートークン</h3>
+<div class="content-box">
+<p>最初の発見は、CoT推論において生成されるトークンのエントロピーには顕著な偏りがあるということです。</p>
+<div class="glass-card">
+<p><span class="badge yellow">パターン1</span> 通常、<span class="keyword">ごく一部のトークンのみが高エントロピーで生成</span>され、<span class="keyword">大多数のトークンは低エントロピーで出力</span>されます。</p>
+</div>
+<p>論文のFigure 2(a)（ここではその内容を解説します）を見ると、この傾向が明確に分かります。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<h4><i class="fas fa-sort-amount-down"></i> 低エントロピートークンが大多数</h4>
+<p>生成されるトークンの大部分は、エントロピーが非常に小さい値を示します。これは、モデルがこれらのトークンを高い確信度で予測していることを意味します。</p>
+<p>具体的には、収集されたトークンのうち、<span class="highlight">約半数（約50.64%）のエントロピーが \(10^{-2}\) 未満</span>でした。これは非常に低い値です。</p>
+<div style="text-align: center; margin: 10px 0;">
+<i class="fas fa-battery-quarter" style="font-size: 3em; color: var(--color-primary);"></i>
+<p style="font-family: 'Yomogi', cursive;">大部分は予測しやすい！</p>
+</div>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-random"></i> 高エントロピートークンは少数派</h4>
+<p>一方で、高いエントロピーを持つトークンは少数派です。これらのトークンは、モデルにとって予測が難しく、複数の可能性の中から選択されたことを示唆します。</p>
+<p>具体的には、<span class="highlight">全トークンのうち20%のみがエントロピー0.672より大きい値</span>を持ちました。</p>
+<div style="text-align: center; margin: 10px 0;">
+<i class="fas fa-dice" style="font-size: 3em; color: var(--color-secondary);"></i>
+<p style="font-family: 'Yomogi', cursive;">一部は予測が難しい！</p>
+</div>
+</div>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 16px;">📊イメージ: トークンエントロピーの分布</p>
+<div style="display: flex; align-items: flex-end; justify-content: center; height: 150px; border: 1px dashed var(--color-gray); padding: 10px; border-radius: 8px;">
+<div style="width: 60%; height: 20%; background-color: var(--color-primary-light); margin-right: 5px; display: flex; align-items: center; justify-content: center; color: var(--color-dark); border-radius: 4px 4px 0 0; background-color: rgba(74, 111, 165, 0.3);"><small>多数 (低エントロピー)</small></div>
+<div style="width: 20%; height: 80%; background-color: var(--color-secondary-light); display: flex; align-items: center; justify-content: center; color: var(--color-dark); border-radius: 4px 4px 0 0; background-color: rgba(255, 126, 95, 0.3);"><small>少数 (高エントロピー)</small></div>
+</div>
+<p style="font-size: 12px; color: var(--color-gray); margin-top: 5px;">（論文のFigure 2(a)の概念図）</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i> Entropy Pattern 2 in CoTs: トークンの役割とエントロピーの関係</h3>
+<div class="content-box">
+<p>次に、トークンのエントロピーの大きさと、そのトークンがCoT推論の中で果たす役割との間に関連性が見られました。</p>
+<div class="glass-card">
+<p><span class="badge yellow">パターン2</span> <span class="keyword">最もエントロピーが高いトークン</span>は、典型的には<span class="highlight">推論の2つの連続する部分間の論理的な繋がりを橋渡しする役割</span>を果たします。一方、<span class="keyword">最もエントロピーが低いトークン</span>は、<span class="highlight">文の現在の部分を完成させたり、単語の構築を終えたりする傾向</span>があります。その他のトークンは、これら2つの機能を様々な度合いで組み合わせています。</p>
+</div>
+<p>このパターンを明らかにするために、論文のFigure 2(b)と(c)では（ここではその内容を解説します）、収集した100万トークンの中から、出現頻度が100回以上のトークンに限定し（平均エントロピーに対するノイズの影響を軽減するため）、平均エントロピーが最も高い100トークンと最も低い100トークンを選び出しています。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4><i class="fas fa-link" style="color: var(--color-accent2);"></i> 高エントロピートークンの特徴 (Figure 2(b)より)</h4>
+<p>これらのトークンは、文内や文をまたいで論理的な接続詞として機能することが多いです。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-arrows-alt-h icon-item"></i> <strong>対比や転換を示す:</strong> "wait", "however", "unless"</li>
+<li><i class="fas fa-long-arrow-alt-right icon-item"></i> <strong>進行や追加を示す:</strong> "thus", "also"</li>
+<li><i class="fas fa-question-circle icon-item"></i> <strong>因果関係を示す:</strong> "since", "because"</li>
+</ul>
+<p>また、数学的な導出においては、仮定、既知の条件、または定義を導入するためによく現れます。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-flask icon-item"></i> <strong>仮定・条件・定義:</strong> "suppose", "assume", "given", "define"</li>
+</ul>
+<div style="text-align: center; margin-top: 15px;">
+<img alt="高エントロピートークンは分岐点" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cstyle%3E.txt%20%7B%20font-family%3A%20%27Yomogi%27%2C%20cursive%3B%20font-size%3A%2012px%3B%20%7D%20.line%20%7B%20stroke%3A%20%234a6fa5%3B%20stroke-width%3A%202%3B%20stroke-linecap%3A%20round%3B%20%7D%20.node%20%7B%20fill%3A%20%23ff7e5f%3B%20stroke%3A%20%232c3e50%3B%20stroke-width%3A%201%3B%20%7D%3C/style%3E%3C/defs%3E%3Cpath%20class%3D%22line%22%20d%3D%22M20%2050%20L50%2030%22/%3E%3Cpath%20class%3D%22line%22%20d%3D%22M20%2050%20L50%2070%22/%3E%3Ccircle%20class%3D%22node%22%20cx%3D%2220%22%20cy%3D%2250%22%20r%3D%225%22/%3E%3Ccircle%20class%3D%22node%22%20cx%3D%2250%22%20cy%3D%2230%22%20r%3D%225%22/%3E%3Ccircle%20class%3D%22node%22%20cx%3D%2250%22%20cy%3D%2270%22%20r%3D%225%22/%3E%3Ctext%20x%3D%2260%22%20y%3D%2235%22%20class%3D%22txt%22%3E推論A%3C/text%3E%3Ctext%20x%3D%2260%22%20y%3D%2275%22%20class%3D%22txt%22%3E推論B%3C/text%3E%3Ctext%20x%3D%2225%22%20y%3D%2255%22%20class%3D%22txt%22%20font-weight%3D%22bold%22%3E高エントロピー%3C/text%3E%3C/svg%3E" style="width: 100px; height: 100px; margin-bottom: 5px;"/>
+<p style="font-family: 'Yomogi', cursive;">論理の<span style="border-bottom: 2px solid var(--color-accent2);">橋渡し役</span>！</p>
+</div>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-puzzle-piece" style="color: var(--color-accent1);"></i> 低エントロピートークンの特徴 (Figure 2(c)より)</h4>
+<p>これらのトークンは、非常に決定論的に出力される傾向があります。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-pen-nib icon-item"></i> <strong>単語の接尾辞:</strong> 例: "-ing", "-tion"</li>
+<li><i class="fas fa-code icon-item"></i> <strong>ソースコードの断片:</strong> 例: "()", ";"</li>
+<li><i class="fas fa-equals icon-item"></i> <strong>数式の構成要素:</strong> 例: "=", "+", "x"</li>
+</ul>
+<p>これらは文脈上、ほぼ一意に定まる部分であり、モデルは高い確信度でこれらを生成します。</p>
+<div style="text-align: center; margin-top: 15px;">
+<img alt="低エントロピートークンは文の完成" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20viewBox%3D%220%200%20100%20100%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cstyle%3E.txt%20%7B%20font-family%3A%20%27Yomogi%27%2C%20cursive%3B%20font-size%3A%2012px%3B%20%7D%20.line%20%7B%20stroke%3A%20%235cb85c%3B%20stroke-width%3A%202%3B%20stroke-linecap%3A%20round%3B%20%7D%20.node%20%7B%20fill%3A%20%23ffd54f%3B%20stroke%3A%20%232c3e50%3B%20stroke-width%3A%201%3B%20%7D%3C/style%3E%3C/defs%3E%3Cpath%20class%3D%22line%22%20d%3D%22M20%2050%20L80%2050%22/%3E%3Ccircle%20class%3D%22node%22%20cx%3D%2220%22%20cy%3D%2250%22%20r%3D%225%22/%3E%3Ccircle%20class%3D%22node%22%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%225%22/%3E%3Ccircle%20class%3D%22node%22%20cx%3D%2280%22%20cy%3D%2250%22%20r%3D%225%22/%3E%3Ctext%20x%3D%2225%22%20y%3D%2240%22%20class%3D%22txt%22%20font-weight%3D%22bold%22%3E低エントロピー%3C/text%3E%3Ctext%20x%3D%2230%22%20y%3D%2270%22%20class%3D%22txt%22%3E文の完成%3C/text%3E%3C/svg%3E" style="width: 100px; height: 100px; margin-bottom: 5px;"/>
+<p style="font-family: 'Yomogi', cursive;">文の<span style="border-bottom: 2px solid var(--color-accent1);">仕上げ役</span>！</p>
+</div>
+</div>
+</div>
+<p>さらに、論文の付録のFigures 12から17（ここでは引用しませんが、論文を参照してください）では、長いCoT応答におけるトークンエントロピーを詳細に可視化しており、最高エントロピー群または最低エントロピー群に属さないほとんどのトークンが、橋渡し機能と継続機能を様々な度合いで混ぜ合わせていることが示されています。</p>
+<div style="text-align: center; margin: 20px 0;">
+<img alt="Token Entropy Color Scale" src="token_entropy_color_scale.jpg" style="width: 80%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p class="reference">図: トークンエントロピーのカラースケール例 (論文Figure 17より引用)。青色が低エントロピー、赤色が高エントロピーを示します。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-code-branch"></i> High-entropy tokens as "forks" in chain-of-thoughts (思考の連鎖における「分岐点」としての高エントロピートークン)</h3>
+<div class="content-box">
+<p>上記で観察された2つのエントロピーパターンに基づき、研究者たちは<span class="keyword">高エントロピートークン</span>を<span class="highlight bubble-box" style="padding: 5px 10px; border-radius: 15px; background-color: rgba(255, 126, 95, 0.2); border: 1px dashed var(--color-secondary); display: inline-block;">「分岐トークン (forking tokens)」</span>と呼んでいます。これらのトークンは、推論プロセスにおいて高い不確実性を伴い、しばしば異なる潜在的な思考の枝分かれ（ブランチ）へと導くためです。分岐点では、次にどちらの道に進むか選択肢が多く、その選択が推論の方向性を大きく左右します。</p>
+<div style="text-align: center; margin: 20px 0;">
+<svg height="120" style="font-family: 'Yomogi', cursive;" viewbox="0 0 200 120" width="200" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="0" refy="3.5">
+<polygon fill="#4a6fa5" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+<!-- Main path -->
+<line stroke="#4a6fa5" stroke-width="3" x1="20" x2="80" y1="60" y2="60"></line>
+<!-- Forking point -->
+<circle cx="80" cy="60" fill="#ff7e5f" r="8"></circle>
+<text fill="white" font-size="12" x="73" y="65">🔑</text>
+<!-- Branches -->
+<line marker-end="url(#arrowhead)" stroke="#4a6fa5" stroke-dasharray="4 2" stroke-width="3" x1="80" x2="140" y1="60" y2="30"></line>
+<line marker-end="url(#arrowhead)" stroke="#4a6fa5" stroke-dasharray="4 2" stroke-width="3" x1="80" x2="140" y1="60" y2="90"></line>
+<!-- Labels -->
+<text fill="#2c3e50" font-size="14" x="5" y="65">推論の流れ</text>
+<text fill="#2c3e50" font-size="12" style="font-family: 'Kaisei Decol', serif;" x="85" y="50">分岐トークン</text>
+<text fill="#2c3e50" font-size="14" x="145" y="28">経路A</text>
+<text fill="#2c3e50" font-size="14" x="145" y="98">経路B</text>
+</svg>
+<p style="font-size:12px; color: var(--color-gray);">高エントロピートークンは、推論の進む方向を決定する重要な「分岐点」として機能します。</p>
+</div>
+<p>この「分岐トークン」の役割を定量的にさらに確認するため、AIME 2024とAIME 2025の評価において、分岐トークンとそれ以外のトークンに異なるデコーディング温度を割り当てる実験を行いました。具体的には、これらの温度の様々な組み合わせがモデルの振る舞いに与える影響を分析するため、各トークン \(t\) の確率分布 \(\pmb{p}_t'\) を以下のように調整します。</p>
+<div class="formula definition-box">
+<div class="definition-title"><i class="fas fa-calculator"></i> 調整された確率分布の計算式 (Equation (5)に対応)</div>
+            $$ p _ { t } ^ { \prime } = { \mathrm { Softmax } } \left( { \frac { z _ { t } } { T _ { t } ^ { \prime } } } \right) , \qquad { \mathrm { w h e r e } } \quad T _ { t } ^ { \prime } = \left\{ { \begin{array} { l l } { T _ { \mathrm { h i g h } } } &amp; { \quad { \mathrm { if ~ } } H _ { t } &gt; h _ { \mathrm { t h r e s h o l d } } , } \\ { T _ { \mathrm { l o w } } } &amp; { \quad { \mathrm { o t h e r w i s e } } . } \end{array} } \right. $$
+            <p style="text-align: left; margin-top: 10px; font-size: 14px;">ここで、各記号の意味は以下の通りです。</p>
+<ul class="unstyled-list" style="text-align: left; font-size: 14px; margin-left: 20px;">
+<li><i class="fas fa-tag"></i> \(\pmb{z}_t \in \mathbb{R}^V\): トークン \(t\) に対するソフトマックス関数適用前のロジット（生のスコア）。\(V\) は語彙サイズ。</li>
+<li><i class="fas fa-tag"></i> \(T_t' \in \mathbb{R}\): トークン \(t\) に対する調整後の温度。</li>
+<li><i class="fas fa-tag"></i> \(h_{\mathrm{threshold}} \stackrel{\cdot}{=} 0.672\): 分岐トークンとそれ以外のトークンを区別するためのエントロピー閾値。これは、前述のサンプリングされた100万トークンにおける80パーセンタイル値として推定されました（つまり、エントロピーが高い上位20%のトークンを分岐トークンとみなす）。</li>
+<li><i class="fas fa-tag"></i> \(T_{\mathrm{high}} \in \mathbb{R}\): 分岐トークン（高エントロピートークン）に適用する温度。</li>
+<li><i class="fas fa-tag"></i> \(T_{\mathrm{low}} \in \mathbb{R}\): それ以外のトークン（低エントロピートークン）に適用する温度。</li>
+</ul>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-fire"></i> 温度 (Temperature) の役割</div>
+<p>デコーディング時の温度パラメータは、モデルの出力のランダム性を制御します。
+                    <ul class="unstyled-list">
+<li><strong>温度が高い (\(T &gt; 1\))</strong>: 確率分布がより平坦になり、多様な（時には予期しない）トークンが選ばれやすくなります。探索的・創造的な応答が期待できる反面、支離滅裂になるリスクも。</li>
+<li><strong>温度が低い (\(T &lt; 1\))</strong>: 確率分布がより尖鋭になり、最も確率の高いトークンが選ばれやすくなります。決定的・保守的な応答が期待できる反面、単調になる可能性も。</li>
+<li><strong>温度が1 (\(T = 1\))</strong>: 元の確率分布をそのまま使用します。</li>
+</ul>
+                この実験では、推論の「分岐点」となるトークンと、そうでない「確定的な部分」のトークンで温度を変えることで、それぞれの役割を検証しようとしています。
+                </p>
+</div>
+</div>
+<p>異なる \(T_{\mathrm{high}}\) と \(T_{\mathrm{low}}\) の値を設定した場合の影響を、論文のFigure 3に示しています。</p>
+<img alt="Figure 3: Temperature Effects on AIME Scores" class="figure-image" src="temperature_effects_on_aime_scores.jpg"/>
+<p class="reference">Figure 3: AIME 2024とAIME 2025の平均スコア。赤線: \(T_{\mathrm{low}} = 1\) で \(T_{\mathrm{high}}\) を変化させた場合。青線: \(T_{\mathrm{high}} = 1\) で \(T_{\mathrm{low}}\) を変化させた場合。</p>
+<div class="bubble-box" style="border-color: var(--color-accent2);">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 16px; color: var(--color-accent2);"><i class="fas fa-search-plus"></i> Figure 3 からの洞察 🔍</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-arrow-down" style="color: var(--color-secondary);"></i> <span class="keyword">\(T_{\mathrm{high}}\) を下げる（赤線、左側）</span>と、\(T_{\mathrm{low}}\) を下げる（青線、左側）場合と比較して、<span class="highlight">パフォーマンスが著しく低下</span>します。これは、分岐トークンの多様性を抑圧すると、推論能力が悪影響を受けることを示唆しています。</li>
+<li><i class="fas fa-arrow-up" style="color: var(--color-accent1);"></i> <span class="keyword">\(T_{\mathrm{high}}\) を上げる（赤線、右側）</span>と、\(T_{\mathrm{low}}\) を上げる（青線、右側）場合よりも、<span class="highlight">パフォーマンスが大幅に向上</span>します。\(T_{\mathrm{low}}\) を上げすぎると、LLMが意味不明な出力を生成することさえあります。これは、分岐トークンにおいて多様な選択肢を探索することが推論に有益であることを示しています。</li>
+</ul>
+</div>
+<div class="note-box" style="border-left-color: var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-check-circle"></i> 結論</div>
+<p>これらの結果は、<span class="keyword">分岐トークン（高エントロピートークン）は他のトークンと比較して相対的に高い温度を割り当てることで恩恵を受ける</span>ことを示唆しています。分岐トークンは元々他のトークンよりも高いエントロピーを示すことを考えると、この結果は、それらがさらに高いエントロピーレベルで動作する必要性を裏付けています。この観察は、高エントロピーが多様な推論方向への分岐を可能にするという、「分岐点」としての役割と一致しています。つまり、重要な意思決定の場面では、ある程度の「揺らぎ」や「遊び」があった方が、より良い結果に繋がる可能性があるということです。🌟</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="4_RLVR_Preserves_and_Reinforces_Base_Model_Entropy_Patterns">
+<h2 class="section-title"><i class="fas fa-wave-square"></i>4 RLVR Preserves and Reinforces Base Model Entropy Patterns</h2>
+<div class="content-box">
+<p>📝 このセクションでは、前のセクション (セクション3) で議論した「思考の連鎖 (Chain-of-Thought, CoT)」におけるエントロピーのパターンが、<span class="keyword">RLVR (Reinforcement Learning with Verifiable Rewards)</span> という強化学習手法による訓練を通じてどのように変化していくのかを深掘りして調査します。</p>
+<p>このセクションの主な主張は以下の2点です：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p style="text-align: center;"><i class="fas fa-save fa-2x" style="color: var(--color-primary);"></i></p>
+<p><strong>主張1:</strong> RLVRは、ベースモデル（訓練前の元のモデル）が元々持っているエントロピーのパターンを<span class="highlight">主に保存</span>します。</p>
+</div>
+<div class="info-card glass-card">
+<p style="text-align: center;"><i class="fas fa-chart-line fa-2x" style="color: var(--color-accent1);"></i></p>
+<p><strong>主張2:</strong> RLVRは、特に<span class="highlight">高エントロピーを持つトークンのエントロピーを変化</span>させることで、そのパターンを<span class="highlight">強化</span>する傾向があります。一方で、低エントロピーのトークンは比較的安定しています。</p>
+</div>
+</div>
+<p>これらの発見は、RLVRがLLMの推論能力をどのように向上させるかを理解する上で重要な手がかりとなります。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-shield-alt"></i> RLVRはベースモデルの既存のエントロピーパターンを主に保存する</h3>
+<div class="content-box">
+<p>🔍 まず、RLVR訓練中にエントロピーのパターンがどのように変化するのかを分析しましょう。この分析では、<span class="keyword">DAPO (Dynamic sAmpling Policy Optimization)</span> というRLVRアルゴリズムを、<span class="keyword">Qwen3-14B</span> というベースモデルに適用します (DAPOの詳細はセクション2.2、Qwen3-14Bの詳細はセクション5で触れられています)。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-cogs"></i> 分析の手順</div>
+<ol class="process-step-list unstyled-list">
+<li class="process-step"><span class="step-number">1</span><span class="step-content">RLVRで訓練された推論モデルを使って、6つのベンチマークデータセット (Table 2参照) の各質問に対して16個の応答を生成します。</span></li>
+<li class="process-step"><span class="step-number">2</span><span class="step-content">生成された応答内の各トークンについて、RLVR訓練の様々な段階（初期、中間、最終）のモデルを使って、そのトークンが生成される直前の<span class="keyword">ロジット</span>（softmax関数を適用する前の値）を計算します。</span></li>
+<li class="process-step"><span class="step-number">3</span><span class="step-content">計算したロジットから各トークンの<span class="keyword">エントロピー</span>を算出し、エントロピーが上位20%に入る高エントロピートークンを特定します。</span></li>
+<li class="process-step"><span class="step-number">4</span><span class="step-content">各中間段階のモデルと、「ベースモデル（訓練開始前、ステップ0）」および「最終RLVRモデル（訓練完了後、ステップ1360）」との間で、<span class="keyword">上位20%高エントロピートークンが出現する位置</span>がどれだけ共通しているかを示す<span class="keyword">重複率 (overlap ratio)</span> を計算します。</span></li>
+</ol>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-percentage"></i> 重複率 (Overlap Ratio) とは？</div>
+<p>重複率とは、2つの異なるモデル（例：ベースモデルと訓練途中のモデル）でエントロピーが高いと判断されたトークンの「位置」が、どれだけ一致しているかを示す割合です。</p>
+<p><em>具体例:</em> 想像してみてください。ある文章の中に100個の単語（トークン）があるとします。</p>
+<ul>
+<li>モデルAが「特に不確実性が高い（高エントロピーな）単語の位置」として、{2番目, 5番目, 10番目} を選びました。</li>
+<li>モデルBが同じように選んだ位置が、{2番目, 8番目, 10番目} だったとします。</li>
+</ul>
+<p>この場合、共通しているのは {2番目, 10番目} の2つの位置です。もし両モデルとも3つの位置を選んでいたなら、重複率は 2/3 (約66.7%) となります。この値が高いほど、両モデルが「どのトークンが不確かか」という点で似たような判断をしていることを意味します。</p>
+</div>
+<p>📊 Table 1は、この重複率の推移を示しています。</p>
+<div class="table-wrapper">
+<table>
+<caption>Table 1: 上位20%高エントロピートークンの位置における重複率の推移。ベースモデル(ステップ0)とRLVR訓練後のモデル(ステップ1360)を比較。</caption>
+<thead>
+<tr>
+<th>ステップ (Step)</th>
+<th>ベースモデル(Step 0)との重複率</th>
+<th>最終RLVRモデル(Step 1360)との重複率</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>0</td><td>100%</td><td>86.41%</td></tr>
+<tr><td>170</td><td>91.56%</td><td>90.12%</td></tr>
+<tr><td>340</td><td>89.43%</td><td>92.27%</td></tr>
+<tr><td>510</td><td>88.01%</td><td>93.81%</td></tr>
+<tr><td>680</td><td>87.25%</td><td>95.03%</td></tr>
+<tr><td>850</td><td>86.99%</td><td>96.18%</td></tr>
+<tr><td>1020</td><td>86.58%</td><td>97.54%</td></tr>
+<tr><td>1190</td><td>86.42%</td><td>98.77%</td></tr>
+<tr><td>1360</td><td>86.41%</td><td>100%</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-table"></i> Table 1 の見方</div>
+<ul>
+<li><strong>ステップ (Step)</strong>: RLVR訓練の進行度を示します。ステップ0は訓練前のベースモデル、ステップ1360は訓練完了後の最終モデルです。</li>
+<li><strong>ベースモデル(Step 0)との重複率</strong>: 各訓練段階のモデルと、<span class="highlight">訓練前のベースモデル</span>との間で、エントロピー上位20%のトークン位置がどれだけ一致しているかを示します。</li>
+<li><strong>最終RLVRモデル(Step 1360)との重複率</strong>: 各訓練段階のモデルと、<span class="highlight">訓練完了後の最終モデル</span>との間で、エントロピー上位20%のトークン位置がどれだけ一致しているかを示します。</li>
+</ul>
+</div>
+<p>Table 1 から読み取れることは以下の通りです：</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fas fa-arrow-down fa-2x" style="color: var(--color-secondary);"></i>
+<p>ベースモデルとの重複率は、訓練が進むにつれて<span class="highlight">徐々に減少</span>します。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-arrow-up fa-2x" style="color: var(--color-accent1);"></i>
+<p>最終RLVRモデルとの重複率は、訓練が進むにつれて<span class="highlight">増加</span>します。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-check-circle fa-2x" style="color: var(--color-primary);"></i>
+<p>重要なのは、訓練が収束した時点 (ステップ1360) でも、ベースモデルとの重複率が <span class="keyword">86%以上</span>と高い値を維持している点です。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-stamp"></i> <strong>結論：</strong>これらの結果は、RLVRが「どのトークンが高い不確実性（高エントロピー）を示し、どのトークンが低い不確実性（低エントロピー）を示すか」という<span class="keyword">ベースモデルのエントロピーに関するパターンを大部分保持する</span>ことを強く示唆しています。つまり、RLVRは既存のパターンを破壊するのではなく、それを基盤としているのです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-tools"></i> RLVRは主に高エントロピートークンのエントロピーを変化させ、低エントロピートークンは安定</h3>
+<div class="content-box">
+<p>次に、RLVRが具体的にどのトークンのエントロピーを変化させるのかを見ていきましょう。Table 1 と同じ実験設定を用いて、ベースモデルにおける初期のエントロピー値に基づいてトークンをグループ分けし、各グループのトークンがRLVR訓練後にどれだけエントロピーを変化させたかを分析します。</p>
+<p>具体的には、ベースモデルのトークンをエントロピーの低い順に並べ、<span class="keyword">5%ごとのパーセンタイル範囲</span>（例：エントロピーが下位0～5%のトークン群、5～10%のトークン群など）に分け、それぞれの範囲でRLVRによる平均エントロピー変化を計算しました。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-stream"></i> エントロピーパーセンタイル範囲とは？</div>
+<p>エントロピーパーセンタイルとは、データセット内の全トークンのエントロピー値を小さい順に並べたときに、特定の位置に来るエントロピー値のことです。</p>
+<ul>
+<li>例えば、<span class="highlight">「x%パーセンタイル」</span>とは、「データセット内のトークンのうち、x%がこのエントロピー値以下である」ことを示す値です。</li>
+<li><span class="highlight">「5%エントロピーパーセンタイル範囲」</span>とは、例えば「0%～5%の範囲」であれば、データセット中で最もエントロピーが低い方から5%のトークン群を指します。</li>
+</ul>
+</div>
+<p>📊 Figure 4 は、この結果を示しています。</p>
+</div>
+<img alt="Figure 4: Average entropy change after RLVR within each 5% entropy percentile range of the base model." class="figure" src="average_entropy_change_after_rlvr.jpg"/>
+<p class="reference" style="text-align: center;">Figure 4: ベースモデルの各5%エントロピーパーセンタイル範囲における、RLVR後の平均エントロピー変化。<br/>X軸のx%パーセンタイルは、データセット内のトークンのx%がこの値以下のエントロピーを持つことを意味します。<br/>Y軸は対数スケールであることに注意してください。初期エントロピーが高いトークンほど、RLVR後に大きなエントロピー増加を経験する傾向があります。</p>
+<div class="content-box">
+<div class="note-box">
+<div class="note-title"><i class="fas fa-chart-bar"></i> Figure 4 の見方</div>
+<ul>
+<li><strong>X軸 (Percentile Boundaries)</strong>: ベースモデルにおけるトークンの初期エントロピーのパーセンタイル範囲を示します。左側が低エントロピーのトークン群、右側が高エントロピーのトークン群です。</li>
+<li><strong>Y軸 (Average Change (log scale))</strong>: RLVR訓練後の平均エントロピー変化量を示します。<span class="highlight">対数スケール</span>なので、バーの高さのわずかな違いが実際には大きな変化量の差を表すことに注意が必要です。</li>
+</ul>
+</div>
+<p>Figure 4 から以下の重要な観察が得られます：</p>
+<ul>
+<li><span class="keyword">ベースモデルで初期エントロピーが高かったトークンほど、RLVR後にはるかに大きなエントロピーの増加を示す</span>傾向があります。グラフの右側に行くほど、バーが高くなっているのが分かりますね。</li>
+<li>この観察は、「RLVRが主にベースモデルのエントロピーパターンを保存する」という先程の結論をさらに補強するものと考えられます。つまり、元々不確実性が高かった部分をRLVRがさらに調整している、ということです。</li>
+</ul>
+<p>🤔 さらに、Qwen3-14Bベースモデルを用いたRLVR訓練中のエントロピーパーセンタイルの時間的変化をFigure 5で見てみましょう。(Figure 5は、様々なエントロピーの閾値が訓練中にどう変わるかを示します)</p>
+</div>
+<img alt="Figure 5: The evolution of entropy percentiles during RLVR training." class="figure" src="entropy_percentiles_evolution_rlvr.jpg"/>
+<p class="reference" style="text-align: center;">Figure 5: RLVR訓練中のエントロピーパーセンタイルの変化。<br/>x-thパーセンタイルとは、データセット内のトークンのx%がこの値以下のエントロピーを持つことを意味します。言い換えれば、最も低いx%のトークンのエントロピー値が下回る閾値を表し、エントロピー分布の異なるセグメントが訓練を通じてどのように変化するかを追跡できます。</p>
+<div class="content-box">
+<div class="note-box">
+<div class="note-title"><i class="fas fa-binoculars"></i> Figure 5 の見方 (論文の記述に基づく解説)</div>
+<p>この図は、RLVR訓練の各ステップ（横軸）において、異なるエントロピーパーセンタイル値（例えば0パーセンタイル、20パーセンタイル、...、100パーセンタイル）がどのように変化するか（縦軸）を示しています。各サブプロットは特定のパーセンタイルに対応しています。</p>
+<ul>
+<li><strong>0パーセンタイル (最もエントロピーが低いトークン群の境界)</strong>: ほとんど変動せず、非常に低いエントロピー値を保っています。</li>
+<li><strong>高次のパーセンタイル (例: 80, 100パーセンタイル、エントロピーが高いトークン群の境界)</strong>: 訓練初期には変動が見られますが、全体として高いエントロピー値を維持し、訓練が進むにつれてある程度安定しつつも、低次のパーセンタイルよりは変動が大きいです。</li>
+<li>論文では「0パーセンタイルから100パーセンタイルに移動するにつれて、RLVR訓練全体を通じた変動範囲が着実に減少する」と記述されています。これは、最もエントロピーの低いトークン群（0パーセンタイル付近）の変動が極めて小さく、パーセンタイルが上がるにつれて絶対的なエントロピー値は大きくなるものの、その値の相対的な変動や訓練中のダイナミクスが、高エントロピー側よりも低エントロピー側でより安定していることを示唆していると考えられます。
+                特に、0パーセンタイルのようにエントロピーがほぼゼロのトークンは、訓練を経てもほとんど変化しないことを示しています。
+                </li>
+</ul>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <strong>全体的な結論：</strong>これらの観察結果から、RLVRの訓練プロセス全体を通じて、モデルは<span class="keyword">主に高エントロピーのトークンのエントロピーを調整</span>していることがわかります。一方で、<span class="keyword">低エントロピーのトークンのエントロピーはごくわずかな変動しか示さず、比較的安定している</span>と言えます。これは、RLVRが推論経路における重要な「分岐点」となるような不確実な部分に選択的に作用し、それ以外の確定的な部分にはあまり影響を与えない、という戦略を取っている可能性を示唆しています。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="5_High-Entropy_Minority_Tokens_Drive_Effective_RLVR">
+<h2 class="section-title"><i class="fas fa-brain"></i> 5 High-Entropy Minority Tokens Drive Effective RLVR</h2>
+<p>このセクションでは、大規模言語モデル（LLM）の推論能力を向上させるための強化学習手法である <span class="keyword">RLVR (Reinforcement Learning with Verifiable Rewards)</span> において、特に<span class="highlight">「高エントロピーを持つマイノリティトークン」</span>（少数派のトークン）がどのように学習に貢献するのかを深掘りします。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> このセクションのキーポイント</p>
+<ul>
+<li>RLVRは推論モデルの訓練に広く使われていますが、どの種類のトークンが学習に最も貢献するのかは、まだ十分に解明されていません。</li>
+<li>以前のセクション (セクション3, 4) で示唆されたように、<span class="keyword">高エントロピートークン</span>（別名：<span class="keyword">フォーキングトークン</span>、分岐点となるトークン）が特に重要であると考えられます。</li>
+<li>本セクションでは、これらのフォーキングトークンが、RLVRによる推論能力の向上にどれほど貢献するのかを調査します。</li>
+</ul>
+</div>
+<img alt="Figure 5: The evolution of entropy percentiles during RLVR training" class="research-image" src="entropy_percentiles_evolution_rlvr.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図5: RLVR訓練中のエントロピー分位点の進化</strong><br/>
+        このグラフは、RLVRの訓練が進むにつれて、トークンのエントロピーがどのように変化するかを示しています。
+        <span class="highlight">$x$-th percentile</span>（$x$パーセンタイル）とは、データセット内の全トークンのうち、$x\%$のトークンがこのエントロピー値以下であることを意味します。言い換えると、最もエントロピーが低い$x\%$のトークングループの上限値を示しており、訓練を通じてエントロピー分布のさまざまな部分（低い部分、中間の部分、高い部分）がどのように変動するかを追跡できます。
+    </p>
+<p>図5を見ると、エントロピーが高いパーセンタイル（例えば95パーセンタイルや99パーセンタイル）の線は、低いパーセンタイルの線よりも訓練中に大きく変動していることが分かります。これは、RLVRが特に高エントロピートークンの確率分布を調整している可能性を示唆しています。</p>
+<h3 class="section-title"><i class="fas fa-cogs"></i> 5.1 Formulation of RLVR Using Only Policy Gradients of the Highest-Entropy Tokens</h3>
+<p>このサブセクションでは、<span class="keyword">DAPO (Dynamic sAmpling Policy Optimization)</span> の目的関数（論文中の式(4)で示されたもの）をベースに、新しいアプローチを提案します。具体的には、<span class="highlight">低エントロピートークンの勾配情報を捨て</span>、<span class="highlight">高エントロピートークンの勾配情報のみを使ってモデルを訓練</span>します。</p>
+<p>データセット $\mathcal{D}$ からサンプリングされた各バッチ $\boldsymbol{B}$ に対して、最大化を目指す目的関数は次のように定義されます。</p>
+<div class="formula">
+        $$
+        \begin{array}{c}
+        \mathcal{J}_{\text{HighEnt}}^B(\theta) = \mathbb{E}_{\{o^i\}_{i=1}^G \sim \pi_{\theta_{\text{old}}}(\cdot|q)} \left[ \frac{1}{\sum_{i=1}^G |o^i|} \sum_{i=1}^G \sum_{t=1}^{|o^i|} \mathbb{I}[H_t^i \ge \tau_{\rho}^B] \cdot \min \left( r_t^i(\theta) \hat{A}_t^i, \text{clip}(r_t^i(\theta), 1-\epsilon_{\text{low}}, 1+\epsilon_{\text{high}}) \hat{A}_t^i \right) \right], \\
+        \text{s.t.} \quad 0 &lt; \left| \left\{ o^i \mid \text{is_equivalent}(a, o^i) \right\} \right| &lt; G.
+        \end{array}
+        \quad (6)
+        $$
+    </div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 数式(6)の記号解説</p>
+<ul>
+<li>$H_t^i$: 応答 $i$ におけるトークン $t$ の<span class="keyword">エントロピー</span>。トークン生成時の不確かさの度合いを表します。</li>
+<li>$\mathbb{I}[\cdot]$: <span class="keyword">指示関数</span>。カッコ内の条件が真なら1、偽なら0を返します。この関数により、高エントロピートークンのみが損失計算に関与します。</li>
+<li>$\rho \in (0, 1]$: 事前に定義された割合。バッチ内で選択される<span class="highlight">上位の高エントロピートークンの割合</span>を指定します。例えば $\rho=0.2$ なら上位20%です。</li>
+<li>$\tau_{\rho}^B$: バッチ $\boldsymbol{B}$ 内の対応する<span class="keyword">エントロピー閾値</span>。$H_t^i \ge \tau_{\rho}^B$ を満たすトークン（つまり、バッチ内でエントロピーが上位 $\rho$ の割合に入るトークン）のみが勾配計算に使用されます。</li>
+<li>$r_t^i(\theta)$: 重要度サンプリングの比率 $\frac{\pi_{\theta}(o_t^i|q, o_{<t}^i)}{\pi_{\theta_{\text{old}}}(o_t^i|q, li="" o_{<t}^i)}$="" 。<="">
+<li>$\hat{A}_t^i$: アドバンテージ関数（利得の見積もり）。</li>
+<li>$\text{clip}(\cdot)$: PPOで使われるクリッピング関数。</li>
+<li>$G$: グループサイズ（サンプリングされる応答の数）。</li>
+<li>$q$: 入力クエリ。</li>
+<li>$o^i$: 生成された応答。</li>
+<li>$\text{is_equivalent}(a, o^i)$: 生成された応答 $o^i$ が正解 $a$ と等価かどうかを判定する関数。</li>
+</t}^i)}{\pi_{\theta_{\text{old}}}(o_t^i|q,></li></ul>
+</div>
+<p>📝 <span class="keyword">数式(6)とオリジナルのDAPOの目的関数(式(4))の比較</span></p>
+<p>この新しい目的関数(6)は、オリジナルのDAPOの目的関数(式(4))と比べて、主に2つの点が異なります（論文では赤字で強調されています）：</p>
+<ol class="process-step-list unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">アドバンテージ項（$\min(\dots)$の部分）に <span class="highlight">$\mathbb{I}[H_t^i \ge \tau_{\rho}^B]$ が掛けられている</span>点。これにより、トークン $o_t^i$ のエントロピー $H_t^i$ が閾値 $\tau_{\rho}^B$ 以上の場合のみ、そのトークンがポリシー勾配損失の計算に関与するようになります。つまり、<span class="keyword">低エントロピートークンの勾配は実質的に0</span>になります。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">データセット $\mathcal{D}$ からサンプリングされた各（マイクロ）バッチ $\boldsymbol{B}$ 内で、<span class="highlight">上位 $\rho$ の割合の高エントロピートークンのみをフィルタリングして使用</span>する点。これにより、計算コストを削減し、学習を重要なトークンに集中させることができます。</div>
+</li>
+</ol>
+<p>この変更により、モデルは推論経路における重要な分岐点（高エントロピートークン）の学習に集中することが期待されます。</p>
+<h3 class="section-title"><i class="fas fa-tools"></i> 5.2 Experimental Setup</h3>
+<p>このサブセクションでは、提案手法の有効性を検証するための実験設定について説明します。</p>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-laptop-code" style="color: var(--color-accent1);"></i> 学習詳細 (Training details)</p>
+<ul>
+<li><span class="badge blue">コードベース</span>: <span class="keyword">verl (Sheng et al., 2024)</span> の学習コードベースを改変。</li>
+<li><span class="badge blue">学習レシピ</span>: 最新のLLM用RLアルゴリズムの一つである <span class="keyword">DAPO (Yu et al., 2025)</span> の学習レシピに従う。</li>
+<li><span class="badge blue">比較対象</span>:
+                <ol>
+<li>通常のRLVR（全トークンの勾配を使用、Vanilla DAPO、式(4)）</li>
+<li>提案手法（フォーキングトークンのみの勾配を使用、式(6)）</li>
+</ol>
+</li>
+<li><span class="badge green">共通テクニック</span>: 両設定ともに、clip-higher, dynamic sampling, token-level policy gradient loss, overlong reward shaping (Yu et al., 2025) などのテクニックを使用。</li>
+<li><span class="badge purple">ハイパーパラメータ</span> (DAPO推奨値):
+                <ul>
+<li>clip-higher: $\epsilon_{\text{high}} = 0.28, \epsilon_{\text{low}} = 0.2$</li>
+<li>overlong reward shaping: 最大応答長 20480, キャッシュ長 4096</li>
+</ul>
+</li>
+<li><span class="badge purple">学習設定</span>:
+                <ul>
+<li>学習バッチサイズ: 512</li>
+<li>ミニバッチサイズ: 32 (verlの設定)</li>
+<li>これにより、1学習バッチあたり16勾配ステップ</li>
+<li>学習率: $10^{-6}$ (学習率のウォームアップやスケジューリングはなし)</li>
+</ul>
+</li>
+<li><span class="badge orange">重要</span>: 学習プロセスでは、<span class="highlight">KLダイバージェンス損失</span>と<span class="highlight">エントロピー損失</span>の両方を除外。</li>
+<li><span class="badge blue">モデル</span>: スケーリング能力を評価するため、<span class="keyword">Qwen3-32B</span> ベースモデルと <span class="keyword">Qwen3-8B</span> ベースモデルでRLVR実験を実施。</li>
+<li><span class="badge yellow">学習データ</span>: <span class="keyword">DAPO-Math-17K (Yu et al., 2025)</span> を使用。</li>
+<li><span class="badge green">提案手法の設定</span>: 主要な結果では、式(6)の <span class="highlight">$\rho = 20\%$</span> と設定。つまり、各バッチ内でエントロピーが上位20%のトークンの勾配のみを使用してポリシーを更新。</li>
+<li><span class="badge blue">チャットテンプレート</span> (Qwen3モデル用):
+                <div class="glass-card" style="padding: 10px; margin-top: 5px; font-size: 0.9em;">
+<code>User:\n[question]\nPlease reason step by step, and put your final answer within \boxed{}.\n\nAssistant:\n</code>
+</div>
+                ここで、<code>"[question]"</code> は具体的な質問に置き換えられ、<code>"&lt;\|endoftext\|&gt;"</code> がEOSトークンとして機能します。
+            </li>
+</ul>
+</div>
+<img alt="Table 2: Comparison between vanilla DAPO and DAPO with forking tokens" class="research-image" src="table2.png"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>表2: 全トークンを使用するvanilla DAPOと上位20%高エントロピートークン（フォーキングトークン）のみを使用するDAPOの比較</strong><br/>
+        Qwen3-32B, Qwen3-14B, Qwen3-8Bベースモデルで評価。「Acc@16」はベンチマークごとに16回の評価での平均精度、「Len@16」は平均応答長。
+    </p>
+<p>表2は、提案手法（DAPO w/ Forking Tokens）とベースライン（DAPO）の性能を様々な数学的推論ベンチマークで比較しています。モデルサイズ（8B, 14B, 32B）ごとに、AIME、AMC、MATH500などのテストセットでの精度（Acc@16）と平均応答長（Len@16）が示されています。この表から、提案手法が特に大規模なモデル（14B, 32B）において、ベースラインと同等かそれ以上の性能を達成していることが読み取れます。</p>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-chart-bar" style="color: var(--color-accent1);"></i> 評価 (Evaluation)</p>
+<ul>
+<li><span class="badge blue">評価ベンチマーク</span>: 推論能力を評価するためによく使用される6つの標準的な数学的推論ベンチマークでモデルを評価。
+                <ul>
+<li>AIME’24, AIME’25, AMC’23, MATH500 (Hendrycks et al., 2021), Minerva, OlympiadBench (He et al., 2024)</li>
+</ul>
+</li>
+<li><span class="badge green">評価設定</span>: 全ての評価は<span class="keyword">ゼロショット設定</span>（モデルがタスク固有の例題を事前に見ていない状態）で実施。</li>
+<li><span class="badge purple">生成方法</span>: 各質問に対して、デコーディング温度 $T=1.0$ で16個の独立した応答を生成。</li>
+<li><span class="badge yellow">報告指標</span>: <span class="keyword">平均精度 (Acc@16)</span> と応答ごとの<span class="keyword">平均トークン数 (Len@16)</span> を報告。</li>
+</ul>
+</div>
+<h3 class="section-title"><i class="fas fa-poll"></i> 5.3 Main Results</h3>
+<p>このサブセクションでは、実験から得られた主要な結果について説明します。</p>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-lightbulb" style="color: var(--color-accent1);"></i> 高エントロピートークンがLLM推論のための強化学習を駆動する</p>
+<p>図6と表2は、全トークンを使用する<span class="keyword">vanilla DAPO</span>と、ポリシー勾配損失で上位20%の高エントロピートークンのみを保持する我々の<span class="keyword">提案手法</span>を比較しています。</p>
+<img alt="Figure 6: Comparison of vanilla DAPO and DAPO with forking tokens on Qwen3 models" class="research-image" src="dapo_forking_tokens_vs_all_tokens.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図6: Qwen3-32B, Qwen3-14B, Qwen3-8Bモデルにおける、全トークンを使用するvanilla DAPOと上位20%高エントロピー（フォーキング）トークンを使用するDAPOの比較</strong><br/>
+            (a) &amp; (b) Qwen3-32B: 下位80%の低エントロピートークンを除外すると、訓練が安定し、AIME’24スコアが7.73向上。<br/>
+            (c) &amp; (d) Qwen3-14B: 同様に、80%の低エントロピートークンを除外すると、AIME’24スコアが5.21向上。<br/>
+            (e) &amp; (f) Qwen3-8B: 上位20%のフォーキングトークンのみを保持しても性能は維持される。さらに、上位20%の高エントロピートークンのみを使用すると、全てのモデルサイズで応答長が増加。
+        </p>
+<p>驚くべきことに、<span class="highlight">下位80%の低エントロピートークンを破棄しても、推論性能は低下せず</span>、6つのベンチマーク全体でむしろ改善が見られました。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">Qwen3-32B ベースモデル</span>: AIME’24で<span class="highlight highlight-green">+7.71ポイント</span>、AIME’25で<span class="highlight highlight-green">+11.04ポイント</span>の向上。</li>
+<li><span class="badge blue">Qwen3-14B ベースモデル</span>: AIME’24で<span class="highlight highlight-green">+5.21ポイント</span>、AIME’25で<span class="highlight highlight-green">+4.79ポイント</span>の向上。</li>
+<li><span class="badge blue">Qwen3-8B ベースモデル</span>: 性能に影響なし（維持）。</li>
+</ul>
+<p>これらの結果は、<span class="keyword">RLVRにおける推論能力の向上は主に高エントロピートークンによって駆動される</span>ことを示唆しています。一方で、低エントロピートークンは推論性能にほとんど影響を与えないか、特にQwen3-32BおよびQwen3-14Bベースモデルではむしろ性能を妨げる可能性さえあります。</p>
+<p>図6は、学習ステップごとのAIME'24スコア（左列）と応答長（右列）の推移を示しています。赤線が提案手法（フォーキングトークンのみ）、青線がvanilla DAPOです。Qwen3-32B（(a), (b)）とQwen3-14B（(c), (d)）では、提案手法がvanilla DAPOを一貫して上回り、最終的により高いスコアを達成しています。Qwen3-8B（(e), (f)）では、性能はほぼ同等ですが、応答長は提案手法の方が長くなる傾向が見られます。これは、高エントロピートークンに集中することで、モデルがより長く、詳細な推論を展開するようになる可能性を示唆しています。</p>
+</div>
+<img alt="Figure 7: Comparison among DAPO using different range of tokens" class="research-image" src="dapo_forking_tokens_vs_all_tokens_performance.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図7: ポリシー勾配損失で異なる範囲のトークンを使用したDAPOの比較</strong><br/>
+        「Top $x\%$」はエントロピーが最も高い$x\%$のトークンのみを使用（$x=10, 20, 50$）。「Bottom $80\%$」はエントロピーが最も低い$80\%$のトークンのみを使用。「$100\%$」は全トークンを使用（vanilla DAPO）。「overall entropy」は全トークンにわたる平均エントロピー。
+    </p>
+<div class="content-box">
+<p>より詳細な分析のために、式(6)の割合 $\rho$ を変更して実験を行いました（図7(a)）。</p>
+<ul>
+<li><span class="badge blue">Qwen3-8B ベースモデル</span>: $10\%, 20\%, 50\%$ といった異なる割合で性能は比較的安定。</li>
+<li><span class="badge blue">Qwen3-14B, Qwen3-32B ベースモデル</span> (図7(c), (e)):
+                <ul>
+<li>$\rho$ を $20\%$ から $10\%$ に減らすと、わずかに性能が低下。</li>
+<li>$\rho$ を $100\%$ に急増させると、顕著な性能低下。</li>
+</ul>
+</li>
+</ul>
+<p>これらの観察から、<span class="highlight">妥当な範囲内であれば、推論性能は $\rho$ の正確な値にあまり影響されない</span>ことがわかります。さらに重要なのは、全トークンを使用するのではなく<span class="keyword">高エントロピートークンに焦点を当てることで、一般的に性能が維持され、大規模モデルでは大幅な向上が期待できる</span>ことを示唆しています。</p>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-thumbs-down" style="color: var(--color-accent1);"></i> 低エントロピートークンは推論性能にほとんど貢献しない</p>
+<p>図7(a)と(b)が示すように、RLVR中に<span class="highlight">エントロピーの低い下位80%のトークンのみを保持</span>すると、これらのトークンが訓練に使用される総トークン数の80%を占めるにもかかわらず、<span class="highlight highlight-red">性能が大幅に低下</span>します。この発見は、<span class="keyword">低エントロピートークンは推論能力の向上にはほとんど貢献しない</span>ことを示しており、効果的なモデル訓練のためには高エントロピートークンがより重要であることを強調しています。</p>
+<p>図7(a)（Qwen3-8B）、(c)（Qwen3-14B）、(e)（Qwen3-32B）のAIME'24スコアを見ると、「Bottom 80%」（黄色い線）の性能は他の設定（Top 10%, Top 20%, Top 50%, 100%）と比較して著しく低いことが分かります。これは、低エントロピートークンだけでは効果的な学習が困難であることを示しています。</p>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-search" style="color: var(--color-accent1);"></i> 高エントロピートークンの有効性は探索能力の向上にあるかもしれない</p>
+<p>我々の分析によると、高エントロピートークンのサブセット（実験では約20%）に焦点を当てることで、RLVRにおける<span class="keyword">探索 (exploration)</span> と<span class="keyword">訓練の安定性</span>の間で効果的なバランスが取れることが明らかになりました。</p>
+<p>図7(b), (d), (f) に示すように、割合 $\rho$ を $20\%$ から $10\%, 50\%, 100\%$ のいずれかに調整すると、訓練初期から性能が収束し始める時点まで、<span class="highlight">全体的なエントロピーが一貫して低く</span>なります。さらに、エントロピーの低い下位80%のトークンで訓練すると、全体的なエントロピーが大幅に低下します。</p>
+<p>これらの発見は、<span class="highlight">一定割合の高エントロピートークンを保持することが効果的な探索を促進する</span>可能性があることを示しています。この範囲外のトークンは、特に性能収束前の重要な段階において、探索にあまり役立たないか、あるいは有害である可能性さえあります。これが、Qwen3-32Bベースモデルにおいて、上位20%の高エントロピートークンのみを使用するDAPOがvanilla DAPOを上回る理由かもしれません（図6(a)）。しかし、Qwen3-8Bベースモデルでは、おそらくモデルの能力が低いため、探索強化の恩恵は限定的であるように見えます。</p>
+<p>図7(b)（Qwen3-8B）、(d)（Qwen3-14B）、(f)（Qwen3-32B）の全体エントロピーの推移を見ると、「Top 20%」（赤線）が他の多くの設定と比較して高いエントロピーを維持していることが分かります。特に「Bottom 80%」（黄色い線）は著しく低いエントロピーを示しています。これは、高エントロピートークンが多様な応答を生成する探索行動を促し、それが結果的に性能向上に繋がる可能性を示唆しています。</p>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-arrow-alt-circle-up" style="color: var(--color-accent1);"></i> ポリシー勾配損失でフォーキングトークンに焦点を当てることは、より大きな推論モデルに利益をもたらす</p>
+<p>フォーキングトークンのみを利用する場合の<span class="keyword">スケーリングトレンド</span>を図8に示します。</p>
+<img alt="Figure 8: Scaling trend of DAPO using only forking tokens" class="research-image" src="dapo_forking_tokens_performance.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図8: ポリシー勾配損失でフォーキングトークン（上位20%の高エントロピートークン）のみを使用したDAPOのスケーリングトレンド</strong><br/>
+            これらの結果は、ポリシー勾配損失でフォーキングトークンのみに集中することが、より大きな推論モデルでより大きな利益をもたらす可能性があることを示唆しています。
+        </p>
+<p>AIME’24およびAIME’25ベンチマークにおいて、<span class="highlight">モデルサイズが大きくなるにつれて、vanilla DAPOに対する性能向上がますます顕著になる</span>ことが観察されます。これは、<span class="keyword">ポリシー勾配損失でフォーキングトークンのみに焦点を当てることは、より大きな推論モデルにおいてより大きな利点をもたらす可能性がある</span>という有望な結論を示唆しています。</p>
+<p>図8(a)はAIME'24、図8(b)はAIME'25におけるスケーリングトレンドを示しています。横軸はモデルのパラメータ数（8B, 14B, 32B）、縦軸はAcc@16です。赤線が提案手法（DAPO w/ only forking tokens）、青線がvanilla DAPOです。モデルサイズが大きくなるほど、赤線と青線の差（性能向上幅）が拡大していることが明確に見て取れます。例えば、AIME'25 (b)では、32Bモデルにおいて+11.04ポイントという大幅な改善が見られます。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-microscope"></i> 5.4 Analysis</h3>
+<p>このサブセクションでは、提案手法のさらなる分析を行います。</p>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-globe-americas" style="color: var(--color-accent1);"></i> 他のドメインへの汎化能力 (Generalization ability to other domains)</p>
+<p>セクション5.2で概説したように、RLVR実験には主に数学データから成る<span class="keyword">DAPO-Math-17K</span>データセットを使用しました。ここでは、数学データセットで訓練され、ポリシー勾配損失で高エントロピートークンのごく一部のみを使用するDAPOが、<span class="highlight">分布外 (out-of-distribution) のテストセット</span>、例えば<span class="keyword">LiveCodeBench (Jain et al., 2024)</span>（プログラミングのベンチマーク）でもvanilla DAPOを上回ることができるかをテストします。</p>
+<img alt="Figure 9: Comparison on LiveCodeBench" class="research-image" src="livecodebench_dapo_performance.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図9: Qwen3-32Bベースモデルから訓練された、ポリシー勾配損失で異なる範囲のトークンを使用したDAPOの、分布外LiveCodeBenchベンチマークにおける比較</strong><br/>
+            「Top $x\%$」はエントロピーが最も高い$x\%$のトークンのみを使用（$x=10, 20$）。「$100\%$」は全トークンを使用（vanilla DAPO）。精度曲線の分散が大きいため、ウィンドウサイズ10のウィンドウスムージングを使用して曲線を平滑化しています。
+        </p>
+<p>Qwen3-32Bベースで、エントロピー上位10%または20%のトークンのみを使用するDAPOと、vanilla DAPO（100%のトークンを使用）を比較した結果を図9に示します（設定はセクション5.2と同じ）。これらの結果から、<span class="highlight">エントロピー上位10%または20%のトークンのみを保持した場合でも、DAPOは分布外テストデータセットLiveCodeBenchでvanilla DAPOを大幅に上回る</span>ことが観察されます。この発見は、<span class="keyword">高エントロピートークンが推論モデルの汎化能力に関連している</span>可能性を示唆しています。エントロピーが最も高いトークンの小さなサブセットのみを保持することで、推論モデルの汎化能力が向上する可能性があります。</p>
+<p>図9では、訓練ステップに対するLiveCodeBenchでの精度（Acc@16）がプロットされています。赤線（Top 20%）と灰色線（Top 10%）は、青線（100%）を一貫して上回っており、特に学習が進むにつれてその差が明確になっています。これは、数学データで学習したにもかかわらず、高エントロピートークンに焦点を当てる戦略が、プログラミングという異なるドメインでの性能向上にも寄与することを示しています。</p>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-unlock-alt" style="color: var(--color-accent1);"></i> フォーキングトークンのみを用いたRLVRのさらなる可能性の解放 (Unlocking more potential of RLVR with only forking tokens)</p>
+<p>セクション5.3の実験では、最大応答長を20480に設定しました。図10に示すように、Qwen3-32Bベースモデルから訓練されたDAPO w/ only forking tokens（図6(a)および(b)で示されたもの）の<span class="highlight">最大応答長を29696に増加</span>させました。</p>
+<img alt="Figure 10: Performance with longer context length" class="research-image" src="dapo_forking_tokens_longer_context_performance.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図10: 最大応答長を20,480から29,696に延長し、図6(a)および(b)に示されるSoTA 32Bモデルから訓練を継続することで、AIME’24スコアが63.54から68.12にさらに向上し、応答長も著しく増加。</strong>
+</p>
+<p>この調整により、AIME’24での既にSoTA（State-of-the-Art: 最新最高性能）であった性能が、<span class="highlight highlight-green">63.54から68.12へと改善</span>しました。これらの発見は、<span class="keyword">我々のアプローチの全潜在能力はまだ実現されていない</span>可能性があり、より長いコンテキスト長や潜在的により困難な訓練データを用いることで、さらに大きな性能向上が達成できる可能性があることを示唆しています。</p>
+<p>図10(a)はAIME'24スコアの推移、図10(b)は応答長の推移を示しています。途中からコンテキスト長を長くした（緑色の点線）後、スコアと応答長の両方がさらに向上していることが分かります。これは、モデルがより長い思考連鎖を生成できるようになったことで、より複雑な問題解決能力が向上した可能性を示唆しています。</p>
+</div>
+<div class="content-box">
+<p class="subsection-title" style="font-size: 16px; color: var(--color-dark); border-left-color: var(--color-accent1);"><i class="fas fa-random" style="color: var(--color-accent1);"></i> Qwen以外のモデルでの結果 (Results on models other than Qwen)</p>
+<p>Qwenシリーズ以外のモデル、具体的には<span class="keyword">Llama-3.1-8Bモデル</span>で、フォーキングトークンのみを使用するDAPO（エントロピー上位20%のトークン）とvanilla DAPOを比較します。</p>
+<p>DAPOをLlama-3.1-8Bベースモデルに適用すると、訓練データセット（DAPO-MATH-17K）で非常に低い精度（約1%）しか達成できず、RL訓練の初期段階で繰り返し単語を含む応答を生成することがよくありました。これに対処するため、<span class="keyword">Qwen3-32Bモデル (Yang et al., 2025) を教師として使用</span>し、DAPO-MATH17Kクエリに対する応答を生成しました。生成されたクエリから、正解を含む10,000件をランダムにサンプリングして<span class="keyword">コールドスタートデータ</span>とし、Llama-3.1-8Bベースモデルで<span class="keyword">教師ありファインチューニング (SFT)</span> を実行しました (Grattafiori et al., 2024)。残りの7,398クエリは、コールドスタート段階後のRL用に予約されました。</p>
+<img alt="Figure 11: Comparison on Llama-3.1-8B" class="research-image" src="llama3_dapo_forking_tokens_performance.jpg"/>
+<p style="text-align: center; font-size: 0.9em; margin-bottom: 20px;">
+<strong>図11: コールドスタート後のLlama3.1-8Bから訓練された、フォーキングトークンのみを使用するDAPOとvanilla DAPOの比較。</strong>
+</p>
+<p>RL訓練中のAIME’24スコアと応答長を図11にプロットします。結果は、<span class="highlight">フォーキングトークンのみを使用するDAPOがvanilla DAPOを依然として上回り</span>、平均してより長い応答を生成することを示しています。しかし、AIME’24での両設定の性能が比較的低いことを考えると、<span class="keyword">Llama-3.1-8Bでの結果は、Qwen3モデルで観察されたものほど説得力がない</span>と考えられます。</p>
+<p>図11(a)はAIME'24スコア、図11(b)は応答長の推移を示しています。赤線（DAPO w/ only forking tokens）が青線（DAPO）を上回る傾向が見られますが、全体的なスコアはQwenモデルと比較して低いです。これは、モデルアーキテクチャや事前学習の違いが、RLVRの効果に影響を与える可能性を示唆しています。</p>
+</div>
+</div>
+<div class="section-card" id="6_Discussions">
+<h2 class="section-title"><i class="fas fa-comments"></i> 6 Discussions</h2>
+<div class="bubble-box">
+<p>このセクションでは、本研究で得られた興味深い結果、特に<span class="keyword">高エントロピーを持つ少数派トークン</span>の重要性について、さらに深く掘り下げて考察します。具体的には、これらのトークンが強化学習(RL)と教師ありファインチューニング(SFT)の振る舞いの違いをどう説明できるか、LLMの思考連鎖(CoT)におけるエントロピーパターンが従来のRLとどう異なるか、そしてRLVRにおけるエントロピー正則化手法の改善可能性について議論します。思考の分岐点となるこれらのトークンに着目することで、LLMの推論能力向上のための新たな視点が見えてきます。🎓✨</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> Discussion 1: なぜRLは般化し、SFTは記憶するのか？鍵を握る高エントロピー少数トークン</h3>
+<div class="content-box">
+<p>Chuら(2025)の研究では、<span class="highlight">RL（特に結果ベースの報酬を用いる場合）は未知のルールベースタスクに対して強力な般化能力を示す</span>のに対し、<span class="highlight">SFTは訓練データを記憶しやすく、訓練分布外のタスクへの般化に苦労する</span>ことが経験的に示されています。この違いはなぜ生まれるのでしょうか？🤔 私たちは、その重要な要因の一つが<span class="keyword">フォーキングトークン (forking tokens)</span>のエントロピーにあるのではないか、という仮説を立てています。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 押さえておきたい用語解説</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-random"></i> <strong>高エントロピー少数トークン (High-entropy minority tokens) / フォーキングトークン (Forking tokens):</strong> 生成される確率分布のエントロピーが高いトークンのこと。つまり、次にどの単語を選ぶかについてモデルの不確実性が高い箇所。これらのトークンは、推論プロセスにおいて複数の可能な経路への「分岐点」として機能するため、「フォーキング（分岐）」トークンと呼ばれます。</li>
+<li><i class="fas fa-chalkboard-teacher"></i> <strong>SFT (Supervised Fine-Tuning; 教師ありファインチューニング):</strong> 大規模言語モデルを特定のタスクに適応させるため、高品質な手本（入力と期待される出力のペア）データセットを使って訓練する手法。</li>
+<li><i class="fas fa-vector-square"></i> <strong>One-hot distributions (ワンホット分布):</strong> 確率分布の一種で、ある特定の要素の確率が1で、それ以外の全ての要素の確率が0であるような分布。SFTは、モデルの出力を特定の手本に近づけようとするため、結果として出力の確率分布がワンホット分布に近くなる傾向があります。</li>
+</ul>
+</div>
+<p>私たちの実験結果 (例えば、Figure 5やFigure 7で示唆されるように) は、以下の傾向を示しています：</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+<div class="info-card glass-card">
+<h4 style="text-align: center; color: var(--color-primary);"><i class="fas fa-cogs"></i> 強化学習 (RL) の場合 <span class="badge blue">般化促進</span></h4>
+<p style="text-align: center;">🧠<br/>フォーキングトークンのエントロピーを<span class="highlight">維持、あるいは増加させる</span>傾向があります。</p>
+<div style="text-align: center; margin-top: 10px;">
+<i class="fas fa-arrow-down" style="color: var(--color-accent1); font-size: 20px;"></i>
+</div>
+<p style="text-align: center;">これにより、<span class="keyword">推論経路の柔軟性が保たれます</span>。<br/>🔄 多様な思考パスを探索可能</p>
+</div>
+<div class="info-card glass-card">
+<h4 style="text-align: center; color: var(--color-secondary);"><i class="fas fa-database"></i> 教師ありファインチューニング (SFT) の場合 <span class="badge orange">記憶傾向</span></h4>
+<p style="text-align: center;">💾<br/>出力ロジットをワンホット分布に近づけるため、フォーキングトークンのエントロピーが<span class="highlight">減少します</span>。</p>
+<div style="text-align: center; margin-top: 10px;">
+<i class="fas fa-arrow-down" style="color: var(--color-accent2); font-size: 20px;"></i>
+</div>
+<p style="text-align: center;">結果として、<span class="keyword">推論経路の柔軟性が失われます</span>。<br/>🔗 特定の思考パスに固定化</p>
+</div>
+</div>
+<div class="note-box" style="margin-top:20px;">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 重要な示唆</p>
+<p>この<span class="keyword">推論経路の柔軟性</span>こそが、推論モデルが未知のタスクに対して効果的に般化する能力を決定づける重要な要素である可能性があります。RLがフォーキングトークンのエントロピーを高く保つことで、多様な状況に対応できる「遊び」を残しているのに対し、SFTは特定解を覚え込むことでこの「遊び」を失ってしまうのかもしれません。</p>
+</div>
+<p class="reference" style="text-align:center; margin-top:15px;">(関連図: Figure 5はRLVR訓練中のエントロピー変化を示し、Figure 7は異なるトークン範囲でのDAPO比較を示しており、これらの結果が高エントロピートークンの重要性を裏付けています。)</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i> Discussion 2: LLMの思考連鎖(CoT)と伝統的RLにおけるエントロピーパターンの違い</h3>
+<div class="content-box">
+<p>LLMによる推論は、伝統的な強化学習(RL)とはいくつかの点で異なります。特に、LLMは<span class="highlight">広範な事前知識を統合</span>し、かつ<span class="highlight">人間が読んで理解できる自然な出力</span>を生成する必要があります。この特性が、LLMの思考連鎖(CoT)におけるトークンエントロピーのパターンに影響を与えていると考えられます。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 押さえておきたい用語解説</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-link"></i> <strong>LLM CoT (Chain-of-Thought; 思考連鎖):</strong> LLMが複雑な推論タスクを解く際に、最終的な答えだけでなく、そこに至るまでの中間的な思考ステップを逐次的に生成する手法。</li>
+<li><i class="fas fa-brain"></i> <strong>Prior knowledge (事前知識):</strong> LLMが大規模なテキストデータで事前学習されることによって獲得した、言語や世界に関する広範な知識。</li>
+<li><i class="fas fa-glasses"></i> <strong>Readability (可読性):</strong> 生成されたテキストが人間にとって読みやすく、理解しやすい度合い。</li>
+<li><i class="fas fa-dice-d6"></i> <strong>Uniform action entropy (均一な行動エントロピー):</strong> 伝統的なRLにおいて、エージェントが取りうる各行動の不確実性（エントロピー）が、行動の系列（軌跡）全体を通して均一であるという仮定。</li>
+</ul>
+</div>
+<img alt="Figure 2(a) LLM CoTトークンのエントロピー分布" class="figure-image" src="https://raw.githubusercontent.com/mlvlab/RLHF-RLVR-Survey-Code/main/assets/Beyond_the_80_20_Rule_High_Entropy_Minority_Tokens_Drive_Effective_Reinforcement_Learning_for_LLM_Reasoning/figure2.png"/>
+<p class="reference" style="text-align:center; margin-bottom:15px;">上図 (Figure 2(a)に相当) は、LLMのCoTにおけるトークンエントロピーの分布を示しています。大部分のトークンは<span class="keyword">低いエントロピー</span>を持つ一方で、ごく一部のトークンのみが<span class="keyword">高いエントロピー</span>を示していることが分かります。</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+<div class="info-card">
+<h4 style="color: var(--color-primary);"><i class="fas fa-feather-alt"></i> LLMのCoTにおけるエントロピー</h4>
+<p>📝 <strong>低エントロピー多数トークン:</strong><br/>
+                LLMは事前学習で得た膨大な知識 (言語構造、事実など) と、流暢で自然な文章を生成するという制約から、ほとんどのトークンを確定的に (低エントロピーで) 生成します。これらは主に、記憶された言語パターンや文法構造を完成させる役割を担います。</p>
+<p>🔄 <strong>高エントロピー少数トークン:</strong><br/>
+                一方で、事前学習コーパスにおいて本質的に不確実性が高い (つまり、次に何が来てもおかしくない) 一部のトークンは、探索の余地を残し、高いエントロピーを示します。これらが推論の方向性を決める「分岐点」となります。</p>
+</div>
+<div class="info-card">
+<h4 style="color: var(--color-secondary);"><i class="fas fa-robot"></i> 伝統的なRLにおけるエントロピー</h4>
+<p>⚙️ <strong>均一なエントロピー:</strong><br/>
+                伝統的なRLでは、各行動の分布を例えば固定された標準偏差を持つガウス分布として定式化することが一般的です (Schulman et al., 2017; Raffin et al., 2021; Weng et al., 2022)。その結果、軌跡全体を通して各行動のエントロピーは<span class="keyword">均一になる傾向</span>があります。</p>
+<p>🎲 <strong>探索の均等性:</strong><br/>
+                これは、全ての行動選択肢に対してある程度の不確実性（探索の可能性）を均等に持たせることを意味します。</p>
+</div>
+</div>
+<div class="note-box" style="margin-top:20px;">
+<p class="note-title"><i class="fas-project-diagram"></i> なぜLLMのCoTはこのような独特なエントロピーパターンを持つのか？</p>
+<p>このLLM CoTにおける独特なエントロピーパターンは、<span class="highlight">大規模な事前知識への準拠</span>と<span class="highlight">言語としての流暢さの必要性</span>に起因すると考えられます。ほとんどのトークンは記憶された言語構造に沿って低エントロピーで生成される必要があり、事前学習コーパス中で本質的に不確実な一部のトークンのみが探索を許容し、高エントロピーを示すのです。この推論は、Table 1 (高エントロピートークン位置の重複率が訓練後も高いことを示す表) の結果とも整合しています。</p>
+</div>
+<img alt="Table 1: 高エントロピートークン位置の重複率の推移" class="figure-image" src="table1.png"/>
+<p class="reference" style="text-align:center; margin-bottom:15px;">Table 1 は、RLVR訓練後もベースモデルの高エントロピートークンの位置がある程度保存されることを示しており、LLMが持つ固有のエントロピーパターンを示唆しています。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-rocket"></i> Discussion 3: RLVRにおけるエントロピーボーナスは最適か？ Clip-higherの優位性</h3>
+<div class="content-box">
+<p>強化学習(RL)では、探索を促進するために訓練損失に<span class="keyword">エントロピーボーナス</span>を加えることが一般的な手法です。これは伝統的なタスク (Schulman et al., 2017; Williams, 1992; Mnih et al., 2016) で確立されており、最近ではLLMの推論 (Sheng et al., 2024; Hu et al., 2024) にも適用されています。しかし、前述の通り、LLMのCoTは伝統的なRLの軌跡とは異なる独特なエントロピーパターンを持っています。この違いを考慮すると、エントロピーボーナスはLLMのCoT推論にとって最適ではない可能性があります。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 押さえておきたい用語解説</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-gift"></i> <strong>エントロピーボーナス (Entropy bonus):</strong> RLの目的関数に加算される項で、方策のエントロピーを最大化するように働く。これにより、エージェントがより多様な行動を取るようになり、探索が促進される。</li>
+<li><i class="fas fa-scissors"></i> <strong>Clip-higher (Yu et al., 2025):</strong> DAPO (Yu et al., 2025) で提案された手法。PPOのクリッピング目的関数 \( \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \) の上限クリップ値 \(1+\epsilon_{\text{high}}\) を \(1+\epsilon_{\text{low}}\) よりも適度に高く設定する (\(\epsilon_{\text{high}} &gt; \epsilon_{\text{low}}\))。これにより、特に重要度の高いトークン（高エントロピートークンと関連）の更新を促進する。Equation (4) で \(\epsilon_{\text{high}}\) として導入されています。</li>
+<li><i class="fas fa-balance-scale"></i> <strong>重要度比率 (Importance ratios) \(r_t(\theta)\):</strong> PPOで用いられる、現在のポリシー \(\pi_\theta\) と古いポリシー \(\pi_{\theta_{\text{old}}}\) の下での行動 \(o_t\) の確率の比。 \(r_t(\theta) = \frac{\pi_\theta(o_t | q, o_{<t})}{\pi_{\theta_{\text{old}}}(o_t (2)で定義)。この比率が大きいトークンは、ポリシー更新による影響が大きいことを意味します。<="" (equation="" li="" o_{<t})}\)="" q,="" |="">
+</t})}{\pi_{\theta_{\text{old}}}(o_t></li></ul>
+</div>
+<img alt="Figure 3: 温度調整がAIMEスコアに与える影響" class="figure-image" src="https://raw.githubusercontent.com/mlvlab/RLHF-RLVR-Survey-Code/main/assets/Beyond_the_80_20_Rule_High_Entropy_Minority_Tokens_Drive_Effective_Reinforcement_Learning_for_LLM_Reasoning/figure3.png"/>
+<p class="reference" style="text-align:center; margin-bottom:15px;">上図 (Figure 3) は、高エントロピートークンの温度 (エントロピーと関連) を選択的に高めることが性能向上につながることを示唆しています。逆に、全トークンのエントロピーを一様に上げると問題が生じる可能性があります。</p>
+<div class="two-column" style="gap: 20px;">
+<div class="column challenge-box">
+<h4 class="challenge-title"><i class="fas fa-exclamation-triangle"></i> エントロピーボーナスの問題点 (LLM CoTの場合)</h4>
+<p>全てのトークンのエントロピーを一様に増加させようとすると、本来低エントロピーであるべき多数派トークン（言語構造を担う部分）のエントロピーまで不必要に上げてしまいます。これにより、言語としての自然さや一貫性が損なわれ、<span class="highlight">性能低下を引き起こす可能性</span>があります。</p>
+<p>Figure 3で示されているように、低エントロピートークンの温度 (エントロピー) を上げると性能が悪化するケースがあることからも、この懸念が裏付けられます。</p>
+</div>
+<div class="column note-box">
+<h4 class="note-title"><i class="fas fa-check-circle"></i> Clip-higherの優位性</h4>
+<p><span class="keyword">Clip-higher</span> (Yu et al., 2025) は、Equation (4) で定義されるDAPOの目的関数において、クリッピング範囲の上限 \(\epsilon_{\text{high}}\) を適度に引き上げることで、<span class="highlight">高エントロピーの少数派トークンをより効果的にターゲット</span>します。</p>
+<p>経験的に、<span class="keyword">重要度比率 \(r_t(\theta)\)</span> (Equation (2) で定義) が高いトークンは、高いエントロピーを持つ傾向があることが観察されています。Clip-higherは、これらの重要度の高い（そして高エントロピーの）トークンをより多く訓練に含めることで、全体の探索を促進します。重要なのは、これが<span class="highlight">低エントロピートークンに大きな悪影響を与えることなく</span>達成される点です。この効果は、Yuら (2025)によって支持され、本研究のFigure 5 (RLVR訓練中のエントロピーパーセンタイルの変化を示し、高エントロピー部分がより変動することを示す図) でも示唆されています。</p>
+</div>
+</div>
+<div class="formula" style="margin-top: 20px;">
+<p><strong>DAPOの目的関数 (Equation (4) 関連箇所):</strong></p>
+<p>\( \text{min} \left( r_t^i(\theta) \hat{A}_t^i, \text{clip}(r_t^i(\theta), 1 - \epsilon_{\text{low}}, 1 + \epsilon_{\text{high}}) \hat{A}_t^i \right) \)</p>
+<p style="font-size: 0.9em;">ここで、\(\epsilon_{\text{high}}\) を \(\epsilon_{\text{low}}\) より大きく設定するのが <span class="keyword">clip-higher</span> の特徴です。</p>
+</div>
+<img alt="Figure 5: RLVR訓練中のエントロピーパーセンタイルの変化" class="figure-image" src="https://raw.githubusercontent.com/mlvlab/RLHF-RLVR-Survey-Code/main/assets/Beyond_the_80_20_Rule_High_Entropy_Minority_Tokens_Drive_Effective_Reinforcement_Learning_for_LLM_Reasoning/figure5.png"/>
+<p class="reference" style="text-align:center; margin-bottom:15px;">Figure 5 は、RLVR訓練中に高エントロピー側のパーセンタイル値がより大きく変動することを示しており、RLVRが高エントロピートークンに主眼を置いている可能性を示唆しています。Clip-higherはこの傾向をさらに強める働きをすると考えられます。</p>
+<div class="bubble-box" style="margin-top:20px;">
+<p>🎯 まとめると、LLMのCoT推論においては、<span class="highlight">全トークンに均一なエントロピーボーナスを与えるのは最適ではない</span>可能性があります。代わりに、<span class="keyword">clip-higher</span>のような手法を用いて、推論の方向性を決定づける<span class="highlight">高エントロピーの少数派トークン（フォーキングトークン）のエントロピーを選択的に促進する</span>方が、性能向上に繋がるという洞察が得られました。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="7_Related_Work">
+<h2 class="section-title"><i class="fas fa-book-open"></i>7 Related Work</h2>
+<div class="content-box" style="text-align: center; margin-bottom: 25px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px;">
+            このセクションでは、本論文の研究成果を既存の研究の広大な海の中に位置づけます。特に、<span class="keyword">大規模言語モデル (LLM)</span> の<span class="keyword">推論能力</span>を向上させるための<span class="keyword">強化学習 (RL)</span> の役割、中でも<span class="keyword">検証可能な報酬を用いた強化学習 (RLVR)</span> に焦点を当てて解説します。そして、本研究が<span class="keyword">トークンエントロピー</span>という新しいレンズを通してRLVRをどのように分析し、これまでの知見とどう関連し、どのような新しい光を当てているのかを明らかにしていきます。
+        </p>
+<div style="border-bottom: 2px dashed var(--color-secondary); width: 80%; margin: 15px auto;"></div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-brain"></i> LLMのための強化学習</h3>
+<div class="content-box">
+<p>
+<span class="highlight">OpenAIのo1 (OpenAI, 2024)</span> のような推論能力を持つモデルが登場する以前から、強化学習(RL)は、<span class="keyword">人間のフィードバックからの強化学習 (RLHF)</span> という形で、LLMの指示追従能力を向上させたり、人間の好みと一致させたりするために広く利用されてきました (Ouyang et al., 2022)。
+        </p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-comments"></i>RLHFとは？</p>
+<p><span class="keyword">RLHF (Reinforcement Learning from Human Feedback)</span> は、人間の評価者からのフィードバック（例：「この応答の方が良い」というラベル付け）を報酬として利用し、LLMの行動を望ましい方向へ学習させる手法です。これにより、LLMがより自然で、役に立ち、安全な応答を生成できるようになります。</p>
+</div>
+<p>RLHFの手法は、大きく分けて<span class="highlight">オンライン手法</span>と<span class="highlight">オフライン手法</span>による嗜好最適化に分類されます。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-primary); font-size: 1.2em; text-align: center;">
+<i class="fas fa-sync-alt"></i> オンライン手法 (Online Methods)
+                </p>
+<p>学習プロセス中にモデルが応答を生成し、それに対してリアルタイムでフィードバックを受け取り、ポリシーを更新します。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">例</span> PPO (Schulman et al., 2017)</li>
+<li><span class="badge blue">例</span> GRPO (Shao et al., 2024)</li>
+<li><span class="badge blue">例</span> REINFORCE (Williams, 1992)</li>
+</ul>
+<p><span class="keyword">特徴</span>: <i class="fas fa-chart-line"></i> 動的な学習、潜在的により高い性能。 <i class="fas fa-hourglass-half"></i> 計算コストが高い場合がある。</p>
+<div style="text-align:center; margin-top:10px;">
+<img alt="Online RLHF Diagram" src="https://via.placeholder.com/150x80/E0F7FA/00796B?Text=Online+RLHF+%E2%86%97%E2%86%98" style="width: 60%; border-radius: 8px; border: 1px dashed var(--color-primary); padding: 5px;"/>
+<p style="font-size: 0.8em; color: var(--color-gray);"><em>図: オンライン手法のイメージ (生成とフィードバックのループ)</em></p>
+</div>
+</div>
+<div class="info-card">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-secondary); font-size: 1.2em; text-align: center;">
+<i class="fas fa-database"></i> オフライン手法 (Offline Methods)
+                </p>
+<p>事前に収集された嗜好データ（通常は人間の注釈者や他のLLMによるもの）の固定セットを使用してポリシーを最適化します。</p>
+<ul class="unstyled-list">
+<li><span class="badge orange">例</span> DPO (Rafailov et al., 2023)</li>
+<li><span class="badge orange">例</span> SimPO (Meng et al., 2024)</li>
+<li><span class="badge orange">例</span> KTO (Ethayarajh et al., 2024)</li>
+</ul>
+<p><span class="keyword">特徴</span>: <i class="fas fa-bolt"></i> 学習効率が高い。 <i class="fas fa-chart-area"></i> オンライン手法に比べて性能が劣ることがある (Tang et al., 2024)。</p>
+<div style="text-align:center; margin-top:10px;">
+<img alt="Offline RLHF Diagram" src="https://via.placeholder.com/150x80/FFF3E0/E65100?Text=Offline+RLHF+%E2%86%92" style="width: 60%; border-radius: 8px; border: 1px dashed var(--color-secondary); padding: 5px;"/>
+<p style="font-size: 0.8em; color: var(--color-gray);"><em>図: オフライン手法のイメージ (静的データからの学習)</em></p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<p>
+            近年、<span class="keyword">検証可能な報酬を用いた強化学習 (RLVR: Reinforcement Learning with Verifiable Rewards)</span> (Lambert et al., 2025) が、特に数学やプログラミングといったドメイン (Shao et al., 2024; DeepSeek-AI et al., 2025; Yang et al., 2025; Lambert et al., 2025) でLLMの<span class="highlight">推論能力を強化するための有望なアプローチ</span>として登場しています。
+        </p>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <strong>RLVRの核心</strong></p>
+<p>RLVRは、解答の正しさを自動的に検証できるタスク（例：数学問題の最終解答が正しいか、コードがテストケースをパスするか）において、その検証結果を報酬としてRLエージェント（LLM）に与えることで学習を進めます。これにより、LLMは正しい推論プロセスを自ら発見し、強化していくことが期待されます。</p>
+</div>
+<p>
+<span class="badge purple">画期的成果</span> <span class="keyword">OpenAI o1 (OpenAI, 2024)</span> は、RLが大規模な推論能力を効果的に引き出すことができることを<span class="highlight">初めて示した研究</span>です。このo1の成功を受けて、以下のようなモデルがその性能に匹敵、あるいはそれを超えることを目指して開発されました：
+        </p>
+<ul class="unstyled-list" style="padding-left: 20px;">
+<li><i class="fas fa-rocket" style="color:var(--color-accent1);"></i> <span class="keyword">DeepSeek R1</span> (DeepSeek-AI et al., 2025)</li>
+<li><i class="fas fa-rocket" style="color:var(--color-accent1);"></i> <span class="keyword">QwQ</span> (Team, 2025)</li>
+<li><i class="fas fa-rocket" style="color:var(--color-accent1);"></i> <span class="keyword">Kimi k1.5</span> (Team et al., 2025)</li>
+<li><i class="fas fa-rocket" style="color:var(--color-accent1);"></i> <span class="keyword">Qwen3</span> (Yang et al., 2025)</li>
+</ul>
+<p>
+            中でも、<span class="keyword">DeepSeek R1</span> は特筆すべき成果を上げています。このモデルは、オンラインRLアルゴリズムである<span class="keyword">GRPO (Shao et al., 2024)</span> を用いた<span class="highlight">結果ベースの最適化 (outcome-based optimization)</span> によって、強力な推論能力が発現することを示しました。さらに、<span class="keyword">「ゼロRL (zero RL)」パラダイム</span>を導入し、従来のRLファインチューニングを行わずにベースモデルから推論能力を引き出すアプローチも提示しています。
+        </p>
+<p>
+            これらの成果に触発され、<span class="keyword">DAPO (Yu et al., 2025)</span>、<span class="keyword">VAPO (Yue et al., 2025b)</span>、<span class="keyword">SimpleRLZoo (Zeng et al., 2025)</span>、<span class="keyword">Open-Reasoner-Zero (Hu et al., 2025)</span> といった後続の手法が、RLに基づく推論能力の探求をさらに深めています。
+        </p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-thumbtack"></i>本研究での位置づけ</p>
+<p>本論文では、これらの流れの中で、特に<span class="keyword">DAPO</span> をベースライン手法として採用し、LLMにRLを適用する際の重要な側面について詳細な調査を行っています。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> 検証可能な報酬を用いた強化学習 (RLVR) の分析</h3>
+<div class="content-box">
+<p>
+            前述の通り、<span class="keyword">RLVR</span> はLLMの推論能力を向上させるための主流アプローチとして急速に普及しています。それに伴い、RLVRの特性や関連概念を分析する研究もいくつか行われています。
+        </p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive; font-size: 1.1em;"><i class="fas fa-user-astronaut"></i> Gandhi et al. (2025) の発見</p>
+<p>強化学習における性能向上の鍵は、<span class="highlight">解答の正しさそのものよりも、推論行動が存在すること</span>であると発見しました。つまり、「考えているように見える」振る舞いが重要だということです。</p>
+<div style="text-align: center; margin-top: 5px;">🧠 <i class="fas fa-arrow-right"></i> 📈</div>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive; font-size: 1.1em;"><i class="fas fa-link"></i> Li et al. (2025) の発見</p>
+<p>長い<span class="keyword">思考の連鎖 (CoT: Chain-of-Thought)</span> の<span class="highlight">構造</span>が学習プロセスにとって決定的であり、個々の推論ステップの内容の影響は最小限であると示しました。つまり、「どのように考えるか」という思考の型や流れが重要だということです。</p>
+<div style="text-align: center; margin-top: 5px;">🔗 <i class="fas fa-arrow-right"></i> 🎓</div>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive; font-size: 1.1em;"><i class="fas fa-exclamation-triangle"></i> Vassoyan et al. (2025) の発見</p>
+<p>CoT内に<span class="keyword">「クリティカルトークン (critical tokens)」</span>が存在することを発見。これらはモデルが誤りを犯しやすい決定点であり、<span class="highlight">KLペナルティを調整</span>することでこれらのトークン周辺の探索を促すことを提案しました。</p>
+<div style="text-align: center; margin-top: 5px;">🚦 <i class="fas fa-search-location"></i> 🗺️</div>
+</div>
+<div class="info-card glass-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive; font-size: 1.1em;"><i class="fas fa-wrench"></i> Lin et al. (2024) の発見</p>
+<p>同様に、不正解に大きな影響を与える<span class="keyword">クリティカルトークン</span>を特定し、これらのトークンを特定して置き換えることでモデルの振る舞いを変化させられることを実証しました。</p>
+<div style="text-align: center; margin-top: 5px;">🔧 <i class="fas fa-random"></i> ✨</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="bubble-box" style="border-color: var(--color-accent2);">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-flask"></i> 本研究との関連と独自性</p>
+<p>
+                本研究で得られた「RLVRは主に推論経路における<span class="keyword">分岐トークン (forking tokens)</span>に焦点を当てる」という発見は、GandhiらやLiらが示唆する「RLVRは内容よりも<span class="highlight">フォーマット (形式)</span>を学習する」という観察と共通する部分があります。
+                <br/>
+<span class="badge yellow">しかし</span>、本研究の分析はさらに一歩進んでおり、この発見を<span class="highlight">トークンレベルで特定</span>しています。🔬
+            </p>
+<hr style="border-top: 1px dashed var(--color-accent2); margin: 10px 0;"/>
+<p>
+                さらに、VassoyanらやLinらが提唱する<span class="keyword">「クリティカルトークン」</span>の概念は、本論文で導入する<span class="keyword">「高エントロピー少数派トークン (high-entropy minority tokens)」</span>と密接に関連しています。
+                <br/>
+<span class="badge yellow">ただし</span>、先行研究がトークンの重要性を<span class="highlight">出力の正しさ</span>に基づいて判断するのに対し、本研究では<span class="keyword">トークンエントロピー</span>を基準として提案しています。このトークンエントロピーという尺度が、LLMの根底にあるメカニズムをより正確に反映している可能性があると考えています。💡
+            </p>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-balance-scale"></i> 先行研究との視点の違い</p>
+<div class="two-column">
+<div class="column">
+<p><strong>先行研究の多く:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color:var(--color-accent1);"></i> トークンの重要性を<span class="highlight">出力の正しさ</span>で判断。</li>
+<li><i class="fas fa-project-diagram" style="color:var(--color-accent1);"></i> 主にCoTの構造やフォーマットに着目。</li>
+</ul>
+</div>
+<div class="column">
+<p><strong>本研究:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-wave-square" style="color:var(--color-primary);"></i> トークンの重要性を<span class="keyword">トークンエントロピー</span>で判断。</li>
+<li><i class="fas fa-atom" style="color:var(--color-primary);"></i> <span class="highlight">トークンレベル</span>でのメカニズム解明を目指す。</li>
+<li><i class="fas fa-question-circle" style="color:var(--color-primary);"></i> エントロピーがLLMの内部状態をより直接的に示す可能性を示唆。</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="8_Conclusion">
+<h2 class="section-title"><i class="fas fa-trophy"></i> 8 Conclusion</h2>
+<div class="content-box">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; text-align: center; padding: 10px; background-color: rgba(74, 111, 165, 0.1); border-radius: 8px;">
+<i class="fas fa-lightbulb"></i> この論文では、<strong>強化学習による検証可能な報酬 (RLVR)</strong> をトークンエントロピーという新しいレンズを通して分析し、LLMの推論メカニズムに関する新鮮な洞察を提供しました！
+        </p>
+</div>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-brain"></i> CoT推論における発見</h3>
+<div style="text-align: center; margin-bottom: 15px;">
+<i class="fas fa-sitemap" style="font-size: 40px; color: var(--color-primary);"></i>
+</div>
+<p>思考の連鎖 (Chain-of-Thought; CoT) 推論を調べた結果、実は<span class="keyword">ごく一部のトークンだけが高いエントロピーを示し</span>、これらが推論の方向性を左右する<strong style="color: var(--color-secondary);"><i class="fas fa-code-branch"></i> 「分岐点 (フォーク)」</strong>として機能していることがわかりました。</p>
+<div class="bubble-box" style="margin-top:10px;">
+<p><i class="fas fa-comment-dots"></i> <strong>トークンエントロピーとは？</strong><br/>
+                あるトークンが生成される際の「不確かさ」の度合いです。エントロピーが高いほど、次にどんなトークンが来るか予測しにくい（多様な選択肢がある）状態を意味します。</p>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-cogs"></i> RLVR訓練中のエントロピー動態</h3>
+<div style="text-align: center; margin-bottom: 15px;">
+<i class="fas fa-chart-line" style="font-size: 40px; color: var(--color-accent1);"></i>
+</div>
+<p>RLVRによる訓練中、推論モデルはベースモデルのエントロピーパターンを<span class="highlight">ほぼ維持する</span>ことが明らかになりました。RLVRは主に、<strong style="color: var(--color-secondary);">元々エントロピーが高かったトークンのエントロピーを調整</strong>しているのです。</p>
+<div class="note-box" style="margin-top:10px;">
+<p class="note-title"><i class="fas fa-sticky-note"></i> ポイント</p>
+<p>つまり、RLVRは全く新しいエントロピーの分布を作り出すのではなく、既存の「重要な不確かさ」を持つ箇所をさらにファインチューニングするイメージです。</p>
+</div>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 25px;">
+<h3 class="framework-title" style="font-family: 'Yomogi', cursive; text-align: center;"><i class="fas fa-filter"></i> 重要な発見に基づくアプローチ <i class="fas fa-arrow-down"></i></h3>
+<p style="text-align: center;">これらの発見は、<span class="keyword">高エントロピーを持つ少数のトークン</span>がいかに重要であるかを強調しています。そこで、私たちはRLVRにおけるポリシー勾配の更新を、<strong style="color: var(--color-primary);">エントロピーが最も高い上位20%のトークンに限定</strong>してみました。</p>
+<div class="two-column" style="margin-top: 20px; align-items: center;">
+<div class="column" style="text-align: center;">
+<div style="border: 2px dashed var(--color-accent2); padding: 15px; border-radius: 8px; background-color: rgba(149, 117, 205, 0.05);">
+<i class="fas fa-percentage" style="font-size: 30px; color: var(--color-accent2);"></i>
+<p style="font-size: 18px; font-weight: bold; margin-top: 10px;">上位20%の高エントロピートークンのみ更新</p>
+</div>
+</div>
+<div class="column">
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 全トークンを更新するRLVRと同等、あるいはそれを<strong style="color: var(--color-accent1);">上回る性能</strong>を達成！</li>
+<li><i class="fas fa-chart-bar" style="color: var(--color-accent1);"></i> モデルサイズが大きくなるほど、この傾向は<strong style="color: var(--color-accent1);">より顕著に</strong>（強いスケーリングトレンド）。</li>
+</ul>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 20px;">
+<p class="challenge-title"><i class="fas fa-times-circle"></i> 逆に、低エントロピーの大多数 (80%) のトークンに最適化を向けると…</p>
+<p><strong style="font-size: 16px;">パフォーマンスが大幅に低下</strong>してしまいました <i class="fas fa-arrow-down" style="color: var(--color-secondary);"></i>。</p>
+</div>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; text-align: center; margin-top: 20px; padding: 10px; background-color: rgba(255, 126, 95, 0.1); border-radius: 8px;">
+<i class="fas fa-key"></i> これらの結果から、RLVRの有効性は主にこの<strong style="color: var(--color-secondary);">高エントロピーの部分集合を最適化する</strong>ことから生まれることが示唆されます。これにより、LLMの推論能力を向上させるための、より焦点を絞った効率的な戦略が見えてきました。
+        </p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card" style="margin-top: 20px;">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-exclamation-triangle" style="color: var(--color-accent3);"></i> Limitations <span style="font-family: 'Zen Kurenaido', sans-serif; font-size: 14px; color: var(--color-gray);">(本研究の限界)</span></h3>
+<p>この研究にはまだ改善の余地があると考えています。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+<div class="feature-item" style="background-color: rgba(255, 248, 225, 0.7); border: 1px dashed var(--color-accent3);">
+<div class="icon-item"><i class="fas fa-robot" style="color: var(--color-accent3);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-dark);">モデルの多様性</h4>
+<p>実験は主にQwenファミリーで行われました。LLaMAモデルなど、他のモデル群での評価を試みましたが、AIMEベンチマークで十分な性能を出すのが難しかったです。 <span class="badge yellow">今後の課題</span></p>
+</div>
+<div class="feature-item" style="background-color: rgba(230, 245, 255, 0.7); border: 1px dashed var(--color-primary);">
+<div class="icon-item"><i class="fas fa-book-open" style="color: var(--color-primary);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-dark);">データセットの範囲</h4>
+<p>数学以外のドメイン（プログラミングや、ARC-AGIのようなより複雑なタスク）へデータセットの範囲を広げる必要があります。 <span class="badge blue">拡張性</span></p>
+</div>
+<div class="feature-item" style="background-color: rgba(232, 245, 233, 0.7); border: 1px dashed var(--color-accent1);">
+<div class="icon-item"><i class="fas fa-flask" style="color: var(--color-accent1);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-dark);">一般化可能性</h4>
+<p>本論文の発見や結論は特定の実験設定に基づいています。全てのRLVRシナリオに一般化できるとは限りません。例えば、我々の実験で見られた20%という効果的な割合は、他の設定では調整が必要になるかもしれません。 <span class="badge green">要注意</span></p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card" style="margin-top: 20px;">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-lightbulb" style="color: var(--color-accent2);"></i> Future Directions <span style="font-family: 'Zen Kurenaido', sans-serif; font-size: 14px; color: var(--color-gray);">(今後の展望)</span></h3>
+<p>将来的には、以下のような方向性を探求していきます。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">1</div>
+<div class="step-content">
+<strong style="color: var(--color-secondary);">新しいRLVRアルゴリズムの開発</strong>: <br/>
+<span class="keyword">高エントロピー少数トークン</span>をより効果的に活用するための新しいRLVRアルゴリズムを開発すること。
+                        <div style="text-align: center; margin-top:10px;">
+<i class="fas fa-cogs" style="font-size: 2em; color: var(--color-secondary);"></i> <i class="fas fa-arrow-right" style="font-size: 1.5em; margin: 0 10px;"></i> <i class="fas fa-brain" style="font-size: 2em; color: var(--color-secondary);"></i>
+</div>
+</div>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">2</div>
+<div class="step-content">
+<strong style="color: var(--color-accent1);">他アプローチへの応用</strong>: <br/>
+                        これらの知見が、RLVRだけでなく、他のアプローチ（例：教師ありファインチューニング(SFT)、知識蒸留、推論時戦略、マルチモーダル訓練など）をどのように強化できるかを探ること。
+                        <div class="tag-list" style="margin-top:10px;">
+<span class="tag" style="background-color: rgba(92, 184, 92, 0.2); border-color: var(--color-accent1); color: var(--color-accent1);"><i class="fas fa-chalkboard-teacher"></i> SFT</span>
+<span class="tag" style="background-color: rgba(74, 111, 165, 0.2); border-color: var(--color-primary); color: var(--color-primary);"><i class="fas fa-share-alt"></i> 蒸留</span>
+<span class="tag" style="background-color: rgba(255, 126, 95, 0.2); border-color: var(--color-secondary); color: var(--color-secondary);"><i class="fas fa-search"></i> 推論</span>
+<span class="tag" style="background-color: rgba(149, 117, 205, 0.2); border-color: var(--color-accent2); color: var(--color-accent2);"><i class="fas fa-cubes"></i> マルチモーダル</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div style="margin-top: 30px; text-align: center; font-family: 'Kaisei Decol', serif;">
+<p style="font-size: 18px; color: var(--color-primary);">
+<i class="fas fa-paper-plane"></i> この研究が、LLMの推論能力向上のための、より効率的で洞察に満ちたアプローチ開発のきっかけとなることを願っています！
+        </p>
+</div>
+</div>
+</div>
+</div></body>
+</html>

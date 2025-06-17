@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ClickSight: Interpreting Student Clickstreams to Reveal Insights on Learning Strategies via LLMs解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">ClickSight: Interpreting Student Clickstreams to Reveal Insights on Learning Strategies via LLMs</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-lightbulb"></i> 1 Introduction</h2>
+<div class="content-box">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.1em; text-align: center; padding: 10px; background-color: rgba(255, 243, 205, 0.3); border-radius: 8px; border-left: 5px solid var(--color-accent3);">
+            このセクションでは、論文の導入部として、研究の背景、目的、そして提案する手法「ClickSight」の概要について解説します。デジタル学習環境における<span class="keyword">クリックストリームデータ</span>の可能性と、その分析における課題、そして<span class="keyword">大規模言語モデル(LLM)</span>を用いた新しいアプローチの必要性を明らかにします。
+        </p>
+</div>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card glass-card">
+<h3 class="subsection-title" style="font-size:1.1em; color: var(--color-primary);"><i class="fas fa-laptop-code"></i> デジタル学習環境の台頭</h3>
+<p>近年、<span class="highlight">デジタル学習環境</span> 💻🎓 が急速に普及し、教育のあり方に大きな変化をもたらしています。これらの環境は、以下のような大きなメリットを提供します：</p>
+<ul class="unstyled-list" style="padding-left: 15px;">
+<li><i class="fas fa-user-graduate" style="color: var(--color-accent1);"></i> <strong>個別化された学習</strong>: 一人ひとりの進捗や理解度に合わせた学びを提供。</li>
+<li><i class="fas fa-expand-arrows-alt" style="color: var(--color-accent1);"></i> <strong>スケーラブルな教育</strong>: 時間や場所を選ばず、多くの学習者に教育機会を提供。</li>
+<li><i class="fas fa-chart-line" style="color: var(--color-accent1);"></i> <strong>データ駆動型の教育</strong>: 学習データを活用し、教育内容や方法を改善。</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h3 class="subsection-title" style="font-size:1.1em; color: var(--color-primary);"><i class="fas fa-mouse-pointer"></i> クリックストリームデータとは？</h3>
+<p>デジタル学習環境では、<span class="keyword">クリックストリームデータ</span>という貴重な情報が収集できます。</p>
+<div class="definition-box" style="margin-top:10px;">
+<div class="definition-title"><i class="fas fa-info-circle"></i> 用語解説：クリックストリームデータ</div>
+<p>学生が学習プラットフォーム上で行うあらゆる操作（クリック、ページの閲覧、課題の提出など）を、<strong style="color: var(--color-secondary);">タイムスタンプ付き</strong>で詳細に記録したデータのことです。まさに「学習の足跡🐾」と言えるでしょう。</p>
+<div style="text-align:center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:0.9em;">例: 学生Aが10:05:32に「解説ビデオ再生」ボタンをクリック</span><br/>
+<span style="font-family: 'Yomogi', cursive; font-size:0.9em;">学生Aが10:05:45に「練習問題1」ページを開く</span>
+</div>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="margin-top: 25px;">
+<h3 class="subsection-title" style="margin-top:0; color: var(--color-primary);"><i class="fas fa-cogs"></i> クリックストリームデータの価値</h3>
+<p>この<span class="keyword">クリックストリームデータ</span>を分析することで、学生の<span class="highlight">学習行動に関する貴重な洞察</span>を得ることができます。これらの洞察は、様々な立場の人々にとって有益です。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.1);">
+<div class="icon-item"><i class="fas fa-microscope" style="color: var(--color-accent1);"></i></div>
+<strong style="color: var(--color-accent1);">研究者 🧑‍🔬</strong>
+<p style="font-size:0.9em;">学生の学習行動や戦略をより深く理解するのに役立ちます。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1);">
+<div class="icon-item"><i class="fas fa-chalkboard-teacher" style="color: var(--color-secondary);"></i></div>
+<strong style="color: var(--color-secondary);">教員 👩‍🏫</strong>
+<p style="font-size:0.9em;">学習につまずいている学生へ、<span class="highlight">タイムリーな介入</span>や個別指導を行うための手がかりを得られます。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(149, 117, 205, 0.1);">
+<div class="icon-item"><i class="fas fa-user-cog" style="color: var(--color-accent2);"></i></div>
+<strong style="color: var(--color-accent2);">学生 🧑‍🎓</strong>
+<p style="font-size:0.9em;">自身の学習パターンについて<span class="highlight">フィードバック</span>を受け、より効果的な学習戦略を身につける助けになります。</p>
+</div>
+</div>
+</div>
+<div class="challenge-box" style="margin-top:25px;">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> クリックストリームデータ分析の課題 🚧</div>
+<p>しかし、生のクリックストリームデータから<span class="highlight">意味のある情報を抽出する</span>のは簡単ではありません。主な課題として以下の2点が挙げられます。</p>
+<div class="two-column" style="align-items: center;">
+<div class="column">
+<p><strong class="keyword">1. 高次元性 (High Dimensionality)</strong> <i class="fas fa-sitemap" style="color:var(--color-secondary);"></i><br/>
+                データに含まれる特徴（例：クリックの種類、場所、順序、時間間隔など）が非常に多く、複雑です。</p>
+<p><strong class="keyword">2. 詳細な粒度 (Granularity)</strong> <i class="fas fa-search-plus" style="color:var(--color-secondary);"></i><br/>
+                データが非常に細かい単位（例：1回ごとのクリック）で記録されているため、そのままでは全体像を把握しにくいです。</p>
+</div>
+<div class="column" style="text-align:center;">
+<i class="fas fa-puzzle-piece fa-3x" style="color:var(--color-secondary); margin-bottom:10px;"></i>
+<p style="font-family: 'Yomogi', cursive;">これらの特性により、専門家が手作業でデータに意味付け（アノテーション）するには、<span class="highlight">莫大な時間と労力</span>、そして<span class="highlight">高度な認知能力</span>が求められます。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-history"></i> これまでのAI教育分野での取り組み</h3>
+<p>AIを活用した教育分野 (AI for Education) では、クリックストリームデータから学習戦略を検出したり、学生の行動を分析したりするために、これまで様々な技術が用いられてきました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:15px;">
+<div class="info-card" style="border-left: 3px solid var(--color-accent1);">
+<strong style="color:var(--color-accent1);"><i class="fas fa-tools"></i> ドメイン固有の特徴量設計</strong>
+<p style="font-size:0.9em;">特定の学習戦略に関連するデータの特徴量を専門家が手動で設計・抽出する方法。[8, 21]</p>
+</div>
+<div class="info-card" style="border-left: 3px solid var(--color-accent1);">
+<strong style="color:var(--color-accent1);"><i class="fas fa-users"></i> 行動パターンに基づくクラスタリング</strong>
+<p style="font-size:0.9em;">類似した行動パターンを持つ学生のグループ（クラスター）を発見する方法。[21]</p>
+</div>
+<div class="info-card" style="border-left: 3px solid var(--color-accent1);">
+<strong style="color:var(--color-accent1);"><i class="fas fa-stream"></i> シーケンシャルパターンマイニング</strong>
+<p style="font-size:0.9em;">学生の操作ログから、頻繁に現れる行動の連続パターン（インタラクショントレース）を見つけ出す方法。[1, 25, 27]</p>
+</div>
+<div class="info-card" style="border-left: 3px solid var(--color-accent2);">
+<strong style="color:var(--color-accent2);"><i class="fas fa-microchip"></i> 教師あり分類器</strong>
+<p style="font-size:0.9em;">事前に専門家がラベル付けしたデータ（アノテーションデータ）を用いて、機械学習モデルを訓練し、新たなデータを分類する方法。[1]</p>
+</div>
+<div class="info-card" style="border-left: 3px solid var(--color-accent2);">
+<strong style="color:var(--color-accent2);"><i class="fas fa-brain"></i> 知識追跡 (Knowledge Tracing)</strong>
+<p style="font-size:0.9em;">学生の解答履歴などから、知識状態の時系列的な変化をモデル化する方法。[8]</p>
+</div>
+</div>
+<div class="note-box" style="margin-top:15px;">
+<div class="note-title"><i class="fas fa-exclamation-circle"></i> 既存手法の限界</div>
+<p>これらの手法は価値ある洞察をもたらしてきましたが、いくつかの共通の課題も抱えています：</p>
+<ul>
+<li><span class="badge red">多大な手作業</span>: 特徴量設計やアノテーションに多くの人手が必要。</li>
+<li><span class="badge red">専門知識への依存</span>: 教育ドメインの深い知識が不可欠。</li>
+<li><span class="badge red">般化の難しさ</span>: ある学習環境やタスクで有効だった手法が、別の環境やタスクではうまく機能しないことが多い。</li>
+</ul>
+<p style="font-family: 'Kaisei Decol', serif; text-align:center; margin-top:10px;">つまり、<strong style="color: var(--color-secondary);">スケーラビリティや汎用性に限界</strong>があったのです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<img alt="ClickSight Pipeline Overview" src="https://raw.githubusercontent.com/tatsu-lab/llm-paper-explanation/main/images/clicksight-fig1.png" style="width: 80%; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px;"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray); margin-bottom:20px;">
+<strong>図1: ClickSightの処理パイプライン概要</strong><br/>
+        この図は、本論文で提案するClickSightの全体像を示しています。(1) 環境コンテキストの収集、(2) LLMによるクリックストリームの解釈、(3) ドメイン専門家による解釈の評価、という3つの主要なステップで構成されます。図中には、PharmaSimやBeer's Law Labといった具体的な学習環境の例や、Zero-Shotプロンプティング、自己改善（Self-Refinement）といった要素も示されています。
+    </p>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-robot"></i> 大規模言語モデル (LLM) の登場と新たな可能性</h3>
+<p><span class="keyword">大規模言語モデル (LLM)</span>、例えばOpenAIの<span class="highlight">GPT-4o</span> [13]などは、教育工学分野に新たな機会をもたらしています [4]。LLMは既に様々な教育タスクで活用されています。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-file-alt" style="color: var(--color-primary);"></i></div>
+<strong style="color: var(--color-primary);">教材コンテンツ生成</strong> [19]
+            </div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-comment-dots" style="color: var(--color-primary);"></i></div>
+<strong style="color: var(--color-primary);">フィードバック提供</strong> [14]
+            </div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-user-friends" style="color: var(--color-primary);"></i></div>
+<strong style="color: var(--color-primary);">学生シミュレーション</strong> [15]
+            </div>
+</div>
+<p style="margin-top:15px;">特に、LLMが持つ<span class="highlight">強力なパターン認識能力</span> [11] は、クリックストリームデータを<span class="keyword">学習戦略</span>の観点から解釈する上で大きな可能性を秘めています。しかし、この可能性はまだ十分に探求されていませんでした。</p>
+<div class="note-box" style="background-color: rgba(255, 213, 79, 0.2); border-left: 3px solid var(--color-accent3);">
+<div class="note-title" style="color: var(--color-accent3);"><i class="fas fa-search"></i> 注目ポイント！</div>
+            LLMのパターン認識能力を、複雑なクリックストリームデータに応用することで、これまで難しかった「学生がどのような戦略で学習しているのか？」という問いに、より効率的かつ深く迫れるのではないか、というのが本研究の出発点です。
+        </div>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-paper-plane"></i> 本論文の提案：ClickSight</div>
+<p>そこで本論文では、<strong class="keyword">ClickSight</strong> という新しい手法を提案します。これは、<span class="highlight">文脈内学習 (in-context learning)</span> に基づくLLMパイプラインであり、事前に定義された学習戦略を通して学生のクリックストリームを解釈します。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<strong style="color: var(--color-primary);">入力 <i class="fas fa-sign-in-alt"></i></strong>: 学生のクリックストリームデータ ＋ 事前に定義された学習戦略のリスト
+            </div>
+<div class="pipeline-step">
+<strong style="color: var(--color-primary);">処理 <i class="fas fa-cogs"></i></strong>: ClickSight (LLMベースのパイプライン) が学生の行動を解釈
+            </div>
+<div class="pipeline-step" style="margin-bottom:0;">
+<strong style="color: var(--color-primary);">出力 <i class="fas fa-sign-out-alt"></i></strong>: 学生の行動に関するテキストベースの解釈
+            </div>
+</div>
+<h4 class="subsection-title" style="font-size:1em; margin-top:20px; color: var(--color-secondary);"><i class="fas fa-tasks"></i> ClickSightの検証における検討事項</h4>
+<p>ClickSightの性能を検証するために、以下の点を検討します：</p>
+<ul class="unstyled-list">
+<li><span class="badge orange">📝 4つのプロンプティング戦略</span>: LLMに指示を与える方法（プロンプト）の違いが解釈の質にどう影響するか。</li>
+<li><span class="badge orange">🔄 自己改善 (Self-Refinement)</span>: LLM自身が生成した解釈を批判し、修正するプロセスの影響。</li>
+</ul>
+<h4 class="subsection-title" style="font-size:1em; margin-top:15px; color: var(--color-secondary);"><i class="fas fa-flask"></i> 評価方法</h4>
+<p>ClickSightの評価は、異なるドメインの2つの学習環境で行います：</p>
+<div class="two-column">
+<div class="column">
+<div class="glass-card" style="padding:15px; background: rgba(74, 111, 165, 0.1);">
+<p style="text-align:center; font-weight:bold; color:var(--color-primary);"><i class="fas fa-pills"></i> PharmaSim [16]</p>
+<p style="font-size:0.9em;">薬局アシスタントの診断トレーニング用シミュレーション。</p>
+</div>
+</div>
+<div class="column">
+<div class="glass-card" style="padding:15px; background: rgba(255, 126, 95, 0.1);">
+<p style="text-align:center; font-weight:bold; color:var(--color-secondary);"><i class="fas fa-vial"></i> Beer’s Law Lab [21]</p>
+<p style="font-size:0.9em;">中高生向けの仮想化学実験室。</p>
+</div>
+</div>
+</div>
+<p>解釈の質を評価するために、<span class="highlight">人間中心の説明理論</span>に基づいた4つの基準からなる<span class="keyword">ルーブリック</span>を開発し、それに基づいて<span class="keyword">ドメイン専門家</span>が評価を行います。</p>
+<h4 class="subsection-title" style="font-size:1em; margin-top:15px; color: var(--color-secondary);"><i class="fas fa-question-circle"></i> リサーチクエスチョン (RQ)</h4>
+<p>本研究では、以下の2つのリサーチクエスチョンに取り組みます：</p>
+<ol style="padding-left:20px;">
+<li><strong style="color:var(--color-primary);">(RQ1)</strong> どのプロンプティング戦略が、学生のクリックストリームの戦略ベース解釈において最良の結果をもたらすか？ 🤔</li>
+<li><strong style="color:var(--color-primary);">(RQ2)</strong> 自己改善は解釈の質にどのように影響するか？ 🧐</li>
+</ol>
+</div>
+<div class="arrow-connector"></div>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left: 3px solid var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> 結果の概要と貢献</div>
+<p>実験の結果、ClickSightは<span class="highlight">質の高い解釈を生成できる</span>ことが示されました。特に、ある特定のプロンプティング戦略が他の戦略よりも優れた性能を示しました。自己改善については、一部の戦略ではわずかな改善が見られたものの、他の戦略では逆にエラーを誘発する場合もありました。</p>
+<p>本研究の貢献は以下の通りです：</p>
+<ul class="unstyled-list">
+<li><span class="badge green">💡 LLMの新たな活用法</span>: 教育分野のインタラクションデータから理論に基づいた洞察を生成するLLMの可能性を実証。</li>
+<li><span class="badge green">🛠️ ClickSightの実装公開</span>: 提案手法の実装はGitHubリポジトリで公開されています。<br/><a href="https://github.com/epfl-ml4ed/ClickSightLBR25" style="color:var(--color-primary); text-decoration:none;" target="_blank"><i class="fab fa-github"></i> https://github.com/epfl-ml4ed/ClickSightLBR25</a></li>
+</ul>
+</div>
+</div>
+<div class="section-card" id="2_Methodology">
+<h2 class="section-title"><i class="fas fa-cogs"></i>2 Methodology - ClickSightの仕組み</h2>
+<div class="content-box">
+<p>このセクションでは、学生のクリックストリームデータから学習戦略を明らかにするためのフレームワーク <span class="keyword">ClickSight</span> の構成要素と手順を詳しく解説します。ClickSightは、大きく分けて3つのステージで構成されています（論文中のFig.1で図解されています）。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<span class="badge blue">情報収集</span> <strong class="highlight">環境コンテキストの収集</strong><br/>
+                    シミュレーション学習環境の詳細、関連する学習戦略を特定し、学生のクリックストリームデータを構造化された形式に整理します。 (詳細は <a href="#2_1_Gathering_Environment_Context">2.1</a>)
+                </div>
+</div>
+<div class="pipeline-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<span class="badge orange">解釈生成</span> <strong class="highlight">クリックストリームの解釈</strong><br/>
+                    大規模言語モデル（LLM）が、ステージ1で構築されたコンテキスト情報に基づいて、クリックストリームのテキストベースの解釈を生成します。 (詳細は <a href="#2_2_Interpreting_Clickstreams">2.2</a>)
+                </div>
+</div>
+<div class="pipeline-step" style="margin-bottom: 0;"> <!-- 最後の要素なので下矢印は不要 -->
+<div class="step-number">3</div>
+<div class="step-content">
+<span class="badge green">品質評価</span> <strong class="highlight">解釈の評価</strong><br/>
+                    生成された解釈の品質、明確さ、関連性を評価するために、ルーブリックに基づいた専門家による評価を実施します。 (詳細は <a href="#2_3_Evaluating_Interpretations">2.3</a>)
+                </div>
+</div>
+</div>
+<p class="note-box" style="margin-top: 20px;">
+<span class="note-title"><i class="fas fa-lightbulb"></i>論文のFig.1について</span>
+            論文中で言及されているFig.1は、これら3つのステージを図で示したものです。具体的には、左側にPharmaSimとBeer's Law Labの学習環境のスクリーンショットがあり、中央でデータ収集からLLMによる解釈、右側で専門家による評価という流れが描かれています。
+        </p>
+</div>
+<h3 class="subsection-title" id="2_1_Gathering_Environment_Context"><i class="fas fa-database"></i>2.1 Gathering Environment Context - 学習環境の情報を集める</h3>
+<div class="content-box">
+<p>このステージでは、LLMが学生の行動を正しく解釈するために必要な背景情報を収集・整理します。具体的には、使用する学習環境、そこで観察される学習戦略、そして学生の行動記録であるクリックストリームのデータ形式を定義します。</p>
+<p>本研究では、異なる2つの教育環境からのデータを使用します：</p>
+<div class="info-grid">
+<div class="info-card">
+<h4><i class="fas fa-pills"></i>PharmaSim <a class="reference" href="#ref16">[16]</a></h4>
+<p>薬局アシスタントのトレーニング用に開発された<span class="keyword">シナリオベースの学習環境</span>です。学生は仮想的な患者との対話を通じて診断スキルを磨きます。</p>
+<p>📌 <strong>選択されたシナリオ (Fig. 1参照)</strong>: 授乳に関する問題を抱えた母親が薬局を訪れます。学生は、患者への質問、薬剤師への相談、薬のリサーチ、棚の製品確認、医療文書の参照といったアクションを通じて問題を調査します。</p>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-flask"></i>Beer’s Law Lab <a class="reference" href="#ref21">[21]</a></h4>
+<p><span class="keyword">ビールの法則</span>を探求する仮想化学実験室です。学生はキュベットの幅、溶液の濃度、レーザー光の色と溶液の色の組み合わせが光の吸光度にどのように影響するかを調べます。</p>
+<p>📌 <strong>変数の関係性 (Fig. 1参照)</strong>:</p>
+<ul>
+<li>キュベット幅と溶液濃度: 吸光度と<span class="highlight">線形関係</span>にあります。</li>
+<li>レーザー光の色と溶液の色: 吸光度と<span class="highlight">非線形パターン</span>を示します。</li>
+</ul>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-mouse-pointer"></i>PharmaSimにおける学生クリックストリーム</div>
+<p>既存研究 <a class="reference" href="#ref17">[17]</a> の表現方法に従い、各クリックストリームをシミュレーション内の特定の<span class="keyword">行動タイプに対応する関数呼び出しのシーケンス</span>として構造化しました。</p>
+<p>✏️ <strong>例:</strong> 学生が時刻 \(t\) に仮想の母親に症状について尋ねるアクションは、次のように表現されます：</p>
+<div class="formula">
+<code>discuss(mother, symptoms, t) [output: My breast hurts...]</code>
+</div>
+<p>ここでの各要素の意味は以下の通りです:</p>
+<ul class="unstyled-list">
+<li><code>discuss</code>: 行動の種類（関数名）</li>
+<li><code>mother</code>: 対話の対象</li>
+<li><code>symptoms</code>: 対話のトピック（症状）</li>
+<li><code>t</code>: 行動が発生した時刻</li>
+<li><code>[output: My breast hurts...]</code>: システム（この場合は仮想患者）からの応答</li>
+</ul>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-brain"></i>PharmaSimにおける学習戦略</div>
+<p>PharmaSimのような環境で学生の行動に見られる<span class="keyword">9つの診断戦略</span>を、先行研究に基づいて収集しました。これらの戦略は、学習目標との関連性や環境の利用側面において多様です。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h5><i class="fas fa-comments"></i>診断会話戦略 <a class="reference" href="#ref5">[5, 6]</a></h5>
+<p><span class="badge green">効果的</span> <strong class="highlight">LINDAAFF</strong>: 症状の詳細について的を絞った質問をする。</p>
+<p><span class="badge green">効果的</span> <strong class="highlight">Inquiry about Relevant External Factors (関連外部要因に関する質問)</strong>: 赤ちゃんの健康状態など、影響を与える可能性のある外部要因について尋ねる。</p>
+<p><span class="badge red">非効果的</span> <strong class="highlight">Premature Closure (早期結論)</strong>: 十分な情報を集める前に早すぎる診断を下す。</p>
+<p><span class="badge red">非効果的</span> <strong class="highlight">Random Inquiry (ランダムな質問)</strong>: 診断と無関係なトピックについて尋ねる。</p>
+<p><span class="badge red">非効果的</span> <strong class="highlight">Insufficient Inquiry (不十分な質問)</strong>: 診断に必要な情報を十分に収集しない。</p>
+</div>
+<div class="info-card glass-card">
+<h5><i class="fas fa-book-open"></i>リサーチ戦略 (自己調整学習 <a class="reference" href="#ref29">[29]</a> に着想)</h5>
+<p><span class="badge green">効果的</span> <strong class="highlight">Targeted Research (的を絞ったリサーチ)</strong>: 関連する資料（文書、薬剤一覧、棚の商品など）に焦点を当てて調べる。</p>
+<p><span class="badge yellow">中程度/非効果的</span> <strong class="highlight">Unfocused Research (焦点の定まらないリサーチ)</strong>: 散漫で目的のない閲覧行動。</p>
+<p><span class="badge red">非効果的</span> <strong class="highlight">Minimal Research (最小限のリサーチ)</strong>: 資料をほとんど、あるいは全く利用しない。</p>
+</div>
+<div class="info-card glass-card">
+<h5><i class="fas fa-question-circle"></i>ヒント希求戦略 <a class="reference" href="#ref20">[20]</a></h5>
+<p><span class="badge green">効果的</span> <strong class="highlight">Thoughtful Hint Seeking (思慮深いヒント希求)</strong>: ある程度主体的に取り組んだ後、適切なタイミングでヒントを要求する。</p>
+<p><span class="badge red">非効果的</span> <strong class="highlight">Premature Hint Seeking (早すぎるヒント希求)</strong>: 十分な探索を行わずに、早々にヒントに頼る。</p>
+<p><span class="badge yellow">状況による</span> <strong class="highlight">No Hint Seeking (ヒント希求なし)</strong>: インタラクション中に一切ヒントを要求しない。</p>
+</div>
+<div class="info-card glass-card">
+<h5><i class="fas fa-sync-alt"></i>その他の戦略</h5>
+<p><strong class="highlight">Iterative Reflection (反復的内省)</strong> <a class="reference" href="#ref18">[18]</a>: 主要な行動の合間に一時停止し、情報を処理・統合する。</p>
+<p><strong class="highlight">Gaming the System (システムを出し抜く行動)</strong> <a class="reference" href="#ref2">[2]</a>: 意味のある学習活動に取り組まず、タスクを急いで終わらせようとする。</p>
+</div>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-mouse-pointer"></i>Beer’s Law Labにおける学生クリックストリーム</div>
+<p>学生は主に2種類の行動を取ります：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-search"></i> <strong class="highlight">Exploration (探索)</strong>: 変数を操作し、吸光度の変化を観察する。</li>
+<li><i class="fas fa-chart-line"></i> <strong class="highlight">Analysis (分析)</strong>: 後で調査するために値を記録する。</li>
+</ul>
+<p>この研究では戦略ベースの解釈に焦点を当てているため、<span class="keyword">探索行動のみを分析対象</span>とします。探索行動は関数呼び出しとしてフォーマットされます。</p>
+<p>✏️ <strong>例:</strong> キュベット幅を変数として操作するアクションは以下のように表現されます:</p>
+<div class="formula">
+<code>explore(variable=width, value changes=increase from 1.0cm to 1.2cm, begins=5:55, duration=0.2s) [absorbance: increase from 0.67 to 0.79]</code>
+</div>
+<p>ここでの各要素の意味は以下の通りです:</p>
+<ul class="unstyled-list">
+<li><code>variable=width</code>: 操作した変数（この場合は幅）</li>
+<li><code>value changes=increase from 1.0cm to 1.2cm</code>: 値の変化（1.0cmから1.2cmへ増加）</li>
+<li><code>begins=5:55</code>: 行動の開始時刻</li>
+<li><code>duration=0.2s</code>: 行動の継続時間</li>
+<li><code>[absorbance: increase from 0.67 to 0.79]</code>: 吸光度の変化（0.67から0.79へ増加）</li>
+</ul>
+<p class="note-box">
+<span class="note-title"><i class="fas fa-exclamation-circle"></i>データ処理の注意点</span>
+                先行研究 <a class="reference" href="#ref21">[21]</a> に従い、同じ変数に対する連続したアクションが3秒以内に発生した場合、それらは1つのアクションとしてマージ（統合）されます。
+            </p>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-brain"></i>Beer’s Law Labにおける学習戦略</div>
+<p>学生の行動を分析するために、先行研究 <a class="reference" href="#ref21">[21]</a> から<span class="keyword">3つの主要な探求戦略</span>を使用しました。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fas fa-sliders-h"></i>
+<strong class="highlight">Control of Variables Strategy (CVS) (変数統制戦略)</strong>
+<p>一度に1つの独立変数のみを操作し、他の変数は一定に保つ戦略です。科学的探求の基本的な考え方です。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-expand-arrows-alt"></i>
+<strong class="highlight">Range Strategy (範囲戦略)</strong>
+<p>傾向を特定するために、ある変数の値の全範囲を探索することを奨励する戦略です。例えば、キュベットの幅を最小値から最大値まで変化させてみるなどです。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-bullseye"></i>
+<strong class="highlight">Optimal Strategy (最適戦略)</strong>
+<p>交絡効果（結果の解釈を難しくする他の要因の影響）を最小限に抑えるために、非焦点変数（現在注目していない変数）の値を適切に選択する戦略です。例えば、キュベット幅の影響を調べる際に、レーザー光の色と溶液の色が一致する（吸光度が最大になる）組み合わせを避けるなどです。</p>
+</div>
+</div>
+<p class="challenge-box">
+<span class="challenge-title"><i class="fas fa-exclamation-triangle"></i>解釈の難しさ</span>
+                これらの戦略は、3つの独立変数間で、また時間経過とともに変化するため、PharmaSimで見られる集約された戦略よりも解釈が難しくなります。
+            </p>
+</div>
+</div>
+<h3 class="subsection-title" id="2_2_Interpreting_Clickstreams"><i class="fas fa-robot"></i>2.2 Interpreting Clickstreams - LLMによるクリックストリームの解釈</h3>
+<div class="content-box">
+<p>ClickSightの核心部分は、<span class="keyword">大規模言語モデル（LLM）</span>です。LLMは、ステージ1で収集された学習戦略と環境コンテキスト情報を用いて、学生のクリックストリームの解釈を生成します。LLMの解釈生成は、人間中心の説明に関する研究に基づいた<span class="keyword">ルーブリック（評価基準）</span>によって導かれます。</p>
+<p>この研究では、以下の4つの<span class="keyword">プロンプティング戦略</span>を検討し、さらにLLMが自身の応答を見直し改善する<span class="keyword">自己改善（Self-Refinement）ステップ</span>の影響も調査しました。</p>
+<img alt="Table 1: Quality evaluation rubric for clickstream interpretation." class="section-image" src="table1.png"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-table"></i>表1: クリックストリーム解釈のための品質評価ルーブリック</span>
+<p>上の図は、論文中のTable 1を示しています。この表は、LLMが生成する解釈の品質を評価するための基準をまとめたものです。このルーブリックは、LLMへの指示（プロンプト）に含められ、また専門家による評価でも使用されます。基準は以下の4つです：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-double"></i> <strong class="highlight">Completeness (網羅性)</strong>: 環境の異なる側面における学習戦略の実行レベルがすべて含まれているか。</li>
+<li><i class="fas fa-crosshairs"></i> <strong class="highlight">Correctness (正確性)</strong>: 記述された戦略の実行レベルが実際のクリックストリームデータと一致し、言及されていない戦略については実行されていないことが示されているか。</li>
+<li><i class="fas fa-balance-scale"></i> <strong class="highlight">Justifiedness (正当性)</strong>: 結論がクリックストリームからの証拠（例：学生の行動）によって裏付けられているか。</li>
+<li><i class="fas fa-glasses"></i> <strong class="highlight">Comprehensibility (理解可能性)</strong>: 解釈が明確で、曖昧さがないか。曖昧さがあれば「満たされていない」と判断される。</li>
+</ul>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-clipboard-check"></i>高品質な解釈のためのルーブリック</div>
+<p>LLMが意味のある解釈を生成するように導くため、高品質な解釈が何を意味するかの詳細な記述をプロンプトに直接含めました。このルーブリックは、人間中心の説明の品質に関する先行研究 <a class="reference" href="#ref22">[22, 24]</a> に基づいており、上記の4つの基準（網羅性、正確性、正当性、理解可能性）を概説しています。</p>
+<p>🔍 <strong>各基準の詳細:</strong></p>
+<ul>
+<li><strong>網羅性 (Completeness):</strong> 環境の様々な側面における学習戦略の実行の<span class="highlight">全てのレベル</span>が含まれていることを保証します。例えば、PharmaSimでの9つの戦略全てについて言及があるか、などです。</li>
+<li><strong>正確性 (Correctness):</strong> 記述された実行レベルが<span class="highlight">実際のクリックストリームデータと一致</span>し、言及されていない戦略については実行されていない（unmet）と判断されることを要求します。</li>
+<li><strong>正当性 (Justifiedness):</strong> 結論がクリックストリームからの<span class="highlight">証拠（例：学生の具体的な行動）によって裏付けられている</span>ことを要求します。</li>
+<li><strong>理解可能性 (Comprehensibility):</strong> 解釈が<span class="highlight">明確である</span>ことを保証し、解釈に何らかの曖昧さが含まれる場合は「満たされていない」と見なされます。</li>
+</ul>
+<p>このルーブリックは、LLMの応答を形成し、生成された解釈の品質を評価するために使用されました。</p>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-lightbulb"></i>プロンプティング戦略</div>
+<p>プロンプティングが解釈の品質にどのように影響するかを調べるために、効果的なLLMプロンプティングに関する先行研究に基づいて、以下の4つの戦略を設計しました。各プロンプトには、学生のクリックストリーム、環境コンテキスト、学習戦略、そしてルーブリックが含まれています。詳細なプロンプトはGitHubリポジトリで公開されています。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h5><span class="badge purple">1</span> Zero-shot <a class="reference" href="#ref9">[9]</a></h5>
+<p>LLMに、特定の推論ガイダンスを与えることなく、ルーブリックを満たす解釈を生成するよう指示します。タスクに関するLLMの<span class="highlight">内部能力に完全に依存</span>します。</p>
+<p>例: 「提供されたルーブリックに基づいて、このクリックストリームを解釈してください。」</p>
+</div>
+<div class="info-card glass-card">
+<h5><span class="badge purple">2</span> Chain-of-Thought (CoT) <a class="reference" href="#ref26">[26]</a></h5>
+<p>ステップバイステップの推論を促す部分を追加し、LLMに「<span class="highlight">段階的に考える</span>」よう促しながら、解釈を徐々に構築させます。</p>
+<p>例: 「ステップバイステップで考えながら、このクリックストリームを解釈し、ルーブリックを満たしてください。」</p>
+</div>
+<div class="info-card glass-card">
+<h5><span class="badge purple">3</span> Meta-Prompting <a class="reference" href="#ref28">[28]</a></h5>
+<p>単一のプロンプト内で<span class="highlight">複数ステップの推論指示</span>を導入します。LLMに、戦略の実行レベルを検出し、それを環境コンテキストと学生の行動に結び付け、先行ステップに基づいて最終的な解釈を生成するよう指示します。</p>
+<p>例: 「まず戦略の実行レベルを特定し、次に行動とコンテキストを関連付け、最後にそれらを踏まえてルーブリックを満たす解釈を生成してください。」</p>
+</div>
+<div class="info-card glass-card">
+<h5><span class="badge purple">4</span> Chain-of-Prompts <a class="reference" href="#ref23">[23]</a></h5>
+<p><span class="highlight">3つの連続したプロンプト</span>を使用します：</p>
+<ol>
+<li>戦略の実行レベルを検出する。</li>
+<li>環境コンテキストと学生の行動に接続する。</li>
+<li>最終的な解釈を生成する。</li>
+</ol>
+<p>各ステップで専用のプロンプトを使用し、段階的に情報を精緻化します。</p>
+</div>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-magic"></i>自己改善 (Self-Refinement)</div>
+<p>ルーブリック基準との整合性を向上させるために、どのプロンプティング戦略の後にも適用できる<span class="keyword">自己改善ステップ</span>を導入しました。</p>
+<p>📝 <strong>プロセス:</strong></p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge orange">ステップ1</span> LLMが初期解釈を生成します。
+                </div>
+<div class="pipeline-step">
+<span class="badge orange">ステップ2</span> LLMは、4つのルーブリック基準を対象とした<span class="highlight">二値（Yes/No）の質問</span>を使用して、自身の解釈を評価します。
+                    <ul class="unstyled-list">
+<li><i class="fas fa-tasks"></i> 網羅性、正確性、正当性の最初の3つの基準は、それぞれ複数の質問（特定の環境側面内の戦略ごとに1つ）で評価されます。</li>
+<li><i class="fas fa-spell-check"></i> 理解可能性は、単一の質問で評価されます。</li>
+</ul>
+</div>
+<div class="pipeline-step">
+<span class="badge orange">ステップ3</span> いずれかの応答が否定的（No）だった場合、LLMは<span class="highlight">ターゲットを絞ったフィードバックを生成</span>し、解釈を修正します。
+                </div>
+<div class="pipeline-step" style="margin-bottom: 0;">
+<span class="badge orange">ステップ4</span> このプロセスは繰り返すことができます。本研究では、意味のある改善に十分であると判断した<span class="highlight">3ラウンド</span>を使用しました。
+                </div>
+</div>
+<p style="margin-top: 15px;">初期バージョンを <strong class="highlight">Initial</strong>、最終バージョンを <strong class="highlight">Self-Refined</strong> と呼びます。</p>
+</div>
+</div>
+<h3 class="subsection-title" id="2_3_Evaluating_Interpretations"><i class="fas fa-clipboard-list"></i>2.3 Evaluating Interpretations - 生成された解釈の評価</h3>
+<div class="content-box">
+<p>この最終ステージでは、<span class="keyword">人間の専門家</span>が、前述のルーブリック基準（Table 1参照）を用いて、LLMによって生成された解釈を評価します。各環境について2人の独立した<span class="keyword">学習科学の専門家</span>が、各出力がルーブリックの各次元をどの程度満たしているかを反映する構造化された採点スキームで評価しました。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-tasks"></i>採点スキーム (Grading Scheme)</div>
+<p>2.2で概説したアプローチ（LLMの自己改善プロセス）に従い、専門家による評価を導くために、各ルーブリック基準に対して一連の<span class="highlight">Yes/No形式の質問</span>を使用しました。</p>
+<ul>
+<li>最初の3つの基準 — <strong class="keyword">網羅性 (Completeness)</strong>, <strong class="keyword">正確性 (Correctness)</strong>, <strong class="keyword">正当性 (Justifiedness)</strong> — は、それぞれ9つのターゲットを絞った質問で評価されました。これは、戦略と環境の側面（aspect）のペアごとに1つの質問があることを意味します。
+                    <ul>
+<li>PharmaSim: 1つの側面内に9つの戦略があるため、9つの質問。</li>
+<li>Beer’s Law Lab: 3つの側面それぞれに3つの戦略があるため、 \(3 \times 3 = 9\) の質問。</li>
+</ul>
+</li>
+<li><strong class="keyword">理解可能性 (Comprehensibility)</strong> は、単一の二値（Yes/No）質問で評価されました。</li>
+</ul>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-user-check"></i>採点プロセス (Grading Process)</div>
+<p>クラスタリングによって特定された各行動プロファイルを評価するために、クラスターごとに<span class="highlight">代表的な学生5人</span>をサンプリングしました。これにより、以下の評価インスタンス数が得られました：</p>
+<ul>
+<li>PharmaSim: 30インスタンス ( \(5 \text{学生} \times 6 \text{クラスター}\) )
+                    <ul class="unstyled-list">
+<li><i class="fas fa-info-circle"></i> クラスターは、クリックストリームのk-meansクラスタリングから導出され、最適な \(k\) （クラスター数）はエルボー法で決定されました。</li>
+</ul>
+</li>
+<li>Beer’s Law Lab: 20インスタンス ( \(5 \text{学生} \times 4 \text{クラスター}\) )
+                    <ul class="unstyled-list">
+<li><i class="fas fa-info-circle"></i> クラスター数は先行研究 <a class="reference" href="#ref21">[21]</a> の設定に従いました。</li>
+</ul>
+</li>
+</ul>
+<p>結果として、合計で<span class="highlight">400の解釈</span> (50学生 \(\times\) 4プロンプティング方法 \(\times\) 2自己改善条件) が注釈付けの対象となりました。</p>
+<p class="note-box">
+<span class="note-title"><i class="fas fa-shield-alt"></i>倫理的配慮</span>
+                全ての参加者はインフォームドコンセントを提供し、研究は大学の倫理委員会によって承認されました (Nr. 010-2023 および 062-2021)。
+            </p>
+<p>一貫性を確保するために、まず2人の専門家が各環境から代表的なクリックストリームの解釈を独立して評価しました。具体的には、各行動クラスターから1つのクリックストリームを選択し、4つのプロンプティング戦略すべて（自己改善なし）で解釈させました。これにより、PharmaSimでは24サンプル (6クラスター \(\times\) 4手法)、Beer’s Law Labでは16サンプル (4クラスター \(\times\) 4手法) が得られました。</p>
+<p><span class="keyword">アノテーター間合意度 (Inter-annotator agreement)</span> は、各二値質問に対して<strong class="highlight">Cohen’s \(\kappa\) (カッパ係数)</strong> <a class="reference" href="#ref10">[10]</a> を用いて測定されました。複数の質問で構成される基準については、平均合意度と最小合意度の両方を報告します。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h5><i class="fas fa-pills"></i>PharmaSimの合意度スコア</h5>
+<ul class="unstyled-list">
+<li>\(\kappa_{\text{avg-complete}} = 1.0\)</li>
+<li>\(\kappa_{\text{avg-correct}} = 0.95\) (\(\kappa_{\text{min}} = 0.74\))</li>
+<li>\(\kappa_{\text{avg-justified}} = 0.97\) (\(\kappa_{\text{min}} = 0.86\))</li>
+<li>\(\kappa_{\text{comprehensible}} = 1.0\)</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<h5><i class="fas fa-flask"></i>Beer’s Law Labの合意度スコア</h5>
+<ul class="unstyled-list">
+<li>\(\kappa_{\text{avg-complete}} = 1.0\) (\(\kappa_{\text{min}} = 1.0\))</li>
+<li>\(\kappa_{\text{avg-correct}} = 0.98\) (\(\kappa_{\text{min}} = 0.89\))</li>
+<li>\(\kappa_{\text{avg-justified}} = 0.91\) (\(\kappa_{\text{min}} = 0.70\))</li>
+<li>\(\kappa_{\text{comprehensible}} = 1.0\)</li>
+</ul>
+</div>
+</div>
+<p>高い合意度が得られたため、残りの解釈は1人の専門家によって注釈付けされました。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-calculator"></i>Cohen’s \(\kappa\) (カッパ係数) とは？</div>
+<p>カッパ係数は、2人の評価者（この場合は専門家）がカテゴリ分類（この場合はYes/Noの判断）を行う際に、偶然の一致を除いてどの程度意見が一致しているかを示す統計的指標です。値は通常-1から1の範囲を取り、1に近いほど完全な一致、0は偶然による一致と同程度、負の値は偶然よりも不一致が多いことを示します。一般的に0.6以上で十分な一致、0.8以上で強い一致とされます。</p>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-calculator"></i>スコア計算 (Score Calculation)</div>
+<p>基準レベルのスコアを計算するために、複数質問からなる基準については<span class="highlight">二値応答（Yes=1, No=0）の平均</span>を取りました。単一のYes/No質問で評価される<strong class="keyword">理解可能性 (Comprehensibility)</strong> は直接スコアリングされました（明確な解釈は1、曖昧さがあれば0）。</p>
+<p>各解釈の<strong class="highlight">総合品質スコア (Overall quality score) (0～1)</strong> を計算するために、以下の手順を踏みました：</p>
+<ol class="process-step-list unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">まず、複数質問からなる3つの基準 — <strong class="keyword">網羅性</strong>、<strong class="keyword">正確性</strong>、<strong class="keyword">正当性</strong> — にまたがる9つの質問に対する二値応答を収集しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">各戦略について、その3つの基準スコア（網羅性、正確性、正当性）を乗じることで、<span class="highlight">複合スコア</span>を計算しました。これにより、その戦略の実行レベルが正しく言及され、かつ正当化されていることが保証されます。</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">次に、9つの戦略スコアの平均を取りました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">この中間値に<strong class="keyword">理解可能性 (Comprehensibility)</strong> のスコアを乗じました。これにより、総合品質スコアは理解可能性も保証するものとなります。</div>
+</li>
+</ol>
+<p>💡 <strong>具体例 (架空):</strong> ある戦略Xについて、網羅性=1, 正確性=1, 正当性=0 だった場合、戦略Xの複合スコアは \(1 \times 1 \times 0 = 0\) となります。もし9つの戦略の平均複合スコアが0.8で、理解可能性が1だった場合、総合品質スコアは \(0.8 \times 1 = 0.8\) となります。もし理解可能性が0だった場合は、総合品質スコアも0になります。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="3_Results">
+<h2 class="section-title"><i class="fas fa-chart-bar"></i>3 Results</h2>
+<p>このセクションでは、私たちが開発した <span class="keyword">ClickSight</span> というシステムが、学生のクリックストリームデータ（オンライン学習環境での操作ログ）をどれだけうまく解釈できるかを評価した結果を報告します。評価は、<span class="badge blue">PharmaSim</span>（薬局アシスタント訓練用シミュレーション）と <span class="badge orange">Beer’s Law Lab</span>（中学生向け化学実験シミュレーション）という2つの異なる学習環境のデータを用いて行われました。</p>
+<p>主な評価ポイントは以下の2つです：</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card glass-card">
+<div class="feature-item">
+<i class="fas fa-question-circle fa-2x" style="color:var(--color-primary)"></i>
+<h4>RQ1: プロンプティング戦略の影響</h4>
+<p>LLM（大規模言語モデル）に指示を出す方法（<span class="keyword">プロンプティング戦略</span>）の違いが、解釈の質にどう影響するのか？</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="feature-item">
+<i class="fas fa-question-circle fa-2x" style="color:var(--color-secondary)"></i>
+<h4>RQ2: 自己改善の効果</h4>
+<p>LLM自身に生成した解釈を見直させる（<span class="keyword">自己改善; Self-Refinement</span>）ことで、解釈の質は向上するのか？</p>
+</div>
+</div>
+</div>
+<p>これらの問いに答えることで、LLMが教育分野でのデータ分析にどれだけ貢献できるか、その可能性と限界を探ります。✏️</p>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i>3.1 Comparative Evaluation of Prompting Strategies (RQ1)</h3>
+<p>まず、最初の研究課題 (RQ1) である「どの<span class="keyword">プロンプティング戦略</span>が学生のクリックストリームから学習戦略を最も質の高い形で解釈できるか？」を検証しました。</p>
+<p>実験では、以下の4つの異なるプロンプティング戦略を比較しました：</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="feature-item">
+<i class="fas fa-paper-plane fa-2x" style="color:var(--color-accent1)"></i>
+<h4><span class="badge blue">Zero-shot</span></h4>
+<p>LLMに特にヒントを与えず、タスクを直接指示するシンプルな方法。「このクリックストリームを解釈して」とお願いするイメージです。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="feature-item">
+<i class="fas fa-lightbulb fa-2x" style="color:var(--color-accent2)"></i>
+<h4><span class="badge orange">Chain-of-Thought (CoT)</span></h4>
+<p>LLMに「ステップバイステップで考えて」と促し、段階的に推論させる方法。思考のプロセスを明示的にさせます。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="feature-item">
+<i class="fas fa-sitemap fa-2x" style="color:var(--color-accent3)"></i>
+<h4><span class="badge purple">Meta-Prompting</span></h4>
+<p>1つのプロンプト内に複数の段階的な指示（戦略の検出、文脈との関連付け、最終解釈の生成など）を組み込む方法。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="feature-item">
+<i class="fas fa-project-diagram fa-2x" style="color:var(--color-primary)"></i>
+<h4><span class="badge green">Chain-of-Prompts (CoP)</span></h4>
+<p>複数のプロンプトを順番に使用し、各プロンプトが特定のサブタスク（例：戦略検出、証拠特定、最終報告）を担当する方法。</p>
+</div>
+</div>
+</div>
+<p>これらの戦略で生成された解釈の品質は、私たちが作成した<span class="keyword">評価ルーブリック</span>（2.3節で詳述）に基づいて評価されました。このルーブリックは、以下の4つの基準で構成されています：</p>
+<ul class="unstyled-list">
+<li><span class="highlight">✅ Completeness (網羅性)</span>: 学習戦略の実行レベルが、環境の様々な側面において全て含まれているか。</li>
+<li><span class="highlight">🎯 Correctness (正確性)</span>: 述べられた戦略の実行レベルが、実際のクリックストリームデータと一致しているか。言及されなかった戦略は実行されていないか。</li>
+<li><span class="highlight">🔗 Justifiedness (正当性)</span>: 結論がクリックストリームからの証拠（例：学生の具体的な行動）によって裏付けられているか。</li>
+<li><span class="highlight">📖 Comprehensibility (理解容易性)</span>: 解釈が明確で、曖昧さがないか。</li>
+</ul>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-book-open"></i>評価ルーブリックとは？</div>
+<p>LLMが生成した解釈の「良さ」を測るための評価基準リストです。この研究では、解釈が学習戦略をどれだけ<span class="keyword">網羅的</span>に、<span class="keyword">正確</span>に、<span class="keyword">根拠をもって</span>、そして<span class="keyword">分かりやすく</span>説明できているかを、これらの基準で評価しました。</p>
+</div>
+<h4>📊 Table 2: 各プロンプティング戦略の性能</h4>
+<p>下の表は、各プロンプティング戦略が、PharmaSimとBeer’s Law Labの環境で、各評価基準においてどのような平均スコア（と標準偏差）を示したかをまとめたものです。</p>
+<img alt="Table 2: Performance of different prompting strategies" src="table2.png" style="width: 80%; margin-bottom:15px;"/>
+<p class="reference">Table 2: PharmaSimおよびBeer’s Law Labにおける異なるプロンプティング戦略の性能。スコアは平均値（標準偏差）で示されています。</p>
+<div class="framework-box">
+<div class="framework-title">🔍 Table 2 から読み取れる主なポイント：</div>
+<ul>
+<li>
+<p><strong>🏆 総合スコア (Overall Score):</strong></p>
+<p><span class="badge blue">Zero-shot</span> 戦略が、PharmaSim (<span class="highlight">0.80 ± 0.10</span>) と Beer’s Law Lab (<span class="highlight">0.77 ± 0.05</span>) の両方の環境で<span class="keyword">最高の総合スコア</span>を達成しました。次に高かったのは <span class="badge green">Chain-of-Prompts</span> 戦略でした (PharmaSim: <span class="highlight">0.75 ± 0.05</span>, Beer’s Law Lab: <span class="highlight">0.68 ± 0.07</span>)。</p>
+</li>
+<li>
+<p><strong>✅ Completeness (網羅性):</strong></p>
+<p><span class="badge blue">Zero-shot</span> はここでも強く、両環境で<span class="keyword">完璧なスコア (1.00)</span> を達成しました。これは、学生が取りうる全ての学習戦略を網羅的に特定できたことを意味します。</p>
+<p>一方で、<span class="badge orange">Chain-of-Thought</span> はこの基準で<span class="keyword">最も低いスコア</span>となりました (PharmaSim: <span class="highlight">0.81 ± 0.12</span>, Beer’s Law Lab: <span class="highlight">0.78 ± 0.07</span>)。その理由は、Chain-of-Thought の中間的な推論ステップにおいて、いくつかの戦略が省略されてしまい、結果として不完全な解釈になったためです。</p>
+<div class="bubble-box" style="margin-left: 20px; border-color: var(--color-secondary);">
+<p>✏️ <span class="keyword">Chain-of-Thought</span> の落とし穴：<br/>「順を追って考えてね」と指示すると、途中でいくつかの戦略を「これは重要じゃないかな？」と判断してしまい、最終的な解釈に含めないことがあるようです。</p>
+</div>
+</li>
+<li>
+<p><strong>🎯 Correctness (正確性):</strong></p>
+<p>PharmaSim環境では、<span class="badge purple">Meta-Prompting</span> が他の戦略よりも優れた正確性を示しました (<span class="highlight">0.96 ± 0.05</span>)。これは、Meta-Promptingが単一のプロンプト内で全ての戦略を同時に検出しようとするため、戦略間の関連性や学生の行動の意図をより正確に捉えられたからかもしれません。</p>
+<p>しかし、この利点はBeer’s Law Lab環境では見られませんでした (<span class="highlight">0.93 ± 0.04</span>)。環境の複雑さや特性が影響している可能性があります。</p>
+</li>
+<li>
+<p><strong>🔗 Justifiedness (正当性):</strong></p>
+<p><span class="badge orange">Chain-of-Thought</span> (PharmaSim: <span class="highlight">0.83 ± 0.09</span>, Beer’s Law Lab: <span class="highlight">0.84 ± 0.09</span>) と <span class="badge purple">Meta-Prompting</span> (PharmaSim: <span class="highlight">0.86 ± 0.06</span>, Beer’s Law Lab: <span class="highlight">0.83 ± 0.12</span>) は、この基準でスコアがやや低めでした。これらの戦略から生成された解釈は、しばしば<span class="keyword">出力が短く</span>、クリックストリームからの<span class="highlight">具体的な証拠や根拠が不足</span>している傾向がありました。</p>
+<div class="challenge-box" style="margin-left: 20px;">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i>「なぜそう言えるの？」が重要！</div>
+<p>良い解釈とは、ただ結論を述べるだけでなく、「なぜそう判断したのか」を実際のデータ（この場合は学生のクリック操作）に基づいて示すことが求められます。CoTやMeta-Promptingは、この点が少し弱かったようです。</p>
+</div>
+</li>
+<li>
+<p><strong>📖 Comprehensibility (理解容易性):</strong></p>
+<p>PharmaSim環境では、<span class="keyword">全ての戦略が完璧なスコア (1.00)</span> を達成しました！🎉 これは、どの戦略を使っても非常に分かりやすい解釈が生成されたことを意味します。</p>
+<p>しかし、Beer’s Law Lab環境では、<span class="badge blue">Zero-shot</span> のみがこの完璧さを維持しました (<span class="highlight">1.00 ± 0.00</span>)。他の戦略 (CoT: <span class="highlight">0.85 ± 0.37</span>, Meta-Prompting: <span class="highlight">0.85 ± 0.37</span>, CoP: <span class="highlight">0.95 ± 0.22</span>) では、LLMに「学生の行動を自然言語で記述してください」と指示したにもかかわらず、時折、生の関数形式のクリックストリーム要素（例: <code>explore(variable=width, value_changes=increase from 1.0cm to 1.2cm)</code> のような技術的な記述）が出力に含まれてしまい、人間にとっての<span class="keyword">読解性を損ねる</span>場合がありました。</p>
+<div class="bubble-box" style="margin-left: 20px; border-color: var(--color-accent1);">
+<p>🤖 LLMの「クセ」？<br/>「分かりやすく説明してね！」とお願いしても、Beer's Law Labのような少し技術的なデータの場合、つい専門用語や生のデータ形式が混じってしまうことがあるようです。Zero-shotは、なぜかこの点でうまくやってのけました。</p>
+</div>
+</li>
+</ul>
+</div>
+<p>これらの結果から、現状では<span class="badge blue">Zero-shot</span>プロンプティングが、特別な工夫なしに最もバランスの取れた高品質な解釈を生成する傾向があると言えそうです。</p>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i>3.2 Effect of Self-Refinement (RQ2)</h3>
+<p>次に、2番目の研究課題 (RQ2) である「<span class="keyword">自己改善 (Self-Refinement)</span> が解釈の品質にどのような影響を与えるか？」を調査しました。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-magic"></i>自己改善 (Self-Refinement) とは？</div>
+<p>LLMが一度生成した解釈を、設定された評価基準（この研究では前述のルーブリック）に基づいて<span class="highlight">自分自身で評価し、問題点を見つけて修正する</span>プロセスです。人間が文章を推敲したり、自分の解答を見直したりするのに似ていますね。この研究では、LLMに「完成度は？」「正確性は？」「根拠は十分？」「分かりやすい？」といった質問を投げかけ、もし「いいえ」という回答があれば、その部分を改善するように促しました。このプロセスを3回繰り返しました。</p>
+</div>
+<p>この自己改善プロセスを、RQ1の評価で比較的良好な成績を収めた2つの戦略、<span class="badge blue">Zero-shot</span> と <span class="badge green">Chain-of-Prompts</span> で生成された解釈に適用しました。</p>
+<h4>📊 Figure 2: 自己改善前後の総合スコアの変化</h4>
+<p>下の図 (Figure 2) は、Zero-shot戦略とChain-of-Prompts戦略について、自己改善を行う前 (Initial) と行った後 (Self-Refined) の総合スコアを比較したものです。</p>
+<img alt="Figure 2: Overall scores of Initial and Self-Refined interpretations" src="overall_scores_initial_self_refined.jpg" style="width: 70%; margin-bottom:15px;"/>
+<p class="reference">Fig. 2: PharmaSimおよびBeer’s Law Labにおいて、Zero-shotおよびChain-of-Promptsプロンプティング戦略を用いて生成された初期解釈 (Initial) と自己改善後解釈 (Self-Refined) の総合スコア。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card">
+<h4 style="color:var(--color-accent1);"><i class="fas fa-arrow-alt-circle-up"></i> Chain-of-Prompts (CoP) の場合</h4>
+<p>自己改善は <span class="badge green">Chain-of-Prompts</span> 戦略にとって<span class="keyword">明確なプラスの効果</span>をもたらしました！</p>
+<ul>
+<li>PharmaSim環境: 初期スコア <span class="highlight">0.75</span> → 自己改善後 <span class="highlight">0.80</span> <i class="fas fa-long-arrow-alt-up" style="color:green;"></i></li>
+<li>Beer’s Law Lab環境: 初期スコア <span class="highlight">0.68</span> → 自己改善後 <span class="highlight">0.72</span> <i class="fas fa-long-arrow-alt-up" style="color:green;"></i></li>
+</ul>
+<p>特に、<span class="keyword">Completeness (網羅性)</span> と <span class="keyword">Correctness (正確性)</span> の点で改善が見られました。これは、LLMが自身の解釈を見直すことで、見落としていた戦略を捉え直したり、不正確な記述を修正したりできたことを示唆しています。</p>
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p>✨ <span class="keyword">CoP + 自己改善 = パワーアップ！</span><br/>Chain-of-Promptsは、自己改善プロセスと相性が良いようです。段階的に解釈を構築するCoPの特性が、自己評価と修正のステップを効果的に機能させたのかもしれません。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 style="color:var(--color-secondary);"><i class="fas fa-exchange-alt"></i> Zero-shot の場合</h4>
+<p><span class="badge blue">Zero-shot</span> 戦略に対する自己改善の効果は、一様ではありませんでした。</p>
+<ul>
+<li>PharmaSim環境: 初期スコア <span class="highlight">0.80</span> → 自己改善後 <span class="highlight">0.72</span> <i class="fas fa-long-arrow-alt-down" style="color:red;"></i></li>
+<li>Beer’s Law Lab環境: 初期スコア <span class="highlight">0.77</span> → 自己改善後 <span class="highlight">0.77</span> <i class="fas fa-arrows-alt-h" style="color:gray;"></i> (変化なし)</li>
+</ul>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-brain"></i> ハルシネーションの罠</div>
+<p>PharmaSim環境では、自己改善によってZero-shotの性能が<span class="keyword">わずかに低下</span>してしまいました。これは、LLMがルーブリックに基づいて自己評価を行う際に<span class="highlight">「ハルシネーション（幻覚）」</span>を起こしたためです。つまり、実際には問題ない部分を問題があると誤認したり、存在しない情報を元に修正を試みたりした可能性があります。</p>
+</div>
+<p>Beer’s Law Lab環境では、自己改善は<span class="keyword">効果がありませんでした</span>。これは、LLMが初期の出力（Zero-shotで生成された解釈）が既に全ての評価基準を満たしていると<span class="highlight">誤って判断</span>してしまったためです。「完璧だ！」と思い込んでしまい、改善の余地なしと結論づけたわけです。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary);">
+<p>🤔 <span class="keyword">Zero-shot + 自己改善 = 必ずしも良くならない？</span><br/>元々性能が高いZero-shotの場合、自己改善が逆に足を引っ張ったり、効果がなかったりすることがあるようです。LLMの自己評価能力にはまだ限界があるのかもしれません。</p>
+</div>
+</div>
+</div>
+<p>これらの結果から、<span class="keyword">自己改善</span>は万能薬ではなく、プロンプティング戦略やタスクの特性によって効果が異なることが分かりました。特に、LLMが自身の出力を正確に評価する能力が、自己改善の成否を左右する重要な鍵となりそうです。今後の研究では、より洗練された自己評価・改善メカニズムの開発が求められるでしょう。📝</p>
+</div>
+<div class="section-card" id="4_Conclusion">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i>4 Conclusion</h2>
+<!-- 導入: このセクションの目的と論旨 -->
+<div class="content-box" style="text-align: center; margin-bottom: 25px;">
+<p style="font-size: 16px; font-family: 'Yomogi', cursive;">
+<span class="highlight">この論文の締めくくりとして、私たちが提案する <strong>ClickSight</strong> フレームワークの主な成果と、今後の研究の方向性についてまとめていきましょう！</span> 📝✨
+        </p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">このセクションでは、本研究で開発した<strong style="color: var(--color-primary);">ClickSight</strong>という手法の有効性、実験で得られた知見、そして将来的な研究の展望について解説します。ClickSightがどのように学生の学習行動理解に貢献できるのか、その核心に迫ります。</p>
+</div>
+<!-- ClickSight とルーブリックの紹介 -->
+<div class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-microscope"></i>ClickSightの核心：LLMによるクリックストリーム解釈</div>
+<div class="content-box">
+<p style="font-family: 'Zen Kurenaido', sans-serif;">この論文では、<span class="keyword">ClickSight</span>という新しいフレームワークを提案しました。これは、学生のデジタル学習環境での<strong style="color: var(--color-secondary);">クリックストリームデータ</strong>（どんな操作をしたかの記録ですね！🖱️💻）を、<strong style="color: var(--color-accent1);">大規模言語モデル（LLM）</strong>を使って解釈するためのものです。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.05); border: 1px dashed var(--color-primary);">
+<i class="fas fa-brain" style="font-size: 30px; color: var(--color-primary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-primary); margin-bottom: 5px;">ClickSightとは？</h4>
+<p style="font-size: 13px; font-family: 'Zen Kurenaido', sans-serif;">学生の複雑なクリック操作の連続（クリックストリーム）を、文脈を理解できるLLM（<span class="badge blue">in-context LLM</span>）が分析し、その行動の背景にある<strong style="color: var(--color-accent2);">学習戦略</strong>を明らかにするフレームワークです。これにより、個々の学生がどのように学んでいるのかを深く理解することを目指します。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.05); border: 1px dashed var(--color-secondary);">
+<i class="fas fa-ruler-combined" style="font-size: 30px; color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-secondary); margin-bottom: 5px;">人間中心の評価基準</h4>
+<p style="font-size: 13px; font-family: 'Zen Kurenaido', sans-serif;">解釈の質を評価するために、<strong style="color: var(--color-accent1);">人間中心の説明理論</strong>に基づいた<span class="keyword">ルーブリック</span>（評価基準表）も開発しました。これにより、LLMの解釈が人間にとってどれだけ分かりやすく、適切かを客観的に測ることができます。</p>
+</div>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説コーナー 📖</div>
+<ul style="font-family: 'Zen Kurenaido', sans-serif; list-style-type: '📌 '; padding-left: 20px;">
+<li><strong style="color: var(--color-primary);">ClickSight (クリックサイト)</strong>: この論文で提案された、学生のクリックストリーム（オンライン学習中の操作履歴）を解釈するために、大規模言語モデル（LLM）を活用するフレームワークです。<span class="highlight">文脈情報（in-context）を重視する点</span>が特徴です。</li>
+<li><strong style="color: var(--color-primary);">クリックストリーム (Clickstreams)</strong>: 学生がデジタル学習プラットフォーム上で行う一連のクリック操作やナビゲーション、インタラクションの記録データのこと。例えば、「講義ビデオAを再生」→「練習問題Bに挑戦」→「解説ページCを閲覧」といった行動の連続です。</li>
+<li><strong style="color: var(--color-primary);">文脈内LLMフレームワーク (in-context LLM framework)</strong>: 大規模言語モデル（LLM）に、特定のタスクを処理させる際に、そのタスクに関連する<span class="highlight">具体的な文脈情報</span>（例：個々の学生のクリックストリームデータ、事前に定義された学習戦略のリストなど）をプロンプト（指示文）内に直接含めて提供するアプローチです。これにより、LLMはより状況に応じた適切な出力を生成しやすくなります。</li>
+<li><strong style="color: var(--color-primary);">人間中心の説明理論 (human-centered explanation theory)</strong>: AIシステムなどが生成する「説明」が、それを受け取る人間にとってどれだけ理解しやすく、有用で、信頼できるか、といった<span class="highlight">人間の認知特性やニーズを重視する理論</span>です。この研究では、LLMによる解釈の質を評価するためのルーブリック（評価基準）を作成する際の理論的基盤となっています。</li>
+<li><strong style="color: var(--color-primary);">ルーブリック (Rubric)</strong>: 特定の成果物やパフォーマンスの質を評価するための一連の基準や尺度を明確に示した評価ツールのこと。この論文では、LLMが生成したクリックストリームの解釈が、Completeness（網羅性）、Correctness（正確性）、Justifiedness（正当性）、Comprehensibility（理解容易性）の観点からどれだけ優れているかを評価するために用いられました。</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- 評価した内容 -->
+<div class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-tasks"></i>評価の枠組み：プロンプティング戦略と自己改善</div>
+<div class="content-box">
+<p style="font-family: 'Zen Kurenaido', sans-serif;">ClickSightの性能を客観的に検証するために、以下の重要な要素について詳細な評価を行いました。</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr;">
+<div class="info-card glass-card">
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent1); text-align:center;"><i class="fas fa-lightbulb"></i> プロンプティング戦略の比較 🤖✍️</h4>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">LLMにどのように指示を与えるか、つまり<span class="keyword">プロンプティング戦略</span>によって、生成される解釈の質がどのように変化するかを検証しました。具体的には、<span class="badge orange">4つの異なる戦略</span>（Zero-shot, Chain-of-Thought, Meta-Prompting, Chain-of-Prompts）を比較検討しました。</p>
+</div>
+<div class="info-card glass-card">
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent2); text-align:center;"><i class="fas fa-sync-alt"></i> 自己改善 (Self-refinement) の効果 ✨🔄</h4>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">LLMが一度生成した解釈を、<span class="keyword">自ら評価し、必要に応じて修正・改善するプロセス（自己改善）</span>が、最終的な解釈の品質向上にどの程度貢献するのかを調査しました。</p>
+</div>
+</div>
+<p style="margin-top: 15px; font-family: 'Zen Kurenaido', sans-serif;">これらの評価は、薬学シミュレーションである<strong style="color: var(--color-primary);">PharmaSim</strong>と、化学実験シミュレーションである<strong style="color: var(--color-primary);">Beer’s Law Lab</strong>という、<span class="highlight">2つの異なるドメインの教育環境</span>で実施されました。これにより、ClickSightが特定の分野に限定されず、多様な学習状況で応用可能かどうかを探りました。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説コーナー 📖</div>
+<ul style="font-family: 'Zen Kurenaido', sans-serif; list-style-type: '📌 '; padding-left: 20px;">
+<li><strong style="color: var(--color-primary);">プロンプティング戦略 (Prompting Strategies)</strong>: LLMにタスクを実行させるために与える指示（プロンプト）の設計方法や工夫のこと。例えば、単純に質問するだけでなく、思考プロセスを促したり、役割を与えたりするなど、様々な戦略があります。この研究では、Zero-shot、Chain-of-Thought、Meta-Prompting、Chain-of-Promptsという4つの戦略が比較されました。</li>
+<li><strong style="color: var(--color-primary);">自己改善 (Self-refinement)</strong>: LLMが自身で生成した出力（この場合はクリックストリームの解釈）を、<span class="highlight">事前に定義された基準（この研究ではルーブリック）に基づいて評価し、問題点があればそれを修正するプロセス</span>のことです。これにより、より質の高い出力を目指します。</li>
+<li><strong style="color: var(--color-primary);">教育環境 (Educational Environments)</strong>: この論文では、PharmaSim（薬学シミュレーション）とBeer's Law Lab（化学実験シミュレーション）という2つの異なる学習プラットフォームを指します。これらは学生がインタラクティブに学習を進めることができるデジタル環境です。</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- 主な結果 -->
+<div class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-chart-line"></i>実験結果：ClickSightの可能性と課題 📊</div>
+<div class="content-box">
+<p style="font-family: 'Zen Kurenaido', sans-serif;">実験の結果、いくつかの重要な発見がありました。</p>
+<div class="bubble-box">
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-primary); display: flex; align-items: center;"><i class="fas fa-check-circle" style="color: var(--color-accent1); margin-right: 8px;"></i>ClickSightの有効性</h4>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">ClickSightを用いることで、LLMは<strong style="color: var(--color-accent1);">質の高い解釈を生成できる</strong>ことが示されました。特に、<span class="keyword">Zero-shotプロンプティング</span>（LLMに特別な指示や例を与えずにタスクを実行させる方法）が最も良い成績を収めました。</p>
+<div class="definition-box" style="margin-top: 10px;">
+<div class="definition-title"><i class="fas fa-search"></i> Zero-shotプロンプティングとは？</div>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">Zero-shotプロンプティングとは、LLMに対してタスクの具体例（few-shot learningにおける例示）を<span class="highlight">一切与えずに</span>、タスクの指示だけを与えて応答させる手法です。LLMが持つ汎用的な知識や推論能力に依存する形でタスクを解決しようとします。例えば、「このクリックストリームデータから学習戦略を解釈してください」という指示だけで、過去の類似例などを見せることなくLLMに解釈を生成させるのがZero-shotです。</p>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 25px;">
+<div class="challenge-title" style="font-family: 'Kaisei Decol', serif; display: flex; align-items: center;"><i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>自己改善の効果は限定的</div>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">一方で、<span class="keyword">自己改善</span>の効果は<strong style="color: var(--color-secondary);">一様ではありませんでした</strong>。改善が見られる場合もありましたが、必ずしも全てのケースで品質が向上するわけではなく、タスクの特性に合わせた改善手法の必要性が示唆されました。これは、LLMが自身の誤りを必ずしも正確に認識・修正できるわけではないことを意味します。</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif; margin-top: 10px;"> 🤔 なぜ自己改善の効果が限定的だったのでしょうか？
+                <ul style="font-family: 'Zen Kurenaido', sans-serif; list-style-type: '➡️ '; padding-left: 20px;">
+<li>LLMが自身の出力の誤りを<span class="highlight">正確に特定できなかった</span>可能性がある。</li>
+<li>改善しようとした結果、<span class="highlight">新たな誤り（ハルシネーションなど）を生んでしまった</span>ケースも考えられる。</li>
+<li>現在の自己改善の質問やフィードバックの仕組みが、この特定のタスク（クリックストリーム解釈）には<span class="highlight">最適化されていなかった</span>かもしれない。</li>
+</ul>
+</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- 今後の展望 -->
+<div class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-rocket"></i>今後の展望：さらなる進化に向けて 🚀</div>
+<div class="content-box">
+<p style="font-family: 'Zen Kurenaido', sans-serif;">本研究はZero-shotプロンプティングに焦点を当てましたが、今後の研究では以下のような方向性が考えられます。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<div style="text-align: center; margin-bottom: 10px;">
+<i class="fas fa-lightbulb-on" style="font-size: 28px; color: var(--color-accent3);"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent3); text-align:center;">Few-shot設定の探求 📚</h4>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">LLMにいくつかの<strong style="color: var(--color-accent2);">解釈の例（few-shot）</strong>を提示することで、さらに解釈の質が向上するかどうかを検証します。これにより、LLMがタスクのニュアンスをより深く理解できる可能性があります。</p>
+<div class="definition-box" style="margin-top: 10px;">
+<div class="definition-title"><i class="fas fa-search"></i> Few-shot設定とは？</div>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">Few-shot設定とは、LLMにタスクを実行させる際に、<span class="highlight">少数の具体例（数個〜数十個程度）をプロンプトに含めて提示する</span>手法です。これにより、LLMは提示された例からタスクのパターンや期待される出力形式を学習し、より精度の高い応答を生成することが期待されます。Zero-shotが例を全く見せないのに対し、Few-shotは「お手本」を少し見せるイメージです。</p>
+</div>
+</div>
+<div class="info-card">
+<div style="text-align: center; margin-bottom: 10px;">
+<i class="fas fa-users" style="font-size: 28px; color: var(--color-accent1);"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent1); text-align:center;">ステークホルダーへの適合 👨‍🏫👩‍🎓</h4>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">生成される解釈を、<strong style="color: var(--color-accent2);">教師や学生といった実際の利用者（ステークホルダー）</strong>にとって、より分かりやすく、役立つ形に調整していく必要があります。例えば、教師には指導改善のための示唆を、学生には自己学習を促すフィードバックを提供するなど、目的に応じたアウトプット形式が求められます。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- 総括 -->
+<div class="framework-box" style="margin-top: 20px;">
+<div class="framework-title" style="font-family: 'Kaisei Decol', serif; font-size: 20px; text-align: center;"><i class="fas fa-award"></i>ClickSightの意義と将来性</div>
+<p style="font-family: 'Zen Kurenaido', sans-serif; text-align: center; font-size: 16px;">
+            総じて、ClickSightは、LLMが<strong style="color: var(--color-primary);">インタラクションデータ（学生の操作履歴など）から理論に基づいた洞察を生成する</strong>大きな可能性を秘めていることを示しています。
+        </p>
+<div style="text-align: center; margin-top: 15px;">
+<span class="badge purple" style="font-size: 14px;">教育データ分析の新しい地平を切り開く！</span> ✨
+        </div>
+<p style="font-family: 'Zen Kurenaido', sans-serif; margin-top: 15px;">
+            この研究は、複雑な学習行動の理解を自動化し、より個別化された教育支援を実現するための重要な一歩と言えるでしょう。LLMの力を借りて、これまで見過ごされてきた学生の学びの機微を捉えることが、今後の教育工学における大きなテーマとなるはずです。
+        </p>
+</div>
+<!-- 謝辞 -->
+<div class="subsection-title" style="font-family: 'Yomogi', cursive; margin-top: 30px;"><i class="fas fa-hands-helping"></i>Acknowledgements (謝辞)</div>
+<div class="content-box">
+<p style="font-family: 'Zen Kurenaido', sans-serif;">このプロジェクトは、<strong style="color: var(--color-primary);">スイス連邦教育・研究・イノベーション事務局（SERI）</strong>から多大な資金援助を受けて実施されました。</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-landmark" style="color: var(--color-accent2); font-size: 24px; margin-right: 5px;"></i>
+<span style="font-family: 'Kaisei Decol', serif; font-size: 16px;">Swiss State Secretariat for Education, Research and Innovation (SERI)</span>
+<i class="fas fa-handshake" style="color: var(--color-accent1); font-size: 24px; margin-left: 5px;"></i>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

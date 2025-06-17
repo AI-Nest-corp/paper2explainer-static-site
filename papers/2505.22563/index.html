@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Do Large Language Models Think Like the Brain? Sentence-Level Evidence from fMRI and Hierarchical Embeddings解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">Do Large Language Models Think Like the Brain? Sentence-Level Evidence from fMRI and Hierarchical Embeddings</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-file-alt"></i> Abstract</h2>
+<div class="glass-card" style="margin-bottom: 20px; padding: 20px; border-left: 5px solid var(--color-secondary);">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.3em; text-align: center; color: var(--color-primary); margin-bottom:15px;">
+<i class="fas fa-bullseye"></i> <strong>このAbstractの核心：LLMと脳は、言葉をどう理解しているの？</strong>
+</p>
+<p style="text-align: left; line-height: 1.6;">
+            この論文のAbstract（要旨）では、<span class="keyword">大規模言語モデル (LLM)</span> <i class="fas fa-robot" style="color: var(--color-secondary);"></i> と <span class="keyword">人間の脳</span> <i class="fas fa-brain" style="color: var(--color-primary);"></i> が、私たちが日常的に行っている「言語の理解」という複雑なタスクにおいて、<span class="highlight">果たして同じような計算原理で動いているのか？</span>という根源的で重要な問いを探求しています。特に、LLMがまるで脳のように振る舞うパターンが観察されることがあるけれど、それは単にLLMが巨大化したから（<span class="keyword">スケーリング</span>）なのか、それとももっと深いレベルで人間の言語処理の仕組み（<span class="keyword">アーキテクチャ</span>）と似ているからなのか？という疑問に焦点を当てています。
+        </p>
+<p style="text-align: left; line-height: 1.6;">
+            そのために、この研究では、特に<span class="highlight">文レベルの神経メカニズム</span>に着目し、LLM内部の階層的な情報表現（<span class="keyword">階層的表現</span>）が、人間が文を理解する際の脳活動のダイナミックな変化と、どのように関連しているかを体系的に調査した、と述べています。
+        </p>
+</div>
+<div class="note-box" style="margin-bottom: 25px;">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 主な目的と論旨</p>
+<p>このAbstractの主な目的は、LLMと人間の脳が言語を処理する際に、特に<span class="keyword">文レベルの理解</span>において、計算原理が類似しているかどうかを検証することです。</p>
+<p>論旨としては、LLMの性能向上に伴い、その内部の<span class="keyword">情報表現の構造</span>が人間の脳の階層構造に近づき、特に高度な意味理解のレベルで機能的・解剖学的な対応が強まることを示唆しています。</p>
+</div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-question-circle"></i> 根本的な問い：LLMと脳は同じように「考えている」のか？</h3>
+<p>この研究は、認知神経科学とAIの分野における非常に重要かつ基本的な疑問から始まります。</p>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top: 15px; margin-bottom: 15px;">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 1.2em; color: var(--color-dark);">
+<i class="fas fa-comments" style="color: var(--color-primary);"></i> 「大規模言語モデル（LLM）と人間の脳は、<span class="highlight">類似した計算原理</span>に基づいて言語を処理しているのだろうか？」
+            </p>
+</div>
+<p>LLMが時折見せる、まるで人間の脳のようなパターン。これは一体どこから来るのでしょうか？</p>
+<div class="two-column">
+<div class="column glass-card" style="border: 2px dashed var(--color-secondary); padding: 15px;">
+<p style="text-align: center; font-weight: bold; color: var(--color-secondary); margin-bottom: 10px;">仮説１：スケールの問題？ <i class="fas fa-expand-arrows-alt"></i></p>
+<p>LLMが巨大化し、大量のデータで学習した結果、副次的に脳のような特性が現れただけなのか？</p>
+</div>
+<div class="column glass-card" style="border: 2px dashed var(--color-accent1); padding: 15px;">
+<p style="text-align: center; font-weight: bold; color: var(--color-accent1); margin-bottom: 10px;">仮説２：アーキテクチャの類似？ <i class="fas fa-cogs"></i></p>
+<p>それとも、LLMの設計自体が、人間の言語処理のアーキテクチャと本質的に似ているからなのか？</p>
+</div>
+</div>
+<p>この研究は、特に後者の可能性を探るため、<span class="keyword">文レベルでの神経メカニズム</span>に焦点を当てています。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 研究アプローチ：LLMの階層表現と脳活動の比較</h3>
+<p>この疑問に答えるため、研究チームは以下のステップで調査を進めました。</p>
+<div class="pipeline">
+<div class="pipeline-step" style="border-color: var(--color-accent2);">
+<p><span class="badge purple">1</span> <strong>LLMの選定と階層的表現の抽出</strong> 📝</p>
+<p>公開されている<span class="keyword">14種類のLLM</span>を選び出し、それぞれのモデルが文章を処理する際に内部で形成する<span class="keyword">階層的埋め込み (hierarchical embeddings)</span> を抽出しました。</p>
+<div class="note-box" style="background-color: rgba(149, 117, 205, 0.05); border-left-color: var(--color-accent2);">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-brain"></i> 階層的埋め込みとは？</p>
+<p>LLMは通常、複数の層（レイヤー）から構成されています。入力された文は、これらの層を通過するごとに、より抽象的で複雑な情報表現へと変換されていきます。初期の層では単語の表面的な特徴を、中間の層では文法構造を、そして後段の層では文全体の意味内容を捉える、といった具合に、階層的に情報を処理します。この各層における文の表現を「埋め込み」と呼びます。</p>
+</div>
+</div>
+<div class="pipeline-step" style="border-color: var(--color-accent1);">
+<p><span class="badge green">2</span> <strong>fMRIデータの収集</strong> 🧠</p>
+<p>人間が<span class="keyword">自然な物語（ナラティブストーリー）</span>を聞いている最中の脳活動を<span class="keyword">fMRI (機能的磁気共鳴画像法)</span> で計測したデータを使用しました。</p>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.05); border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-info-circle"></i> fMRIとは？</p>
+<p>脳の特定の部分が活動すると、その部分の血流量が増加します。fMRIは、この血流の変化（BOLD信号）を捉えることで、脳のどの領域が活発に動いているかを間接的に計測する技術です。これにより、人間が言語を理解する際に、脳のどの部分がどのように活動しているかを調べることができます。</p>
+</div>
+</div>
+<div class="pipeline-step" style="border-color: var(--color-primary);">
+<p><span class="badge blue">3</span> <strong>文レベル神経予測モデルの構築</strong> 📊</p>
+<p>LLMの各層の階層的埋め込みと、人間が文を理解した際のfMRIデータ（脳活動）を比較しました。具体的には、LLMの埋め込みを使って、脳の特定領域の活動を予測する<span class="keyword">文レベル神経予測モデル</span>を構築しました。</p>
+</div>
+<div class="pipeline-step" style="border-color: var(--color-secondary);">
+<p><span class="badge orange">4</span> <strong>相関の分析</strong> 🔗</p>
+<p>構築した予測モデルを用いて、LLMのどの層の表現が、脳のどの領域の活動と<span class="keyword">最も強く相関しているか</span>を精密に特定しました。</p>
+</div>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+<img alt="実験デザインの概要図" class="section-image" src="experimental_design_llms_human_brain_correlation.jpg" style="width: 70%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p class="reference" style="font-size: 0.9em; color: var(--color-gray); margin-top: 5px;">図1: 実験デザインの概略。LLMと実際の人間が物語（「星の王子さま」）に触れ、LLMと言語処理における人間の脳との相関関係を比較することを目指しています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> 明らかになったこと：LLMの進化と脳との類似性</h3>
+<p>この比較分析の結果、以下の重要な点が明らかになりました。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card" style="border-top: 5px solid var(--color-primary);">
+<i class="fas fa-brain fa-2x" style="color: var(--color-primary); margin-bottom:10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-primary);">モデル性能と脳のような階層性</h4>
+<p>LLMの<span class="highlight">性能が向上する</span>と、その内部の<span class="keyword">表現アーキテクチャ</span>（情報の持ち方や処理の仕方）が、<span class="highlight">人間の脳の階層構造</span>に近づくように進化していくことが示されました。</p>
+</div>
+<div class="feature-item glass-card" style="border-top: 5px solid var(--color-secondary);">
+<i class="fas fa-layer-group fa-2x" style="color: var(--color-secondary); margin-bottom:10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary);">高次の意味的抽象レベルでの対応</h4>
+<p>特に、<span class="keyword">より高度な意味的抽象レベル</span>（単なる単語の意味だけでなく、文脈全体から生まれる複雑な意味合いなど）において、LLMと脳の間で<span class="highlight">機能的・解剖学的な対応</span>がより強くなることが見出されました。</p>
+<div class="note-box" style="background-color: rgba(255, 126, 95, 0.05); border-left-color: var(--color-secondary); margin-top:10px; text-align:left;">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-puzzle-piece"></i> 機能的・解剖学的対応とは？</p>
+<p><span class="keyword">機能的対応</span>とは、LLMのある層の活動パターンが、脳の特定の領域の活動パターンと似ている（同じような情報処理タスクを担っている可能性がある）ことを指します。<br/><span class="keyword">解剖学的対応</span>とは、LLMの階層構造（例：浅い層から深い層へ）が、脳の情報処理経路（例：初期視覚野から高次認知領域へ）と構造的に似ていることを指します。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 30px; padding: 20px;">
+<p class="challenge-title" style="font-family: 'Yomogi', cursive; font-size: 1.3em; display: flex; align-items: center;"><i class="fas fa-flag-checkered fa-fw" style="margin-right: 10px;"></i> Abstractの結論</p>
+<p style="line-height: 1.7;">この研究は、LLMの性能が向上するにつれて、その内部表現が人間の脳の言語処理メカニズム、特に階層的な処理様式とより強く整合するようになることを示唆しています。これは、LLMの「脳らしさ」が単なる規模の拡大によるものではなく、人間の言語処理アーキテクチャとのより深いレベルでの収斂を反映している可能性を示しています。</p>
+<p style="margin-top: 15px;">言い換えれば、<span class="highlight">より賢いLLMは、より脳に近い形で文の意味を理解しているのかもしれない</span>、ということです。</p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-microscope"></i> 1 Introduction</h2>
+<div class="glass-card" style="margin-bottom: 25px;">
+<p style="text-align: center; font-size: 16px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> このセクションのゴール <i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i>
+</p>
+<p>
+            この「はじめに」のセクションでは、<span class="highlight">大規模言語モデル (LLM) と人間の脳が言語を処理する仕組みにどれほど似ているのか？</span>という大きな問いを探求します。特に、LLMの内部表現と脳活動の関連性についてのこれまでの研究と、まだ解明されていない課題を整理し、本研究がどのような新しい視点からこの問題にアプローチするのかを説明します。
+        </p>
+</div>
+<div class="content-box">
+<p><i class="fas fa-brain" style="color: var(--color-primary);"></i><i class="fas fa-link" style="color: var(--color-gray); margin: 0 5px;"></i><i class="fas fa-robot" style="color: var(--color-secondary);"></i> <span class="keyword">人工知能 (AI)</span> と <span class="keyword">神経科学</span> の融合は、特に <span class="keyword">大規模言語モデル (LLMs; Large Language Models)</span> と人間の <span class="keyword">神経言語処理 (human neural language processing)</span> の類似性を理解する上で、最先端の研究フロンティアとして注目されています。
+            <span class="reference">(Toneva and Wehbe, 2019; Abnar et al., 2019; Schrimpf et al., 2021)</span>
+</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説</div>
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive;">大規模言語モデル (LLM)</strong>: <br/>
+                膨大な量のテキストデータで学習されたAIモデルの一種です。人間が使うような自然な言葉を理解したり、生成したりする能力に長けています。例えば、質問応答、文章作成、翻訳など、様々なタスクに応用されています。 (例: GPTシリーズ、BERTなど)
+            </p>
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive;">神経言語処理 (Neural Language Processing)</strong>: <br/>
+                人間の脳がどのように言語を理解し、生成し、学習するのか、その神経メカニズムを研究する分野です。fMRIやEEGといった脳機能イメージング技術を用いて、言語活動中の脳の働きを調べます。
+            </p>
+</div>
+<p>これまでの研究 <span class="reference">(Anderson et al., 2021; Caucheteux et al., 2021)</span> では、LLMが学習によって獲得する内部表現と、人間が言語を処理する際の神経応答との間に、興味深い相関関係があることが示されてきました。特に、<span class="highlight">特徴抽出</span>や<span class="highlight">表現類似性</span>の観点での関連が指摘されています。
+            <span class="reference">(Caucheteux and King, 2022; Hosseini et al., 2024)</span>
+</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<p style="text-align: center;"><i class="fas fa-cogs fa-2x" style="color: var(--color-accent1);"></i></p>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1); text-align:center;">特徴抽出 (Feature Extraction)</h4>
+<p>LLMも人間の脳も、入力された言語情報から重要な特徴（単語の意味、文法構造など）を抽出するプロセスがあると考えられています。</p>
+</div>
+<div class="info-card">
+<p style="text-align: center;"><i class="fas fa-equals fa-2x" style="color: var(--color-accent2);"></i></p>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent2); text-align:center;">表現類似性 (Representational Similarity)</h4>
+<p>LLMの内部状態（ある層の活性化パターンなど）と、脳の特定領域の活動パターンが、似たような情報を表現している度合いを比較する分析手法です。これによって、LLMと脳が情報をどのように符号化しているかの類似性を評価できます。</p>
+</div>
+</div>
+<p>これらの発見 <span class="reference">(Sun et al., 2021)</span> は、LLMと人間の脳が、<span class="keyword">類似の言語的特徴 (comparable linguistic features)</span> を利用している可能性を示唆しています。その証拠として、LLMの表現が人間の神経活動パターンに対して<span class="highlight">線形マッピング可能 (linear mappability)</span>であることが挙げられます。</p>
+<div class="bubble-box">
+<p><i class="fas fa-pencil-ruler" style="color: var(--color-primary);"></i> <strong style="font-family: 'Yomogi', cursive;">線形マッピング可能性とは？</strong><br/>
+            簡単に言うと、LLMが作り出す「言葉の地図」（専門的には「表現」や「埋め込み表現」）を、単純な数学的操作（拡大・縮小、回転、平行移動など、グラフで言うところの一次関数のようなもの）だけで、人間の脳活動が示す「言葉の地図」に変換できる、という意味です。もしこれが可能なら、LLMと脳は、言葉の意味を似たような形で整理・配置しているかもしれない、と考えられるわけです。
+            </p>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> これまでの研究の課題</div>
+<p>しかしながら、これらの観察結果は、<span class="highlight">「LLMがどのようにして脳のような処理能力を獲得するのか？」</span>という点において、そのメカニズム、つまり<span class="keyword">「どのような重要な特性 (critical properties)」</span>がそれを可能にしているのかという説明が不足しています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<img alt="Figure 1: Experimental Design" src="experimental_design_llms_human_brain_correlation.jpg"/>
+<p class="reference" style="text-align: center; margin-bottom: 20px;"><strong>図1: 実験デザインの概要。</strong> LLMと実際の人間（被験者）の両方に物語（「星の王子さま」）を提示し、LLMと言語処理を行う人間の脳との相関関係を比較することを目指します。</p>
+<div class="glass-card" style="padding: 15px; margin-bottom: 20px;">
+<h4 class="subsection-title" style="margin-top:0; padding-left:0; border-left:0; color: var(--color-primary);"><i class="fas fa-search-plus"></i> 図1のここに注目！</h4>
+<div style="display: flex; align-items: center; gap: 15px;">
+<div style="flex: 1;">
+<p><i class="fas fa-robot" style="color: var(--color-secondary);"></i> <strong>LLM側:</strong> ロボットのアイコンで表されるLLMが、NLPタスク（この研究では「星の王子さま」の読解）を行っています。吹き出しにはチェックリストと鉛筆があり、言語理解タスクを象徴しています。</p>
+<p><i class="fas fa-book-reader" style="color: var(--color-accent1);"></i> <strong>共通の刺激:</strong> 中央には「星の王子さま」の本が描かれており、これがLLMと人間の両方に提示される共通の物語（言語刺激）であることを示しています。</p>
+<p><i class="fas fa-brain" style="color: var(--color-primary);"></i> <strong>人間側:</strong> 右側には人間の脳のfMRI画像が示されています。様々な色の領域は、言語処理に関わる脳の特定部位 (ROI: Region of Interest) を表しています。</p>
+<p><i class="fas fa-arrows-alt-h" style="color: var(--color-gray);"></i> <strong>比較:</strong> LLMと人間の脳の間には太い両方向の矢印があり、「Correlation (相関)」と書かれています。これは、本研究の目的が、同じ物語を処理する際のLLMの内部状態と人間の脳活動との間の相関関係を調べることであることを明確に示しています。</p>
+</div>
+<div style="flex: 0 0 120px; text-align: center;">
+<div style="border: 2px dashed var(--color-primary); padding: 10px; border-radius: 8px; background-color: rgba(74, 111, 165, 0.05);">
+<i class="fas fa-vial fa-2x" style="color: var(--color-primary); margin-bottom: 5px;"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 12px; margin:0;">実験の核心</p>
+</div>
+</div>
+</div>
+</div>
+<div class="content-box">
+<p>最近の研究 <span class="reference">(Goldstein et al., 2022; Caucheteux et al., 2023)</span> では、LLMと神経プロセスの間の<span class="keyword">マルチモーダルな類似性 (multimodal similarities)</span> が探求されています。</p>
+<div class="two-column">
+<div class="column note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1);">
+<div class="note-title" style="color: var(--color-accent1);"><i class="fas fa-check-circle"></i> 一部の研究の発見</div>
+<p><span class="reference">(Antonello et al., 2023; Antonello and Huth, 2024)</span> など一部の研究では、<span class="keyword">自己回帰型LLM (autoregressive LLMs)</span> <span class="reference">(Ethayarajh, 2019; Tenney et al., 2019)</span> と、人間の言語処理に関する<span class="keyword">予測符号化仮説 (predictive coding hypothesis)</span> との間に、より強い整合性が見られることが示されています。</p>
+</div>
+<div class="column note-box" style="background-color: rgba(255, 126, 95, 0.1); border-left-color: var(--color-secondary);">
+<div class="note-title" style="color: var(--color-secondary);"><i class="fas fa-microscope"></i> 他の研究の焦点</div>
+<p>一方で、言語モデリングの性能、モデルの規模 (スケール)、表現の汎化能力といった指標に焦点を当てた研究も存在します。</p>
+</div>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説</div>
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive;">自己回帰型LLM (Autoregressive LLMs)</strong>: <br/>
+                文章を生成する際に、それまでに出力した単語の並び（文脈）に基づいて、次に来る単語を予測するという仕組みで動作するLLMの一種です。「自己」が「回帰」する、つまり自分自身の過去の出力を参照して次の出力を決める、という意味合いです。多くの生成系AI（例：GPT）がこのタイプです。
+            </p>
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive;">予測符号化仮説 (Predictive Coding Hypothesis)</strong>: <br/>
+                人間の脳（特に大脳皮質）が情報を処理する際の基本的な原理の一つとする考え方です。脳は常に次に入ってくる感覚情報を予測しており、実際の入力とその予測との間の「誤差」を計算します。そして、その誤差を最小限に抑えるように内部モデルを更新していく、というものです。言語理解においては、次に来る単語や文の意味を予測しながら処理を進めていると考えられます。
+            </p>
+</div>
+<p>これらの研究全体を総合すると、<span class="highlight">モデリングの質 (modeling quality)</span> が、脳のような表現能力を獲得する上で決定的に重要であることが示唆されています。
+            <span class="reference">(Hickok and Poeppel, 2007; Hasson et al., 2008; Lerner et al., 2011; Ding et al., 2017)</span>
+</p>
+<div class="bubble-box" style="border-color: var(--color-accent2); margin-top: 25px; margin-bottom:25px;">
+<style>
+                .bubble-box.purple::before { border-bottom-color: var(--color-accent2); }
+                .bubble-box.purple::after { border-bottom-color: white; } /* Assuming white background */
+            </style>
+<p><i class="fas fa-question-circle" style="color: var(--color-accent2);"></i> <strong style="font-family: 'Yomogi', cursive; color: var(--color-accent2);">未解決の根本的な問い:</strong></p>
+<p>LLMと人間の脳の間の類似性は、単にモデルの規模が大きくなった結果（パラメータ数が増えた、学習データ量が増えたなど）なのでしょうか？ それとも、人間の音声処理経路（脳が言葉を処理する仕組み）と計算原理のレベルで、より深いレベルでの<span class="keyword">収束 (convergence)</span> を反映しているのでしょうか？</p>
+<p style="margin-top:10px;">
+<i class="fas fa-cogs" style="color: var(--color-dark);"></i> この二分法（どちらの要因が主なのか）を解決することは、次世代のモデルアーキテクチャを進歩させる上で非常に重要です。
+            </p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<p>LLMと脳デコーディング（脳活動から情報を読み解くこと）の関係を調べる現在の研究では、一般的に公開されているデータセットを使って、様々な状況下でのモデルの性能を評価しています。しかし、<span class="highlight">そのようなデータセットでは、特定のタスクにおけるモデルの真の理解能力を正確に反映できない可能性があります。</span></p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-flask"></i> 本研究のアプローチ</div>
+<p>この限界に対処するために、本研究では以下のステップで実験を行いました：</p>
+<ol class="unstyled-list" style="list-style: none; padding-left: 0;">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content"><strong>LLMの選定:</strong> <span class="badge blue">14種類</span> の公開されている事前学習済みLLMを選びました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content"><strong>タスク設計:</strong> LLMの文脈理解能力を評価するために、独自の<span class="keyword">文理解タスク (sentence understanding task)</span> を設計しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content"><strong>fMRIデータの活用:</strong> 自然なテキスト（物語）を聞いている際の参加者の <span class="keyword">fMRI (functional Magnetic Resonance Imaging)</span> データを利用しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">4</div>
+<div class="step-content"><strong>デコーディングモデル構築:</strong> fMRIデータから脳活動パターンを読み解くためのデコーディングモデルを構築しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">5</div>
+<div class="step-content"><strong>相関分析:</strong> <span class="keyword">corrメトリック (相関係数)</span> を用いて、LLMの内部状態と関連する脳領域の活動パターンとの関係を比較しました。</div>
+</li>
+</ol>
+<p>私たちの実験デザインの簡単な説明は、前述の図1に示されています。</p>
+</div>
+<div class="definition-box" style="margin-top:15px;">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説</div>
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive;">fMRI (functional Magnetic Resonance Imaging)</strong>: <br/>
+            機能的磁気共鳴画像法。脳の活動を間接的に測定する技術の一つです。脳の特定の部分が活発に働くと、その領域への血流量が増加します。fMRIはこの血流の変化（BOLD信号と呼ばれる）を捉えることで、どの脳領域がいつ活動しているのかをマッピングします。
+            </p>
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive;">corrメトリック (corr metric)</strong>: <br/>
+            Correlation coefficient (相関係数) の略だと思われます。二つの変数間の関連性の強さと方向を示す統計的指標です。-1から+1の間の値をとり、+1に近いほど強い正の相関（一方が増えると他方も増える）、-1に近いほど強い負の相関（一方が増えると他方は減る）、0に近いほど相関がないことを意味します。この論文では、LLMの表現と脳活動パターンの類似度を測るために使われています。
+            </p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-bullseye"></i> 本論文の主な発見 <i class="fas fa-medal" style="color: gold;"></i></h3>
+<p>私たちの主な発見は以下の通りです：</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fas fa-tasks fa-2x" style="color: var(--color-accent1); margin-bottom:10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1);">1. 文理解タスクの性能 📝</h4>
+<p><span class="keyword">命令チューニングされたモデル (Instruction-tuned models)</span> は、対応する<span class="keyword">ベースモデル (base models)</span> よりも一貫して高い性能を示しました。 (詳細は§4.1)</p>
+<div class="definition-box" style="font-size: 0.9em; padding: 10px; margin-top:10px;">
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive; font-size:1.1em;">命令チューニングモデル:</strong> 特定の指示やタスク（例：「この質問に答えて」）に従うように追加で訓練されたLLM。</p>
+<p><strong style="color: var(--color-secondary); font-family: 'Yomogi', cursive; font-size:1.1em;">ベースモデル:</strong> 大量のテキストデータで事前学習されただけの、汎用的なLLM。</p>
+</div>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-brain fa-2x" style="color: var(--color-secondary); margin-bottom:10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary);">2. 脳活性化との相関 <i class="fas fa-wave-square"></i></h4>
+<p>全てのLLMにおいて、<span class="highlight">中間層</span>が脳活性化の予測において最も良い性能を達成しました。また、モデルの性能（文理解タスクのスコア）と脳との相関の強さの間には、<span class="highlight">有意な正の関連</span>が見られました。命令チューニングされたモデルは、対応するベースモデルよりも高い相関値を示し、この差は統計的に有意でした。(詳細は§4.2)</p>
+<div style="text-align: center; margin-top: 10px;">
+<svg height="60" style="border: 1px solid #ccc; border-radius: 5px;" viewbox="0 0 100 60" width="100">
+<path d="M10 50 Q 30 10, 50 30 T 90 20" fill="none" stroke="var(--color-secondary)" stroke-width="2"></path>
+<circle cx="50" cy="30" fill="var(--color-secondary)" r="3"></circle>
+<text fill="var(--color-dark)" font-family="Yomogi" font-size="10" x="40" y="15">中間層でピーク</text>
+</svg>
+<p style="font-size: 0.8em; margin-top: 5px;">LLMの層と脳活動の相関イメージ</p>
+</div>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-balance-scale-left fa-2x" style="color: var(--color-accent2); margin-bottom:10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent2);">3. 半球非対称性と機能特異性 <i class="fas fa-puzzle-piece"></i></h4>
+<p>特定の脳領域では<span class="keyword">左半球優位性 (left-hemispheric lateralization)</span> が見られ、これは専門化された神経メカニズムを通じて処理効率を高めている可能性が高いです。さらに、他の脳領域における半球非対称性は、モデルの性能に対する<span class="highlight">機能特異的な貢献</span>を明らかにし、領域間で機能が分化していることを示唆しました。(詳細は§4.3)</p>
+<div class="definition-box" style="font-size: 0.9em; padding: 10px; margin-top:10px;">
+<p><strong style="color: var(--color-primary); font-family: 'Yomogi', cursive; font-size:1.1em;">左半球優位性:</strong> 特定の認知機能（特に言語機能）が、脳の左半球でより強く処理される傾向のこと。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="2_Related_Work">
+<h2 class="section-title"><i class="fas fa-book-open"></i> 2 Related Work</h2>
+<p style="margin-bottom: 25px; font-size: 16px; text-align: center; font-family: 'Yomogi', cursive;">
+        このセクションでは、本研究「大規模言語モデル(LLM)は脳のように考えるのか？」の背景となる重要な関連研究をレビューします。<br/>
+        主に、🧠 <strong class="keyword">言語理解に関する神経科学的な知見</strong>と、近年急速に進展している 🤖 <strong class="keyword">LLMを脳と言語のマッピング研究に活用する動向</strong>の2つの側面から解説します。<br/>
+        これらの知識は、本論文の研究目的とアプローチを理解する上で不可欠です。
+    </p>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-brain"></i> Neuroscientific Foundations of Language Comprehension (言語理解の神経科学的基盤)</h3>
+<p>
+            現在主流となっている<span class="keyword">大規模言語モデル（LLM）</span>が登場するずっと以前から、<span class="highlight">認知神経科学</span>の分野では、人間の言語理解が非常に複雑な<span class="keyword">階層的処理 (hierarchical processing)</span> に依存していることが明らかにされてきました (Friederici, 2011)。
+        </p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-lightbulb"></i> 重要な概念：階層的処理</div>
+<p>言語情報を処理する際に、単純な要素から複雑な構造へと段階的に情報を統合していく脳の働き方を指します。例えば、音の最小単位から単語、文、そして複数の文からなる談話へと、徐々に高次の意味理解を構築していきます。</p>
+</div>
+<p>
+            この分野の研究は、脳がどのようにして基本的な<span class="keyword">知覚ユニット (perceptual units)</span>、例えば<span class="highlight">音素 (phonemes)</span> や<span class="highlight">書記素 (graphemes)</span> を、語彙レベル (lexical level)、文レベル (sentential level)、そして談話レベル (discourse level) で意味のある構造へと統合していくのか、そのメカニズムの解明に焦点が当てられてきました (Price, 2012)。
+        </p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<i class="fas fa-microphone-alt" style="font-size: 24px; color: var(--color-accent1);"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; margin-top: 5px;">音素・書記素</p>
+<p style="font-size: 12px;">(例: /k/, /a/, 「あ」)</p>
+</div>
+<div class="feature-item" style="align-self: center;">
+<i class="fas fa-arrow-right" style="font-size: 24px; color: var(--color-primary);"></i>
+</div>
+<div class="feature-item">
+<i class="fas fa-book" style="font-size: 24px; color: var(--color-accent2);"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; margin-top: 5px;">語彙レベル</p>
+<p style="font-size: 12px;">(単語の意味・形態)</p>
+</div>
+<div class="feature-item" style="align-self: center;">
+<i class="fas fa-arrow-right" style="font-size: 24px; color: var(--color-primary);"></i>
+</div>
+<div class="feature-item">
+<i class="fas fa-comments" style="font-size: 24px; color: var(--color-secondary);"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; margin-top: 5px;">文レベル</p>
+<p style="font-size: 12px;">(文の構造・意味)</p>
+</div>
+<div class="feature-item" style="align-self: center;">
+<i class="fas fa-arrow-right" style="font-size: 24px; color: var(--color-primary);"></i>
+</div>
+<div class="feature-item">
+<i class="fas fa-file-alt" style="font-size: 24px; color: var(--color-accent3);"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; margin-top: 5px;">談話レベル</p>
+<p style="font-size: 12px;">(文脈・一貫性)</p>
+</div>
+</div>
+<p style="text-align: center; font-size: 12px; color: var(--color-gray); margin-top: 5px;">図：言語理解における階層的処理のイメージ</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-pencil-alt"></i> 用語解説</div>
+<ul>
+<li>✏️ <strong class="keyword">音素 (Phonemes):</strong> 言語の音を区別する最小の単位。例えば、日本語の「か」(/ka/) は /k/ と /a/ という2つの音素から成ります。</li>
+<li>✏️ <strong class="keyword">書記素 (Graphemes):</strong> 文字体系における最小の筆記単位。例えば、ひらがなの「あ」やアルファベットの「a」が一つの書記素です。</li>
+</ul>
+</div>
+<p>
+            初期の言語処理モデル、例えば有名な<span class="keyword">ウェルニッケ・リヒトハイム・ゲシュヴィント モデル (Wernicke-Lichtheim-Geschwind model)</span> (Geschwind, 1967) は、特定の脳領域が言語機能に関与していることを特定しましたが、<span class="highlight">文レベル</span>や<span class="highlight">談話レベル</span>の複雑な処理、特に複数の文にまたがる情報を統合して<span class="keyword">一貫性 (coherence)</span> を保つメカニズムについては、十分に説明することができませんでした (Hickok and Poeppel, 2004)。
+        </p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 初期モデルの課題</div>
+<p>特定の脳部位の役割は示唆されたものの、文全体の意味理解や、話の流れ全体を通じた文脈理解（例：物語の登場人物の感情の変化を追うなど）をどう脳が行っているのか、解明には至りませんでした。</p>
+</div>
+<p>
+            その後、<span class="keyword">fMRI (機能的磁気共鳴画像法)</span> や <span class="keyword">ERP (事象関連電位)</span> (Kutas and Hillyard, 1984; Osterhout and Holcomb, 1992) といった<span class="highlight">神経画像技術</span>の発展により、言語処理モデルは、特定の部位に機能が集中しているとする<span class="keyword">局在モデル</span>から、複数の脳領域が連携して機能する<span class="keyword">分散ネットワークモデル</span>へと移行しました。その代表的な例として、<span class="keyword">Memory-Unification-Control (MUC) フレームワーク</span> (Hagoort, 2016) があります。
+        </p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<p style="font-family: 'Yomogi', cursive; text-align: center; color: var(--color-primary); font-size: 16px;">🧠 MUC フレームワークの構成要素</p>
+<ul class="unstyled-list">
+<li><span class="badge purple">記憶 (Memory):</span> 言語知識（単語の意味、文法規則など）の貯蔵と検索。</li>
+<li><span class="badge orange">統合 (Unification):</span> 入力される言語情報を既存の知識と結びつけ、意味のあるまとまりを形成。</li>
+<li><span class="badge green">制御 (Control):</span> 複数の情報源や処理プロセスを調整し、目的に応じた言語行動を可能にする。</li>
+</ul>
+</div>
+<div class="info-card">
+<p style="font-family: 'Yomogi', cursive; text-align: center; color: var(--color-primary); font-size: 16px;">💡 神経画像技術の貢献</p>
+<p><span class="keyword">fMRI</span>は脳の活動部位を、<span class="keyword">ERP</span>は活動の時間的推移を捉えるのに役立ち、言語処理が脳の広範なネットワークで行われていることを示しました。</p>
+</div>
+</div>
+<p>
+            しかし、初期のfMRI研究には限界もありました。実験で提示される刺激が<span class="highlight">孤立した単語や文</span>であったり、<span class="keyword">信号を平均化</span>して分析したりする手法が主流だったため、文脈を越えて情報を結びつけるような<span class="highlight">長距離の言語的統合 (long-range linguistic integration)</span> を捉えることは困難でした (Humphries et al., 2007)。
+        </p>
+<p>
+            より自然な状況での言語理解を調べるために、<span class="keyword">物語聴取 (narrative listening)</span> (Yarkoni et al., 2008; Brennan, 2016) のような新しい<span class="keyword">自然主義的パラダイム (naturalistic paradigms)</span> が導入され、談話理解の研究が進みました。一方で、<span class="keyword">Representational Similarity Analysis (RSA)</span> (Kriegeskorte et al., 2008) のようなアプローチは、<span class="highlight">一貫性</span>や<span class="highlight">文脈依存の意味</span>といった談話の中核的な特徴を十分に捉えられない場合があり (Zacks et al., 2017; Xu et al., 2024; Messi and Pylkkanen, 2025)、複数の文にまたがる統合的な分析の必要性が依然として強調されています。
+        </p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-microscope"></i> 用語解説：RSA</div>
+<p><strong class="keyword">Representational Similarity Analysis (RSA)</strong> とは、異なる情報源（例えば、脳の活動パターンと計算モデルの内部表現）が、ある刺激の集合に対してどのように似たような／異なった表現をしているかを比較する分析手法です。これにより、脳とモデルが情報をどのようにコード化しているかの類似性を評価できます。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-robot"></i> Leveraging LLMs for Brain-Language Mapping (脳と言語のマッピングのためのLLM活用)</h3>
+<p>
+            近年、目覚ましい発展を遂げている<span class="keyword">大規模言語モデル (LLM)</span> は、その強力な<span class="highlight">意味処理能力</span>から、脳と言語のマッピングを調査したり、神経プロセスを解読したりするための新たなツールとして注目されています (Luo et al., 2022; Yu et al., 2024)。
+        </p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-cogs"></i> LLMを活用した脳研究のアプローチ例</div>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<strong class="keyword">DSA (Dynamic Similarity Analysis)</strong>: (Ren et al., 2025; Yu et al., 2024) などの研究では、この手法を用いてテキストの<span class="keyword">埋め込み表現 (embeddings)</span> とfMRI信号を比較し、<span class="keyword">Representational Dissimilarity Matrices (RDM)</span> を構築しました。指標としては<span class="highlight">ピアソン相関</span>などが用いられます。
+                    <div class="note-box" style="padding: 10px; margin-top: 5px;">
+<p style="font-size: 12px;">📌 <strong class="keyword">埋め込み表現:</strong> 単語や文などのテキスト情報を、コンピュータが扱いやすい数値ベクトル（通常は密なベクトル）に変換したもの。</p>
+<p style="font-size: 12px;">📌 <strong class="keyword">RDM:</strong> 複数の項目間の「非類似度」を行列で表現したもの。各要素が2つの項目間の非類似度を示す。</p>
+</div>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<strong class="keyword">リッジ回帰 (Ridge Regression)</strong>: (Mischler et al., 2024; Bonnasse-Gahot and Pallier, 2024) などの研究では、言語モデルの<span class="highlight">層ごとの活性化 (layer-wise activations)</span> と、平均化されたfMRI活動マップを、リッジ回帰という統計手法を用いて対応付けています。
+                    <div class="note-box" style="padding: 10px; margin-top: 5px;">
+<p style="font-size: 12px;">📌 <strong class="keyword">リッジ回帰:</strong> 線形回帰の一種で、モデルの複雑さにペナルティを課すことで過学習を防ぎ、予測性能を高める手法。</p>
+</div>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<strong class="keyword">エンコーディングモデル (Encoding Models)</strong>: (Tuckute et al., 2024) の研究では、多様な文を聞いた際の参加者のfMRIデータを用いてエンコーディングモデルを訓練し、<span class="highlight">GPT-2 XLの埋め込み表現</span>（特に22層目）が、実際の神経活動とどれだけよく対応するか（<span class="keyword">ニューラルアラインメント</span>）を最適化しました。
+                     <div class="note-box" style="padding: 10px; margin-top: 5px;">
+<p style="font-size: 12px;">📌 <strong class="keyword">エンコーディングモデル:</strong> ある刺激（例：文）が与えられたときに、脳がどのように応答するかを予測するモデル。</p>
+</div>
+</div>
+</div>
+</div>
+<p>
+            これらの研究は、LLMが人間の言語理解における<span class="highlight">神経メカニズム</span>に関する深い洞察を明らかにするポテンシャルを秘めていることを示しており、認知神経科学の分野に新しいツールと方法論を提供しています。LLMの内部表現と脳活動を比較することで、脳がどのように言語情報を処理し、階層的な意味理解を構築しているのか、その一端を垣間見ることができるかもしれません。
+        </p>
+</div>
+<img alt="LLM表現と神経応答の対応を分析する多段階パイプライン" src="llm_brain_alignment_pipeline.jpg" style="border: 1px solid #ddd; border-radius: 8px; margin-top: 20px; margin-bottom: 10px;"/>
+<p style="text-align: center; font-size: 14px; color: var(--color-gray); margin-bottom: 20px;">
+<strong class="keyword">図2:</strong> この図は、自然な言語理解中のLLM表現と神経応答の間の<span class="highlight">アラインメント（対応関係）</span>を分析するために使用される多段階パイプラインを示しています。この方法論には、聴覚刺激の提示、LLMからの階層的埋め込み表現の抽出、ボクセルワイズ回帰モデリング、および関心領域（ROI）ベースの脳とモデルのアラインメント分析が含まれます。
+    </p>
+<div class="two-column">
+<div class="column">
+<div class="glass-card">
+<p style="font-family: 'Yomogi', cursive; text-align: center; color: var(--color-primary); font-size: 18px;">
+<i class="fas fa-brain"></i> パネル (a): 神経画像データの取得と前処理
+                </p>
+<p>
+                    この部分は、実験参加者から脳活動データを取得し、分析可能な状態にするまでのプロセスを示しています。（詳細は論文の §3.1 から §3.4 を参照）
+                </p>
+<ul class="unstyled-list" style="padding-left: 15px;">
+<li><i class="fas fa-headphones-alt" style="color: var(--color-accent1);"></i> <strong>聴覚刺激の提示:</strong> 参加者に物語（例：『星の王子さま』）を音声で聞かせます。</li>
+<li><i class="fas fa-head-side-scan" style="color: var(--color-accent2);"></i> <strong>fMRIデータ収集:</strong> 物語を聞いている間の脳活動をfMRIで計測します。</li>
+<li><i class="fas fa-cogs" style="color: var(--color-secondary);"></i> <strong>データ前処理:</strong> 計測されたデータからノイズを除去し、標準化するなどの処理を行います。</li>
+<li><i class="fas fa-chart-line" style="color: var(--color-accent3);"></i> <strong>GLM分析:</strong> 一般線形モデル（GLM）を用いて、各文刺激に対する脳活動の強さを推定します。</li>
+</ul>
+</div>
+</div>
+<div class="column">
+<div class="glass-card">
+<p style="font-family: 'Yomogi', cursive; text-align: center; color: var(--color-primary); font-size: 18px;">
+<i class="fas fa-link"></i> パネル (b): 脳とLLMのアラインメント分析
+                </p>
+<p>
+                    この部分は、LLMの内部表現と脳活動データを比較し、両者の関連性を評価するプロセスを示しています。（詳細は論文の §3.5 を参照）
+                </p>
+<ul class="unstyled-list" style="padding-left: 15px;">
+<li><i class="fas fa-robot" style="color: var(--color-accent1);"></i> <strong>LLMによる文処理:</strong> 参加者が聞いたのと同じ文をLLMに入力します。</li>
+<li><i class="fas fa-layer-group" style="color: var(--color-accent2);"></i> <strong>階層的埋め込み抽出:</strong> LLMの各層から、文に対する内部表現（埋め込みベクトル）を抽出します。</li>
+<li><i class="fas fa-calculator" style="color: var(--color-secondary);"></i> <strong>リッジ回帰モデリング:</strong> LLMの埋め込み表現を使って、特定の脳領域（ROI）の活動を予測するモデル（リッジ回帰モデル）を構築します。</li>
+<li><i class="fas fa-equals" style="color: var(--color-accent3);"></i> <strong>アラインメント評価:</strong> 構築したモデルの予測精度（例：相関係数）を評価し、LLMのどの層の表現が脳活動と最もよく対応するかを分析します。</li>
+</ul>
+</div>
+</div>
+</div>
+<p style="margin-top: 15px;">
+        この図は、本論文の研究がどのようにしてLLMの内部表現と人間の脳活動の関連性を定量的に評価しようとしているのか、その全体像を視覚的に示しています。特に、LLMの異なる階層の表現が、脳のどの部分の活動と、どの程度強く関連しているのかを明らかにすることが目的の一つです。
+    </p>
+</div>
+<div class="section-card" id="3_Methodology">
+<h2 class="section-title"><i class="fas fa-cogs"></i> 3 Methodology</h2>
+<div class="content-box">
+<p>このセクションでは、<span class="keyword">大規模言語モデル（LLM）</span>の内部表現と、人間が自然な言語を理解する際の<span class="keyword">神経応答</span>との間の<span class="highlight">対応関係（アラインメント）</span>を体系的に調べるための方法論を詳しく解説します。</p>
+<p>私たちは、以下の要素を組み合わせた<span class="keyword">多段階のパイプライン</span>を実装しました：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-brain" style="color: var(--color-accent1);"></i> 神経画像データ分析 (neuroimaging data analysis)</li>
+<li><i class="fas fa-robot" style="color: var(--color-accent2);"></i> モデル特徴抽出 (model feature extraction)</li>
+<li><i class="fas fa-chart-bar" style="color: var(--color-accent3);"></i> エンコーディングモデル評価 (encoding model evaluation)</li>
+</ul>
+<p>実験全体の流れは以下の図2にまとめられています。</p>
+</div>
+<img alt="実験パイプラインの図" src="llm_brain_alignment_pipeline.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-binoculars"></i> 図2の概観</p>
+<p>この図は、本研究で採用した実験パイプラインを示しています。</p>
+<ul>
+<li><strong>パネル (a)</strong>: <span class="highlight">脳データの取得と前処理</span>、そしてfMRIデータ抽出のパイプライン（セクション3.1から3.4で詳述）を示します。具体的には、聴覚刺激（物語の朗読）を被験者に提示し、その際の脳活動をfMRIで計測・解析する流れです。</li>
+<li><strong>パネル (b)</strong>: <span class="highlight">脳とLLMの対応関係を分析する部分</span>（セクション3.5で詳述）を示します。物語のテキストをLLMに入力し、得られた階層的な特徴量（埋め込み表現）と、(a)で得られた脳活動データとを比較し、関連性を評価します。</li>
+</ul>
+</div>
+<p>これから、聴覚刺激の提示方法、LLMベースの階層的埋め込み抽出、ボクセルワイズ回帰モデリング、そして関心領域（ROI）ベースの脳-モデル対応分析といった、実験手法の詳細を順に説明していきます。</p>
+<h3 class="subsection-title"><i class="fas fa-database"></i> 3.1 Data and Stimuli</h3>
+<div class="content-box">
+<p>本研究では、Liらが2022年に公開した既存のデータセット<span class="keyword">「"The Little Prince" multilingual naturalistic fMRI corpus」</span>を使用しました。これは、「星の王子さま」の物語を複数の言語で聞いている際の脳活動を記録した貴重なfMRIデータセットです。</p>
+<div class="glass-card">
+<p><i class="fas fa-users" style="color: var(--color-primary);"></i> <strong>被験者について</strong></p>
+<ul class="unstyled-list">
+<li>参加者: 健康な<span class="highlight">右利きの若年北京語ネイティブスピーカー35名</span>（うち1名はfMRIデータの一部欠損のため除外）。</li>
+<li>性別: 女性15名。</li>
+<li>年齢: 平均19.3歳（範囲18～25歳）。</li>
+<li>健康状態: 精神疾患、神経疾患、その他認知機能に影響しうる病歴なし。</li>
+<li>背景: 中国在住で、中学校から英語を学習。</li>
+</ul>
+</div>
+<div class="glass-card">
+<p><i class="fas fa-book-open" style="color: var(--color-secondary);"></i> <strong>刺激について</strong></p>
+<p>使用された刺激は、小説「星の王子さま」の<span class="keyword">英語</span>と<span class="keyword">中国語</span>の<span class="highlight">パラレルコーパス</span>（対訳データセット）です。</p>
+<ul class="unstyled-list">
+<li>テキストは中国語で<span class="highlight">1,577文</span>に分割されています。</li>
+<li>各中国語文には、対応する英語文がペアとして紐付けられています。</li>
+<li>これらの文のペアは、後のセクション4.1の分析でも活用されます。</li>
+</ul>
+<div style="text-align: center; margin-top:10px;">
+<span class="badge blue">中国語文1</span> <i class="fas fa-exchange-alt"></i> <span class="badge orange">英語文1</span><br/>
+<span class="badge blue">中国語文2</span> <i class="fas fa-exchange-alt"></i> <span class="badge orange">英語文2</span><br/>
+                ...<br/>
+<span class="badge blue">中国語文1577</span> <i class="fas fa-exchange-alt"></i> <span class="badge orange">英語文1577</span>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-brain"></i> 3.2 fMRI Acquisition and Preprocessing</h3>
+<div class="content-box">
+<p>このセクションでは、fMRIデータの取得方法と、その後の前処理について説明します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-tasks"></i> 実験手順</p>
+<ol>
+<li><span class="badge yellow">準備</span>: 被験者はMRIスキャナーの環境に慣れた後、スキャナー内で仰向けの状態で横になります。</li>
+<li><span class="badge yellow">刺激提示</span>: 実験スクリプトは <span class="keyword">PsychoPy 2</span> (Peirce et al., 2019) というソフトウェアを用いて提示されました。聴覚刺激（物語の朗読）は、MRIに対応した高忠実度ヘッドフォンを通じて被験者に届けられました。</li>
+<li><span class="badge yellow">聴覚刺激</span>: 中国語のオーディオブック教材は、合計で約99分間あり、それぞれ約10分の9つのセグメントに分けられていました。</li>
+<li><span class="badge yellow">受動的聴取と課題</span>: 各セグメントを受動的に聴いた後、被験者はそのセグメントに関する4つの理解度質問（合計で36問）に回答しました。質問はヘッドコイルに取り付けられた鏡を介して提示され、回答はボタンボックスを使って記録されました。</li>
+<li><span class="badge yellow">所要時間</span>: 全体の実験手続きには約2.5時間かかりました。</li>
+</ol>
+</div>
+<div class="two-column">
+<div class="column glass-card">
+<p><i class="fas fa-microscope" style="color: var(--color-primary);"></i> <strong>データ取得</strong></p>
+<p>データは<span class="keyword">3T GE Discovery MR750スキャナー</span>と32チャンネルヘッドコイルを使用して取得されました。</p>
+<ul>
+<li><strong>構造画像 (Structural images)</strong>: <span class="highlight">T1強調MPRAGEシーケンス</span>で取得。これは脳の解剖学的な詳細情報を提供します。</li>
+<li><strong>機能画像 (Functional images)</strong>: <span class="highlight">マルチエコー平面画像法 (ME-EPI) シーケンス</span>で取得。これは脳活動に伴う血流変化を捉えます。
+                        <ul>
+<li><span class="keyword">TR (Repetition Time)</span>: 2000 ms (2秒ごと)</li>
+<li><span class="keyword">TEs (Echo Times)</span>: 12.8 ms, 27.5 ms, 43 ms (複数のエコー時間を設定)</li>
+<li><span class="keyword">ボクセルサイズ</span>: 3.75 × 3.75 × 3.8 mm</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="column glass-card">
+<p><i class="fas fa-magic" style="color: var(--color-secondary);"></i> <strong>前処理 (Preprocessing)</strong></p>
+<p>取得されたデータは、<span class="keyword">AFNI 16</span> (Cox, 1996) というソフトウェアを用いて前処理が行われました。主な処理は以下の通りです：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-cut" style="color: var(--color-accent1);"></i> 最初の4タイムポイント（時間点）の除去（スキャナーの安定化待ちのため）。</li>
+<li><i class="fas fa-filter" style="color: var(--color-accent1);"></i> <span class="highlight">マルチエコー独立成分分析 (ME-ICA)</span> によるノイズ除去。ME-EPIで取得した複数のエコーを活用して、ノイズ成分（頭の動きや生理的ノイズなど）を効果的に分離・除去します。</li>
+<li><i class="fas fa-globe-americas" style="color: var(--color-accent1);"></i> <span class="highlight">MNI標準空間</span>への空間正規化（脳の形やサイズの個人差を補正し、標準的な脳座標系に合わせる処理）。データは2mm³のボクセルにリサンプリングされました。</li>
+</ul>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> 3.3 General Linear Model (GLM)</h3>
+<div class="content-box">
+<p><span class="keyword">一般線形モデル (General Linear Model, GLM)</span> は、fMRI神経科学研究において、タスクによって誘発される<span class="keyword">BOLD信号</span>（血中酸素濃度依存性信号、脳活動の間接的な指標）を、生理的なノイズやシステムノイズから統計的に分離するための標準的な分析フレームワークです。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-brain"></i> BOLD信号とは？</p>
+<p>Blood-Oxygen-Level-Dependent signalの略。神経細胞が活動すると、その領域への血流量が増加し、血液中の酸化ヘモグロビンと脱酸化ヘモグロビンの比率が変化します。この磁気的な性質の違いをfMRIで捉えたものがBOLD信号で、脳活動の指標として用いられます。</p>
+</div>
+<p>GLMの基本的な数式は以下の通りです：</p>
+<div class="formula">
+            $$ \mathbf { Y } = \mathbf { X } { \boldsymbol { \beta } } + \epsilon , \quad \epsilon \sim { \mathcal { N } } ( \mathbf { 0 } , \sigma ^ { 2 } \mathbf { I } ) $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-calculator"></i> 数式の解説</p>
+<ul>
+<li><span class="keyword">$\mathbf{Y}$</span>: BOLD信号の時系列データ。各時間点での脳の各ボクセル（3次元的なピクセル）の信号強度を表すベクトルまたは行列です。</li>
+<li><span class="keyword">$\mathbf{X}$</span>: <span class="highlight">計画行列 (Design Matrix)</span>。実験条件（どのタイミングでどんな刺激が提示されたかなど）や、ノイズと考えられる要因（頭の動きなど）をエンコードした行列です。</li>
+<li><span class="keyword">$\boldsymbol{\beta}$</span>: <span class="highlight">回帰係数 (Regression Coefficients)</span>。計画行列の各列（各要因）がBOLD信号にどれだけ影響を与えるかを示す重みです。これを推定することがGLMの主な目的の一つです。</li>
+<li><span class="keyword">$\epsilon$</span>: 残差ノイズ。モデルでは説明しきれなかった誤差成分で、平均0、分散$\sigma^2$の正規分布に従うと仮定されます。$\mathbf{I}$は単位行列です。</li>
+</ul>
+<p><strong>具体例:</strong> 例えば、ある被験者が「文章Aを読んでいる時間」と「安静にしている時間」のBOLD信号を比較したいとします。$\mathbf{Y}$はその被験者の一つのボクセルにおけるBOLD信号の時系列です。$\mathbf{X}$には、「文章Aを読んでいるか否か」を示す列や、頭の動きのデータを示す列などが含まれます。GLMを解くことで得られる$\boldsymbol{\beta}$のうち、「文章A」に対応する係数が大きければ、そのボクセルは文章Aの読解に関与している可能性が高いと解釈できます。</p>
+</div>
+<p>計画行列 $\mathbf{X}$ は、イベントの開始時刻（刺激提示のタイミングなど）と<span class="keyword">標準的な血行動態応答関数 (canonical Hemodynamic Response Function, HRF)</span> を<span class="highlight">畳み込み積分 (convolution)</span> することで構築されます。HRFとは、神経活動が起きてから実際にBOLD信号として観測されるまでの典型的な遅延や形状をモデル化した関数です。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-wave-square"></i> 血行動態応答関数 (HRF) とは？</p>
+<p>神経細胞が活動すると、即座にBOLD信号が変化するわけではありません。酸素を消費し、それに応じて血流が増加するという一連の生理学的反応には数秒程度の遅れと、特徴的な時間的パターンがあります。HRFは、この神経活動からBOLD信号への変換を数学的にモデル化した関数です。多くの場合、ガンマ関数を2つ組み合わせたような形状をしています。</p>
+<img alt="HRFの例" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Gloor_canonical_hrf.svg/600px-Gloor_canonical_hrf.svg.png" style="width:50%; margin: 10px auto; border: 1px solid #ccc;"/>
+<p style="text-align:center; font-size: 12px;">（図の例：典型的なHRFの形状。横軸が時間、縦軸が信号変化量）</p>
+</div>
+<p>各条件の<span class="keyword">リグレッサー (regressor)</span> $\mathbf{x}_j$（計画行列の列ベクトル）は、試行の開始時刻とノイズ要因（例：動き、ドリフト）を含みます。</p>
+<div class="formula">
+            $$ \mathbf { x } _ { j } ( t ) = \sum _ { k = 1 } ^ { K _ { j } } \mathrm { H R F } ( t - t _ { \mathrm { { o n s e t } } } ^ { ( j , k ) } ) + \sum _ { m = 1 } ^ { M } \gamma _ { m } \mathbf { n } _ { m } ( t ) $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-cogs"></i> リグレッサーの構成要素</p>
+<ul>
+<li>$\mathbf{x}_j(t)$: 時刻 $t$ における、条件 $j$ の予測されるBOLD信号の形状（リグレッサー）。</li>
+<li>$\sum_{k=1}^{K_j} \mathrm{HRF}(t - t_{\mathrm{onset}}^{(j,k)})$ : 条件 $j$ に属する $K_j$ 回の各試行（イベント）の開始時刻 $t_{\mathrm{onset}}^{(j,k)}$ にHRFを適用し、それらを足し合わせたもの。これがタスク関連の活動をモデル化します。</li>
+<li>$\sum_{m=1}^{M} \gamma_m \mathbf{n}_m(t)$: $M$ 個のノイズ要因（例えば頭の動きの6パラメータ、時間的なドリフトなど）$\mathbf{n}_m(t)$ に、それぞれの重み $\gamma_m$ を掛けて足し合わせたもの。これらがノイズ成分をモデル化します。</li>
+</ul>
+</div>
+<p>本研究では、<span class="keyword">Least-Squares Separate (LS-S) アプローチ</span> (Mumford et al., 2014) を採用し、各文レベルの試行に対するBOLD応答を個別にモデリングすることで分離します。このLS-S法は、各目標文を独立してモデル化する手法です。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-lightbulb"></i> LS-Sアプローチの利点</p>
+<p>従来のブロックデザイン（特定の条件がまとまった期間続く）や条件平均モデルと比較して、LS-Sアプローチには以下の利点があります：</p>
+<ul>
+<li><span class="highlight">共線性 (collinearity) の低減</span>: 連続するイベントが互いに影響し合い、それぞれの効果を分離しにくくなる問題（共線性）を減らします。LS-Sでは各イベントを個別のリグレッサーとして扱うため、この問題が緩和されます。</li>
+<li><span class="highlight">一過性の事象関連活動への感度向上</span>: 短時間で起こるイベントに関連した脳活動の変化をより鋭敏に捉えることができます。</li>
+</ul>
+<p>LS-S法により、自然な刺激（物語の聴取など）下での<span class="highlight">文レベルの正確な神経活動パターン</span>を捉えることが可能になります。</p>
+</div>
+<p>ボクセルごとのパラメータ推定値 $\hat{\boldsymbol{\beta}}$ は、最小二乗法を用いて次のように得られます：</p>
+<div class="formula">
+            $$ \hat { \boldsymbol { \beta } } = ( \mathbf { X } ^ { \top } \mathbf { X } ) ^ { - 1 } \mathbf { X } ^ { \top } \mathbf { Y } $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fas-check-circle"></i> パラメータ推定</p>
+<p>この式は、線形回帰における正規方程式の解です。$\mathbf{X}^\top\mathbf{X}$ は計画行列の列間の共分散に関連し、$(\mathbf{X}^\top\mathbf{X})^{-1}$ はその逆行列です。$\mathbf{X}^\top\mathbf{Y}$ は計画行列の各列と観測データ $\mathbf{Y}$ との共変動を表します。これにより、観測データ $\mathbf{Y}$ を最もよく説明するような回帰係数 $\hat{\boldsymbol{\beta}}$ が推定されます。</p>
+</div>
+<p>特定の対比（コントラスト）$\mathbf{c}$ を検定するための $t$統計量は次のように計算されます：</p>
+<div class="formula">
+            $$ t _ { v } = \frac { \mathbf { c } ^ { \top } \hat { \pmb { \beta } } _ { v } } { \sqrt { \hat { \sigma } _ { v } ^ { 2 } \cdot \mathbf { c } ^ { \top } ( \mathbf { X } ^ { \top } \mathbf { X } ) ^ { - 1 } \mathbf { c } } } , \quad \hat { \sigma } _ { v } ^ { 2 } = \frac { \| \mathbf { Y } _ { v } - \mathbf { X } \hat { \pmb { \beta } } _ { v } \| ^ { 2 } } { T - \mathrm { r a n k } ( \mathbf { X } ) } $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-balance-scale"></i> $t$統計量の意味</p>
+<ul>
+<li>$t_v$: ボクセル $v$ における $t$統計量。この値が大きいほど、対比 $\mathbf{c}$ で定義された効果（例えば、条件A &gt; 条件B）が統計的に有意である可能性が高まります。</li>
+<li>$\mathbf{c}$: <span class="highlight">コントラストベクトル</span>。例えば、3つの条件があり、最初の条件の効果だけを見たい場合、$\mathbf{c} = [1, 0, 0]^\top$ のように設定します。</li>
+<li>$\mathbf{c}^\top \hat{\boldsymbol{\beta}}_v$: ボクセル $v$ における推定された効果の大きさ（コントラスト推定値）。</li>
+<li>$\sqrt{\hat{\sigma}_v^2 \cdot \mathbf{c}^\top (\mathbf{X}^\top\mathbf{X})^{-1} \mathbf{c}}$: コントラスト推定値の標準誤差。効果のばらつき具合を示します。</li>
+<li>$\hat{\sigma}_v^2$: ボクセル $v$ における残差の分散の推定値。モデルの当てはまりの悪さを示します。
+                    <ul>
+<li>$\|\mathbf{Y}_v - \mathbf{X}\hat{\boldsymbol{\beta}}_v\|^2$: 残差平方和（観測値とモデルによる予測値の差の二乗和）。</li>
+<li>$T - \mathrm{rank}(\mathbf{X})$: 自由度。$T$ は時間点の数、$\mathrm{rank}(\mathbf{X})$ は計画行列のランク（独立な列の数）です。</li>
+</ul>
+</li>
+</ul>
+<p>この $t$統計量を用いることで、ノイズやドリフトの影響を考慮しつつ、特定の実験条件に関連する脳活動について統計的な推論を行うことができます。これにより、言語刺激に対する神経応答の感度と解釈可能性が向上します。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-map-marker-alt"></i> 3.4 Region of Interest (ROI) Extraction</h3>
+<div class="content-box">
+<p>GLM分析の後、次に行うのは<span class="keyword">関心領域 (Region of Interest, ROI)</span> の抽出です。ROIとは、特定の機能に関連すると考えられる脳の特定の領域のことです。</p>
+<p>本研究では、<span class="highlight">(Fedorenko et al., 2010)によって提案された言語ネットワーク</span>を主要な分析フレームワークとして採用し、人間の脳とLLMが自然言語を理解する際の神経生物学的な違いを調査します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-network-wired"></i> Fedorenko言語ネットワークとは？</p>
+<p>Evelina Fedorenko博士らの研究グループによって特定された、言語処理に特化した脳領域のネットワークです。このネットワークは、個人ごとに機能的に特定され（fMRIで言語タスク遂行中の活動を基に定義）、高い再現性を持つことが示されています。従来の解剖学的な脳地図に基づくROIよりも、言語機能との関連が明確であるとされています。</p>
+<p>このネットワークは、以下のような主要な言語処理を支える神経基盤として広く検証されています：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-spell-check" style="color:var(--color-accent1)"></i> 語彙アクセス (lexical access): 単語を認識し、その意味情報を取り出す処理。</li>
+<li><i class="fas fa-sitemap" style="color:var(--color-accent2)"></i> 構文解析 (syntactic parsing): 文の構造を解析する処理。</li>
+<li><i class="fas fa-brain" style="color:var(--color-accent3)"></i> 意味合成 (semantic composition): 単語や句の意味を組み合わせて文全体の意味を構築する処理。 (Tuckute et al., 2024)</li>
+</ul>
+</div>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge blue">Step 1</span> GLMの実施: まず、前述のGLMを用いて、各被験者の脳全体の活動を分析します。
+            </div>
+<div class="pipeline-step">
+<span class="badge blue">Step 2</span> ROIの利用: 次に、あらかじめ定義された<span class="keyword">解剖学的アトラスマスク</span>（標準脳における各脳領域の位置を示した地図のようなもの）を用いて、特定のROIから<span class="highlight">条件特異的なベータ値 ($\beta$値)</span> を体系的に抽出します。
+            </div>
+</div>
+<p>これらの<span class="keyword">ベータ係数 ($\beta$値)</span>は、特定の実験条件（この研究では個々の文刺激）下でのBOLD信号の応答の大きさ（活動の強さ）を定量化したものです。つまり、ある文を聴いているときに、特定のROIがどれだけ活動したかを示します。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> ROIの機能と重要性</p>
+<p>各ROIの具体的な機能と、人間の言語処理におけるその重要性については、論文の付録 S A (Table 2) に詳述されています。これには、例えばブローカ野やウェルニッケ野といった古典的な言語領域や、より最近の研究で注目されている領域などが含まれます。</p>
+</div>
+<p>図2(a)の右側にある脳の図は、このROI抽出のプロセスを視覚的に示しています。左半球(L)と右半球(R)の様々なROI（例：LH_IFGorb, LH_IFG, LH_PostTempなど）が色分けされて表示されています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i> 3.5 Cross-Validated Ridge Regression for Layer-wise Encoding Analysis</h3>
+<div class="content-box">
+<p>次に、LLMが「星の王子さま」のテキストをどのように処理するかを導入します。このプロセスは図2(b)に示されています。テキストは文に分割され、LLMに入力されます。使用したLLMの詳細は付録Eに記載されています。</p>
+<p>このフレームワークでは、<span class="keyword">リッジ回帰 (Ridge Regression)</span> を用いて、ニューラルネットワークの異なる層から得られる意味表現が、fMRIで捉えられた脳活動パターンとどの程度関連しているかを定量化します。深層学習と神経科学を統合することで、特定のROIにおけるfMRI信号を<span class="highlight">ニューラルネットワークの埋め込み表現（embeddings）</span>がどれだけよく予測できるかを体系的に評価します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-layer-group"></i> エンコーディング分析とは？</p>
+<p>エンコーディング分析は、刺激（ここではLLMの層別特徴量）が脳活動をどのように引き起こすかをモデル化するアプローチです。刺激の特徴から脳活動を予測するモデルを構築し、その予測精度を評価することで、刺激のどの特徴が脳のどの領域の活動と関連しているかを調べます。</p>
+</div>
+<p>以下に、分析の主要な要素を示します。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="keyword"><i class="fas fa-brain"></i> fMRI応答ベクトル ($\mathbf{y}$)</p>
+<p>$\mathbf{y} \in \mathbb{R}^N$</p>
+<p>特定のROIから抽出されたBOLD信号の時系列データ。$N$ はfMRIのサンプル数（例えば、文の数や時間点の数）を表します。</p>
+</div>
+<div class="info-card">
+<p class="keyword"><i class="fas fa-robot"></i> ニューラル埋め込み ($\mathbf{X}$)</p>
+<p>$\mathbf{X} \in \mathbb{R}^{N \times L \times D}$</p>
+<p>LLMの各層から抽出された文ごとの埋め込み表現（特徴ベクトル）。</p>
+<ul>
+<li>$N$: fMRIデータと対応する文の数。</li>
+<li>$L$: LLMの層の数。</li>
+<li>$D$: 各層の埋め込み表現の次元数。</li>
+</ul>
+</div>
+</div>
+<p>各層 $l$ の予測性能は、$K$分割交差検証 (cross-validation) を通じた<span class="keyword">ピアソンの相関係数 ($\rho$)</span> の平均として計算されます。</p>
+<div class="formula">
+            $$ \rho _ { l } = \frac { 1 } { K } \sum _ { k = 1 } ^ { K } \mathrm { corr } \left( \mathbf { y } _ { \mathrm { t e s t } } ^ { ( k ) } , \mathbf { X } _ { \mathrm { t e s t } } ^ { ( l , k ) } \hat { \pmb { \beta } } ^ { ( l , k ) } \right) $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-calculator"></i> 予測性能の計算式解説</p>
+<ul>
+<li>$\rho_l$: LLMの層 $l$ における予測性能（平均相関係数）。</li>
+<li>$K$: 交差検証の分割数（フォールド数）。例えば、$K=10$ なら10分割交差検証。</li>
+<li>$\mathrm{corr}(\cdot, \cdot)$: ピアソンの相関係数を計算する関数。</li>
+<li>$\mathbf{y}_{\mathrm{test}}^{(k)}$: $k$番目のフォールドにおけるテストデータの実際のfMRI応答。</li>
+<li>$\mathbf{X}_{\mathrm{test}}^{(l,k)}$: $k$番目のフォールドにおけるテストデータの、LLMの層 $l$ からの埋め込み表現。</li>
+<li>$\hat{\boldsymbol{\beta}}^{(l,k)}$: $k$番目のフォールドの訓練データを用いて、層 $l$ の埋め込み表現からfMRI応答を予測するために学習されたリッジ回帰の重み係数。</li>
+<li>$\mathbf{X}_{\mathrm{test}}^{(l,k)} \hat{\boldsymbol{\beta}}^{(l,k)}$: 学習済みモデルによる、テストデータのfMRI応答の予測値。</li>
+</ul>
+<p><strong>具体例:</strong> 100個の文に対するfMRIデータと、あるLLMの10層分の埋め込み表現があるとします。10分割交差検証を行う場合、まずデータを10個のサブセットに分けます。1回目の検証では、9個のサブセットを訓練データとして使い、残りの1個をテストデータとします。訓練データを用いて、LLMの各層（例：第5層）の埋め込み表現 $\mathbf{X}_{\mathrm{train}}^{(5,1)}$ からfMRI応答 $\mathbf{y}_{\mathrm{train}}^{(1)}$ を予測するリッジ回帰モデルを学習し、重み $\hat{\boldsymbol{\beta}}^{(5,1)}$ を得ます。次に、このモデルを使ってテストデータの埋め込み表現 $\mathbf{X}_{\mathrm{test}}^{(5,1)}$ からfMRI応答を予測し $\hat{\mathbf{y}}_{\mathrm{test}}^{(5,1)}$、実際のfMRI応答 $\mathbf{y}_{\mathrm{test}}^{(1)}$ との相関係数を計算します。これを10回繰り返し（毎回異なるサブセットをテストデータとする）、得られた10個の相関係数を平均したものが、その層（第5層）の予測性能 $\rho_5$ となります。</p>
+</div>
+<p>このモデルは、<span class="highlight">リッジ回帰</span>を使用してこれらの予測を推定し、データの忠実度と正則化のバランスを取ることで<span class="keyword">過学習 (overfitting)</span> を防ぎます。回帰の重み ($\boldsymbol{\beta}$) は次のように最適化されます：</p>
+<div class="formula">
+            $$ \hat { \boldsymbol { \beta } } ^ { ( l , k ) } = ( \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l , k ) \top } \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l , k ) } + \alpha \mathbf { I } ) ^ { - 1 } \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l , k ) \top } \mathbf { y } _ { \mathrm { t r a i n } } $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-sliders-h"></i> リッジ回帰の重み計算式解説</p>
+<ul>
+<li>$\hat{\boldsymbol{\beta}}^{(l,k)}$: 層 $l$、フォールド $k$ におけるリッジ回帰の推定された重み係数。</li>
+<li>$\mathbf{X}_{\mathrm{train}}^{(l,k)}$: 層 $l$、フォールド $k$ における訓練データのLLM埋め込み表現。</li>
+<li>$\mathbf{y}_{\mathrm{train}}$: フォールド $k$ における訓練データのfMRI応答。 (原文では $\mathbf{y}_{\mathrm{train}}$ となっており、添字 $k$ が抜けていますが、文脈上 $\mathbf{y}_{\mathrm{train}}^{(k)}$ の意味だと思われます。)</li>
+<li>$\alpha$: <span class="highlight">正則化パラメータ</span>。リッジ回帰の正則化の強さを制御します。この値が大きいほど、重み $\boldsymbol{\beta}$ の大きさに強いペナルティが課され、モデルが単純になる傾向があります（過学習抑制）。</li>
+<li>$\mathbf{I}$: 単位行列。</li>
+</ul>
+<p>この式は、通常の最小二乗法の正規方程式に、正則化項 $\alpha\mathbf{I}$ を加えた形になっています。$\alpha$ の値は、入れ子式の交差検証 (nested cross-validation) 内でのグリッドサーチ（候補値をいくつか試し、最も性能が良いものを選ぶ手法）によって選択されます。</p>
+<p>全てのデータ（fMRI応答 $\mathbf{y}$ とLLM埋め込み $\mathbf{X}$）は<span class="keyword">zスコア化</span>（平均0、標準偏差1に標準化）されます。これは、fMRIデータとニューラル埋め込みの間のスケールの違いを調整し、比較可能にするためです。</p>
+</div>
+<div class="glass-card">
+<p class="keyword"><i class="fas fa-cogs"></i> 特徴量の正規化と並列化</p>
+<p><strong>特徴量の正規化 (Feature Normalization)</strong>: 予測精度を上げるため、回帰分析を行う前に、fMRI応答ベクトル $\mathbf{y}$ とLLMの埋め込み $\mathbf{x}$ (原文では $\mathbf{X}$ のことだと思われます) の両方を、平均が0、分散が1になるように標準化します。これにより、数値計算の安定性が向上します。</p>
+<p><strong>並列化 (Parallelization)</strong>: この分析パイプラインでは、被験者、ROI、LLMの層のそれぞれについて計算を並列化します。具体的には、$S$人の被験者、$R$個のROI、$L$個の層に対して、合計で $\mathcal{O}(SRL)$ 個のモデルを学習します。このような大規模な計算を効率的に行うために並列処理が不可欠であり、これにより層ごとの埋め込み評価のスケーラビリティが確保されます。</p>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-user-friends fa-2x" style="color:var(--color-primary)"></i> <span style="font-size:20px;font-weight:bold;margin:0 10px;">S</span> (Subjects)
+            <i class="fas fa-times fa-lg"></i>
+<i class="fas fa-brain fa-2x" style="color:var(--color-secondary); margin-left:10px;"></i> <span style="font-size:20px;font-weight:bold;margin:0 10px;">R</span> (ROIs)
+            <i class="fas fa-times fa-lg"></i>
+<i class="fas fa-layer-group fa-2x" style="color:var(--color-accent1); margin-left:10px;"></i> <span style="font-size:20px;font-weight:bold;margin:0 10px;">L</span> (Layers)
+            <br/>
+<i class="fas fa-arrow-down fa-2x" style="color:var(--color-dark); margin: 10px 0;"></i>
+<br/>
+<span style="font-size:20px;font-weight:bold; color:var(--color-accent2);">$\mathcal{O}(SRL)$ 個のモデル</span>
+</div>
+</div>
+<p>このアプローチにより、層ごとの相関指標 ($\rho_l$) が得られ、ニューラルネットワークの表現がROI特異的な脳活動とどのように整合しているかについての洞察を得ることができます。リッジ回帰プロセスの詳細については、付録SCを参照してください。</p>
+<img alt="実験パイプラインの図 (再掲)" src="llm_brain_alignment_pipeline.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-location"></i> 図2(b)の再確認</p>
+<p>図2(b)は、このセクションで説明した脳とLLMの対応分析のプロセスを示しています。</p>
+<ol>
+<li>物語の文がLLMに入力され、各層 (Layer 1, ..., Layer 32など) から特徴量 (Dimensions) $X_{L1}, ..., X_{L32}$ が抽出されます。</li>
+<li>これらの特徴量 $X_{Ll}$ と、(a)で得られた脳活動データ $Y$ (特定のROIのもの) を用いて、リッジ回帰モデルが学習されます。これにより、LLMの各層の特徴量から脳活動を予測するモデルが作られます ($Y_{L1}', ..., Y_{L32}'$ は予測された脳活動)。</li>
+<li>最後に、実際の脳活動 $Y$ と、LLMの各層による予測値 $Y_{Ll}'$ との相関 (Corr) が計算され、これが $\rho_l$ となります。</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="section-card" id="4_Experiments_and_Results">
+<h2 class="section-title"><i class="fas fa-flask"></i>4 Experiments and Results</h2>
+<div class="content-box">
+<p>このセクションでは、大規模言語モデル（LLM）と人間の脳が言語を処理する際に、類似した計算原理に基づいているのかを検証するための実験とその結果を詳述します。主な目的は、LLMの文レベルでの神経メカニズムと、LLM内部の階層的な情報表現が、人間が自然な物語を聞いている際の動的な脳活動（fMRIデータで測定）とどのように対応するのかを体系的に調査することです。</p>
+<p>中心的な論点として、本研究では<span class="highlight">モデルの性能向上</span>が、LLMの表現アーキテクチャを<span class="highlight">脳のような階層構造へと進化させる</span>こと、そして特に<span class="highlight">高次の意味的抽象レベル</span>（文の意味や文脈の理解など）において、LLMの機能と脳の解剖学的構造との間の対応関係がより強固になることを示します。具体的には、LLMの性能評価、LLMの内部状態と脳活動との相関分析、そして言語処理における脳の左右半球差（側性化）とLLMの挙動との関連性について報告します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i>4.1 Performance of Large Language Models</h3>
+<div class="content-box">
+<p>✏️ まず、<span class="keyword">大規模言語モデル（LLM）</span>が異なる言語間で文脈をどれだけ正確に理解できるか、その能力を評価することから始めます。このために、中国語の原文と、それに対応する複数の英語翻訳選択肢を用意し、LLMに最適な翻訳を選ばせる<span class="highlight">多肢選択形式のテスト</span>を設計しました。</p>
+<p>最近の研究（Zheng et al., 2024; Wang et al., 2024）では、多肢選択問題におけるLLMの堅牢性（ちょっとした変化に対する強さ）を評価する方法が提案されています。これらを参考に、私たちはLLMの性能を試すために、元の文にいくつかの<span class="keyword">摂動（perturbations）</span>、つまり意図的な改変を加えた選択肢を用意しました。具体的には、刺激として使用した各中国語の原文に対して、以下の表1に示すような5つの異なるタイプの英語の選択肢を生成しました。</p>
+</div>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-table"></i>Table 1: 英語翻訳選択肢の例</p>
+<p>この表は、中国語の原文に対して生成された5種類の英語の選択肢が、どのような意味的バリエーションを持っているかを示しています。これらのバリエーションは、LLMがどの程度深く意味を理解しているかを試すためのものです。</p>
+<img alt="Table 1: Examples of English translation options" src="table1.png"/>
+<ul class="unstyled-list">
+<li><span class="badge">A</span> <strong>Correct Translation (正しい翻訳)</strong>: 元の中国語文の正確な英語翻訳。</li>
+<li><span class="badge blue">B</span> <strong>Word Order Scrambled (単語順序攪乱)</strong>: 正しい翻訳の単語の順序をランダムに入れ替えたもの。文法的にはおかしくなることが多いですが、単語自体は同じです。</li>
+<li><span class="badge purple">C</span> <strong>Part-of-speech Substitution (品詞置換)</strong>: 正しい翻訳の一部の単語を、同じ品詞の別の単語（例えば、名詞を別の名詞に、動詞を別の動詞に）置き換えたもの。文の構造は保たれますが、意味が変わります。</li>
+<li><span class="badge orange">D</span> <strong>Sentence Structure Transformation (文構造変換)</strong>: 正しい翻訳の文構造を変形させたもの。例えば、能動態を受動態に変えるなど。意味は基本的に同じですが、表現形式が変わります。</li>
+<li><span class="badge yellow">E</span> <strong>Information Insertion/Deletion (情報挿入/削除)</strong>: 正しい翻訳に余計な情報を追加したり、逆に一部の情報を削除したりしたもの。意味内容が変化します。</li>
+</ul>
+<p class="reference">（各バリエーションの詳細な説明は、論文のAppendix Dに記載されています。）</p>
+</div>
+<div class="content-box">
+<p>これらの英語の選択肢は、それぞれLLMに入力され、対応する<span class="keyword">埋め込み表現（embeddings）</span>を取得します。埋め込み表現とは、単語や文の意味を数値のベクトルで表現したもので、意味が近いほどベクトル間の距離も近くなる（またはコサイン類似度が高くなる）という性質を持ちます。</p>
+<p>この実験設計により、LLMが正しい翻訳を様々な種類の<span class="highlight">攪乱情報（distractors、つまり正解ではない選択肢）</span>から区別する能力を体系的に分析し、その<span class="keyword">クロスリンガルな意味的整合性</span>（異なる言語間で意味がどれだけ一致しているか）の性能を評価することができます。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-calculator"></i>Cross-lingual Semantic Alignment Accuracy (CSAA) の定義</p>
+<p>LLMのクロスリンガルな意味理解能力を定量的に評価するために、私たちは<span class="keyword">Cross-lingual Semantic Alignment Accuracy (CSAA)</span>という指標を提案します。この指標は、モデルが元の中国語文に対して、意味的に最も類似した候補として<span class="highlight">正しい翻訳（選択肢A）を正しく識別したケースの割合</span>として定義されます。ここでの「意味的な類似性」は、埋め込み空間における<span class="keyword">コサイン類似度</span>によって測定されます。</p>
+</div>
+<div class="content-box">
+<p>まず、各サンプル $i$（つまり、各中国語文）に対して、指示変数 $\delta_i$ を以下のように定義します。</p>
+<div class="formula">
+<p>指示変数 $\delta_i$:</p>
+            $$ \delta _ { i } = \begin{cases} 1, &amp; \mathrm{if} \mathrm{ \ a r g m a x } _ { x } \left( \cos \left( { \bf v } _ { c _ { i } } , { \bf v } _ { e _ { i , x } } \right) \right) = A \\ 0, &amp; \mathrm{otherwise} \end{cases} $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-microscope"></i>数式の解説：指示変数 $\delta_i$</p>
+<ul>
+<li>$\delta_i$: $i$番目の中国語文に対する評価結果を示す変数。正解なら1、不正解なら0（論文中では0の場合が明示されていませんが、通常はこのように定義されます）。</li>
+<li>$\mathrm{argmax}_x$: 複数の英語選択肢 $x$ (A, B, C, D, E) の中で、続く式の結果が最大となる選択肢 $x$ を見つける操作。</li>
+<li>$\cos(\mathbf{v}_{c_i}, \mathbf{v}_{e_{i,x}})$: $i$番目の中国語文の埋め込みベクトル $\mathbf{v}_{c_i}$ と、その文に対する$x$番目の英語選択肢の埋め込みベクトル $\mathbf{v}_{e_{i,x}}$ との<span class="keyword">コサイン類似度</span>を計算します。コサイン類似度は、2つのベクトルがどれだけ同じ方向を向いているかを示し、-1から1の値をとり、1に近いほど類似性が高いことを意味します。</li>
+<li>$= A$: 上記のコサイン類似度が最も高かった選択肢が、正しい翻訳である選択肢Aであった場合、という意味です。</li>
+</ul>
+<p>具体例：ある中国語の文があり、それに対する英語の選択肢がA（正解）、B、C、D、Eだとします。LLMが各選択肢と中国語文とのコサイン類似度を計算し、Aの類似度が最も高ければ $\delta_i = 1$ となり、そうでなければ $\delta_i = 0$ となります。</p>
+</div>
+<p>そして、CSAAは以下のように定義されます。</p>
+<div class="formula">
+<p>CSAAの定義式:</p>
+            $$ \mathrm { C S A A } = \frac { 1 } { N } \sum _ { i = 1 } ^ { N } \delta _ { i } $$
+        </div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-line"></i>数式の解説：CSAA</p>
+<ul>
+<li>$N$: 評価に使用した中国語文の総数。</li>
+<li>$\sum_{i=1}^{N} \delta_i$: 全ての中国語文に対して、正しく選択肢Aを選べた回数（$\delta_i=1$となった回数）の合計。</li>
+<li>$\frac{1}{N}$: 上記の合計を総数 $N$ で割ることで、正解率を計算しています。</li>
+</ul>
+<p>つまり、CSAAの値が高いほど、そのLLMは異なる言語間で意味を正確に対応付ける能力（クロスリンガルな意味的整合能力）が強いと評価できます。</p>
+</div>
+</div>
+<img alt="Figure 3: Performance comparison of 14 LLMs" src="llm_similarity_benchmark_results.jpg"/>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-chart-bar"></i>Figure 3: 14種類のLLMの性能比較</p>
+<p>上の図3は、14種類の異なるLLMについて、先ほど定義したCSAAスコアを比較した結果を示しています。棒グラフの横軸はCSAAスコア（ポイント）、縦軸は各LLMのモデル名です。スコアが高いほど、クロスリンガルな文理解性能が高いことを意味します。</p>
+<ul>
+<li>🏆 <span class="highlight">Llama-3.1-Instruct</span> バージョンが<span class="keyword">31.4ポイント</span>でトップの成績を収めました。</li>
+<li>🥈🥉 次いで、2つの <span class="highlight">Gemma</span> のバリアント（指示チューニング版とベース版）がそれぞれ30.7ポイント、30.3ポイントと高いスコアでした。</li>
+<li>📉 上位3つのモデルの後には、性能が急激に低下しています。中位層（22.7～15.1ポイント）は、主に <span class="highlight">Baichuan2</span> と <span class="highlight">DeepSeek</span> のバリアントが占めています。</li>
+<li>⚓️ <span class="highlight">glm-4.9b</span> (7.9ポイント) と <span class="highlight">Qwen2.5-7B</span> (6.4ポイント) は下位に位置しています。</li>
+</ul>
+<p>📊 グラフの色のグラデーション（赤から緑）は、スコアの格差を視覚的に強調しており、最高性能のモデルと最低性能のモデルの間には<span class="highlight">28ポイント以上の差</span>があることを示しています。</p>
+<p>🔍 一貫して見られる傾向として、各モデルファミリー（例えばLlamaファミリーやGemmaファミリーなど）において、<span class="keyword">指示チューニングされたモデル（instruction-tuned models）</span>は、常に<span class="keyword">ベースモデル（base models）</span>よりも優れた性能を示しています。指示チューニングとは、特定の指示に従って応答を生成するようにモデルをファインチューニングする手法で、これによりモデルの対話能力やタスク遂行能力が向上することが知られています。</p>
+</div>
+<img alt="Figure 4: All correlation between model predictions and brain activity across layers. Shaded areas represent the 95% confidence intervals." src="model_layer_brain_activity_correlation.jpg"/>
+<h3 class="subsection-title"><i class="fas fa-brain"></i>4.2 Model Performance and Activation Correlation</h3>
+<div class="content-box">
+<p>🧠 次に、計算モデル（LLM）と人間の脳活動との対応関係を包括的に評価するために、複数の脳領域とLLMの各層におけるモデルの性能を比較しました。</p>
+<p class="note-title"><i class="fas fa-wave-square"></i>Figure 4: モデルの予測と脳活動との層ごとの相関</p>
+<p>上の図4は、様々な計算モデル（LLM）と全脳領域における脳活動との相関を層ごとに比較した結果をまとめています。このグラフは、横軸がLLMの層（Original Layers）、縦軸が相関係数（Correlation Coefficient）を示しており、各色の線が個別のLLMの性能推移を表しています。影付きの領域は、<span class="keyword">95%信頼区間</span>を示しており、結果の統計的な確からしさの範囲を表します。</p>
+<p>重要な発見として、ほとんどの場合、モデルは<span class="highlight">最終層ではなく中間層で予測性能のピーク</span>に達することがわかりました。これは、以前の研究（Mischler et al., 2024）の結果とも一致しています。つまり、LLMが情報を処理していく過程で、最も脳活動と類似した情報表現が現れるのは、必ずしも処理の最終段階ではないということです。</p>
+</div>
+<img alt="Figure 5: Average correlation of LLMs across 12 ROIs." src="model_performance_average_correlation_rois.jpg"/>
+<div class="content-box">
+<p class="note-title"><i class="fas -chart-pie"></i>Figure 5: 12の関心領域(ROI)におけるLLMの平均相関</p>
+<p>さらにモデル間を比較するために、各モデルにおいて<span class="keyword">ピーク性能を示した最適な層</span>（つまり、図4で最も相関が高かった層）をそのモデルの出力表現として選択し、12個の<span class="keyword">関心領域（ROIs: Regions of Interest）</span>にわたる平均相関を調べました。その結果が上の図5に示されています。この箱ひげ図は、横軸に各LLMモデル、縦軸に12のROIで平均した相関係数を示しています。箱の中央線は中央値、箱の上端と下端はそれぞれ75パーセンタイルと25パーセンタイル、ひげはデータの範囲（外れ値を除く）、個々の点は外れ値や個別のデータポイントを示していると考えられます。</p>
+<p>📌 個々のROIに関するより詳細な結果は、論文のAppendixの図9に記載されています。</p>
+<p>私たちの結果は、LLMが脳領域全体で、ベースラインとして用いた<span class="keyword">BERTモデル</span>よりも一貫して高い相関指標をもたらすことを示しています。これは、より大規模で複雑なLLMの方が、BERTのような初期のモデルよりも脳活動との類似性が高いことを示唆しています。</p>
+</div>
+<div class="two-column">
+<div class="column">
+<img alt="Figure 6: Comparison of instruction-tuned versus base models across performance and activation correlations" src="model_performance_activation_correlation.jpg"/>
+<p class="note-title"><i class="fas fa-balance-scale"></i>Figure 6: 指示チューニングモデルとベースモデルの性能および活性化相関の比較</p>
+</div>
+<div class="column">
+<img alt="Figure 7: Correlation between model performance and activation patterns across LLMs" src="model_performance_activation_correlation.jpg"/>
+<p class="note-title"><i class="fas fa-link"></i>Figure 7: LLMにおけるモデル性能と活性化パターンの相関</p>
+<p class="reference">注: 実際には図6と図7は同じ画像が参照されていますが、論文の記述に基づき、ここでは別々のキャプションとして扱います。図の左側が図6の内容に、右側が図7の内容に対応していると解釈します。</p>
+</div>
+</div>
+<div class="content-box">
+<p>14種類のLLMの中から、比較分析のために<span class="highlight">5つの指示チューニングモデル</span>と、それらに対応する<span class="highlight">5つのベースモデル</span>を選択しました。この選択は、指示チューニングの影響を直接比較することを目的としています。</p>
+<p>図6（左側のグラフ）に示すように、指示チューニングモデルは、ベースモデルと比較して、<span class="keyword">相関（Correlation）</span>と<span class="keyword">性能（Performance、これはCSAAスコアを指すと思われます）</span>の両方の指標で改善を示しています。</p>
+<ul>
+<li>具体的には、<span class="highlight">相関の変化（Correlation Change）</span>に関するp値は、統計的に有意な傾向を示しています。</li>
+<li>一方、<span class="highlight">性能の変化（Performance Change）</span>は、<span class="keyword">順列検定（permutation test）</span>で $p = 0.03125$ となり、観測された性能向上は、その大きさが実質的であるだけでなく、統計的有意性に達するほど一貫していることを示しています。</li>
+</ul>
+<p>これらの結果は、<span class="keyword">指示チューニング</span>がモデルの挙動を強化する上で潜在的な可能性を持っていることを強調しています。</p>
+<p>次に、図7（右側の散布図）で、モデルの性能と層の活性化相関（図5で示した最適な層の相関値）との関係を示します。この図では、横軸が層活性化相関（Layer Activation Correlation）、縦軸がモデル性能（Performance Score、CSAAスコア）を表し、各点が個々のLLMを示しています。点の色はパラメータ規模（Params (Billion)）を表しており、ピンクから紫のグラデーションで示されています。</p>
+<p>📝 <span class="highlight">67億～90億パラメータ</span>のモデル群において、より高い性能スコアは、活性化の値と<span class="keyword">弱い正の相関</span>を示すことがわかりました（ピアソンの相関係数: $r = 0.601$, $p = 0.030$）。これは統計的に有意な相関です（アスタリスク*が付いていることから示唆されます）。</p>
+<p>注目すべき例としては、Llama-3-1-8B-Instruct（67億パラメータ）やgemma-2.9b（90億パラメータ）があり、これらの活性化パターンは<span class="highlight">パラメータ規模に依存したクラスタリング</span>（点の色のグラデーションがこれを示唆）を示しています。散布図の白いグリッド背景と、注釈付きの信頼区間（水色の影）は、モデルアーキテクチャの比較分析を容易にしています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-arrows-alt-h"></i>4.3 Left-right Hemispheric Asymmetry</h3>
+<div class="content-box">
+<p>🌍 このセクションでは、主要な言語関連脳領域におけるLLM（67億～90億パラメータ）処理に関連する神経活動の<span class="keyword">側性化パターン</span>、つまり脳の左右半球での活動の違いについて調査します。特に、<span class="highlight">左右半球間の非対称性</span>と、それが<span class="highlight">モデルの性能とどのように関連しているか</span>に焦点を当てます。</p>
+</div>
+<img alt="Figure 8: (a) localization of ROIs, (b) LH-RH correlation differences, (c) relationship between LH-RH asymmetry and model performance" src="roi_hemispheric_asymmetry_llm_performance.jpg"/>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-brain"></i>Figure 8: (a) 両半球におけるROIの局在、(b) ROI-LLM関連における左-右(LH-RH)相関差、(c) LH-RH非対称性とモデル性能の関係</p>
+<p>上の図8(a)では、両半球における関心領域（ROI）の局在を視覚化しています。左半球のROIは赤色で、右半球のROIは青色で示されています。示されている主なROIは以下の通りです：</p>
+<ul class="unstyled-list">
+<li>LH_IFG (左下前頭回), RH_IFG (右下前頭回)</li>
+<li>LH_MFG (左中前頭回), RH_MFG (右中前頭回)</li>
+<li>LH_AntTemp (左前側頭部), RH_AntTemp (右前側頭部)</li>
+<li>LH_PostTemp (左後側頭部), RH_PostTemp (右後側頭部)</li>
+<li>LH_AngG (左角回), RH_AngG (右角回)</li>
+<li>LH_IFGorb (左眼窩部下前頭回), Rigor (右眼窩部？論文中ではRH_IFGorbと対応する領域が明示されていないが、図からは右の眼窩部周辺を指すと思われる)</li>
+</ul>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<p>特定の脳ROIとLLM間の神経活動の相関において、<span class="keyword">左右半球の非対称性</span>が観察されました。図8(b)は、各ROIにおける左半球の相関から右半球の相関を引いた値（LH-RH Correlation Difference）を示しています。正の値は左半球優位、負の値は右半球優位を意味します。</p>
+<ul>
+<li>🧠 <span class="highlight">下前頭回（IFG）</span>と<span class="highlight">後部側頭領域（PostTemp）</span>では、LLM関連の神経相関において、より強い<span class="keyword">左半球優位性</span>が示されました。これは、これらの領域が言語生成や理解といった中核的な言語機能において果たす役割と一致しています（Hu et al., 2023）。統計的にもIFG ($p=0.025$)、PostTemp ($p=0.007$) で有意な左半球優位性が見られました。</li>
+<li>↔️ 逆に、<span class="highlight">中前頭回（MFG）</span>と<span class="highlight">前部側頭領域（AntTemp）</span>では、より強い<span class="keyword">右半球の関与</span>が示されました。これは、比喩の処理、文脈的統合、クロスモーダルな意味処理（例えば、言葉とイメージを結びつけるなど）といったタスクにおける特化を反映している可能性があります。
+                    <ul>
+<li>右MFGの相関は、複雑な物語における認知制御に対するLLMの要求に関連する可能性があります（Japee et al., 2015）。</li>
+<li>右AntTempの活動は、多モーダルな意味表現をサポートしていると考えられます。</li>
+</ul>
+                統計的にもMFG ($p=0.005$)、AntTemp ($p=0.001$) で有意な右半球優位性が見られました。
+                </li>
+</ul>
+<p>これらの発見は、構文/意味処理における<span class="highlight">左半球優位の古典的な言語側性化仮説</span>と、認知制御への<span class="highlight">右半球の貢献を示す新たな証拠</span>（Vigneau et al., 2006; Menon and D’Esposito, 2022）と整合しています。</p>
+</div>
+<div class="info-card">
+<p>半球の非対称性とモデル性能との関係を調べるために、図8(c)は、LH-RH差（横軸）とモデル性能（縦軸、CSAAスコア）との間の相関を示しています。各プロットは異なるROIに対応しています。</p>
+<ul>
+<li>📈 分析された6つのROIのうち、<span class="keyword">IFG</span>と<span class="keyword">MFG</span>の側性化が性能と関連している可能性が示唆され、<span class="highlight">正の関係</span>が見られました（ピアソン相関: IFG: $r = 0.54$, $p = 0.055$; MFG: $r = 0.50$, $p = 0.084$）。p値は厳密な有意水準（例：0.05）には達していませんが、傾向としては注目されます。つまり、これらの領域でより左半球優位（またはより右半球優位の度合いが小さい）であるほど、モデルの性能が高い傾向があることを示唆しています。</li>
+<li>📉 他の領域（AntTemp, PostTemp, AngG, IFGorb）では、有意な相関は見つかりませんでした。
+                    <ul class="unstyled-list">
+<li>AntTemp: $r = 0.02, p = 0.941$</li>
+<li>PostTemp: $r = 0.09, p = 0.770$</li>
+<li>AngG (角回): $r = 0.09, p = 0.687$ (論文では0.09だが図では-0.12と表示、p値は整合)</li>
+<li>IFGorb (眼窩部下前頭回): $r = -0.06, p = 0.845$</li>
+</ul>
+</li>
+</ul>
+<p>この現象の背景には、分散した脳領域に対する<span class="keyword">前頭前皮質（prefrontal cortex）の調節的役割</span>があるかもしれません（Badre and Nee, 2018）。前頭前皮質の側性化された機能的特化は、認知資源のトップダウン協調を強化し、計算モデルで見られる効率最適化を反映している可能性があります。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i>図8(c) AngGのr値に関する注意点</p>
+<p>論文本文中ではAngGのPearson相関r値が $r = 0.09$ と記載されていますが、図8(c)のAngG Lateralizationのプロット内には $r = -0.12$ と表示されています。p値 ($p=0.687$) は一致しているため、どちらかのr値に誤記がある可能性があります。ここでは論文本文の記述を優先しています。</p>
+</div>
+<div class="content-box">
+<p>📌 これまでの実験結果をまとめると、LLMの性能はモデルの種類やチューニング方法によって異なり、特に指示チューニングが有効であることが示されました。また、LLMの内部表現は脳活動と相関し、特に中間層で高い相関が見られること、そしてモデル性能が高いほど脳活動との相関も高まる傾向があることが明らかになりました。さらに、言語処理における脳の左右半球の機能分化が、LLMの性能とも関連している可能性が示唆されました。</p>
+</div>
+</div>
+<div class="section-card" id="5_Discussion">
+<h2 class="section-title"><i class="fas fa-comments"></i> 5 Discussion</h2>
+<div class="bubble-box">
+<p>この「ディスカッション」セクションでは、本研究で明らかになった知見が、<strong class="keyword">大規模言語モデル（LLM）</strong>と人間の脳における<strong class="keyword">文処理</strong>の理解にどのような新しい光を当てるのかを深く議論します。特に、LLMの内部で情報がどのように表現されているか（<strong class="keyword">階層的埋め込み</strong>）と、それが人間の脳活動（<strong class="keyword">fMRIデータ</strong>で計測）とどのように関連しているのか、そして、脳の左右の半球の機能差（<strong class="keyword">半球非対称性</strong>）が言語処理にどう関わっているのかについて、これまでの研究成果と比較しながら考察を深めていきます。この探求は、人工知能と言語を司る私たちの脳、両方のシステムの謎を解き明かすことを目指しています！ 🚀</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> このセクションで出てくる重要キーワード</p>
+<ul>
+<li><strong class="keyword">LLMs (Large Language Models)</strong>: 大量のテキストデータで訓練された、人間のように自然な文章を生成したり理解したりできるAIモデルのこと。</li>
+<li><strong class="keyword">fMRI (functional Magnetic Resonance Imaging)</strong>: 機能的磁気共鳴画像法。脳の活動に伴う血流の変化を捉えることで、脳のどの部分が活発に動いているかを視覚化する技術です。</li>
+<li><strong class="keyword">Brain Decoding</strong>: 脳デコーディング。脳活動パターンから、人が何を見たり聞いたり考えているかを推定する技術。</li>
+<li><strong class="keyword">Activation Correlations</strong>: 活性化相関。LLMの内部状態（ニューロンの活性化具合）と、脳活動パターンの間の統計的な関連性の強さ。</li>
+<li><strong class="keyword">Instruction-tuned models</strong>: 指示チューニングされたモデル。特定の指示（例えば「質問に答えて」「要約して」など）に従ってタスクを実行できるように、追加の学習データで調整されたLLM。</li>
+<li><strong class="keyword">Base models</strong>: ベースモデル。指示チューニングのような特定のタスク向けの追加学習が行われる前の、基本的な大規模テキストデータでの事前学習が完了した状態のLLM。</li>
+<li><strong class="keyword">Scaling Law</strong>: スケーリング則。モデルのサイズ（パラメータ数など）や学習データ量といった要素を大きくしていくと、性能がどのように向上するかを示す法則のこと。</li>
+<li><strong class="keyword">Hemispheric Asymmetry</strong>: 半球非対称性。脳の左半球と右半球で、機能や構造に違いがあること。言語機能は左半球に偏在することが多いとされています。</li>
+<li><strong class="keyword">ROI (Region of Interest)</strong>: 関心領域。fMRI研究などで、特に注目して分析する脳の特定の領域のこと。</li>
+</ul>
+</div>
+<div class="content-box">
+<p>論文では、LLMが文を処理する際に、人間の脳活動とどのように連携するのかを理解することが、AIと言語を司る私たちの脳、両方のシステムの仕組みを解き明かす上で非常に重要だと述べています (Mahowald et al., 2024; Zhou et al., 2024)。これは、AIをより人間らしく賢くするため、そして脳の言語処理メカニズムの謎を解き明かすために、両者の共通点や相違点を探る試みと言えます。 🧠🤝💻</p>
+</div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-brain"></i> 文タスクにおける脳デコーディングの観点から</h3>
+<p>本研究のモデルは、<strong class="keyword">文タスクにおける脳デコーディング</strong>（脳活動から文の意味を読み解くこと）の観点から見ると、LLMの<strong class="highlight">中間層</strong>が最終層よりも高い活性化相関を示すことがわかりました。これはMischlerらの研究(2024)の結果と一致しています。つまり、LLMが文の意味を理解していく過程で、中間の処理段階が脳活動と最も強く結びついている可能性を示唆しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 補足：中間層と最終層</p>
+<p>LLMは多くの層（レイヤー）から構成されており、入力された情報は各層を順番に通過しながら処理されます。初期の層では単語レベルの単純な特徴を捉え、層が進むにつれてより複雑で抽象的な意味情報を捉えていくと考えられています。<strong class="highlight">中間層</strong>が脳活動との相関が高いということは、脳もLLMも、文の意味を完全に理解する手前の、ある程度抽象化された段階で似たような情報表現を使っているのかもしれません。</p>
+</div>
+<p>さらに重要な点として、本研究では<strong class="keyword">fMRIデータ</strong>を用いた探索を行いましたが、これは頭蓋内電極記録やMEG（脳磁図）を用いたMischlerらのアプローチ(Zhou et al., 2024)を補完するものです。異なる計測手法で同様の傾向が見られることは、結果の信頼性を高めますね。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-microscope fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>fMRI</strong>: 血流変化を捉え、空間解像度が高い（どこで活動しているかが詳細にわかる）。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-bolt fa-2x" style="color: var(--color-accent2);"></i>
+<p><strong>頭蓋内電極/MEG</strong>: 電気/磁気活動を直接捉え、時間解像度が高い（いつ活動しているかが詳細にわかる）。</p>
+</div>
+</div>
+</div>
+<div class="info-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 文処理レベルでの比較とLLMの進化</h3>
+<p><strong class="keyword">文処理</strong>のレベルでは、Yuら(2024)はBERTというモデルの観点からこのプロセスを調査しました。一方、本研究ではBERTだけでなく、より大きなLLM（6.7B～9Bパラメータ）と比較しています。パラメータ数が多いほど、モデルはより複雑なパターンを学習できる能力を持つと考えられます。</p>
+<p>そして、<strong class="keyword">指示チューニングされたモデル</strong>（instruction-tuned models）は、ベースモデル（base models）と比較して、脳活動との<strong class="highlight">相関</strong>と<strong class="highlight">文理解能力</strong>の両方で優れており、特に相関においてはわずかながらも有意な改善が見られました。この発見は、指示チューニングがLLMと脳の類似性を大幅に向上させることを報告したRenら(2025)の研究とも一致します。つまり、LLMに「こうしなさい」と教え込むことで、より人間の脳に近い処理をするようになる、ということです。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge blue">ベースモデル</span> 大量のテキストデータで基本的な言語理解能力を学習。
+                </div>
+<div class="pipeline-step">
+<span class="badge orange">指示チューニング</span> 特定の指示に従うように追加学習。
+                </div>
+<div class="pipeline-step">
+<span class="badge green">性能向上モデル</span> より高いタスク性能と脳との類似性向上！
+                </div>
+</div>
+</div>
+</div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> モデルサイズから理解能力への焦点シフト</h3>
+<p>Bonnasse-GahotとPallier(2024)のような以前の研究は、主にモデルの<strong class="keyword">サイズ</strong>と脳との相関関係に焦点を当てていました。しかし、本研究はモデルの<strong class="keyword">理解能力</strong>へと重点を移しています。ここが重要なポイントです！ 📝</p>
+<p>具体的には、6.7Bから9Bのパラメータ範囲内で、モデルの<strong class="highlight">理解能力</strong>と<strong class="highlight">神経的な類似性</strong>（脳活動との整合性）の間に有意な正の関連があることを見出しただけでなく、<strong class="keyword">スケーリング則</strong>も特定しました。これは、<strong class="highlight">言語モデルの理解能力が向上するにつれて、脳活動との神経的な整合性が体系的かつ予測可能に向上する</strong>ことを意味します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-brain"></i> スケーリング則の発見</p>
+<p>📈 モデルの理解力向上 <i class="fas fa-arrow-right" style="color: var(--color-accent1);"></i> 🧠 脳との整合性向上</p>
+<p>これは、単にモデルを大きくするだけでなく、モデルが「賢く」なる（＝理解能力が上がる）ほど、その処理プロセスが人間の脳に近づいていくという、非常に興味深い法則性を示しています。</p>
+</div>
+</div>
+<img alt="Figure 8: ROIの半球非対称性とLLMのパフォーマンスの関係" src="roi_hemispheric_asymmetry_llm_performance.jpg"/>
+<div class="caption-box" style="text-align: center; margin-top: 10px; margin-bottom: 20px; font-style: italic; color: var(--color-gray);">
+<p><strong>図8の説明:</strong></p>
+<p>(a) は、両半球におけるROIの位置を示しています（左半球：赤色、右半球：青色）。脳の絵に色付けされた領域が、分析対象の脳部位です。</p>
+<p>(b) は、ROIとLLMの関連における左半球と右半球の相関の差（LH-RH）を示しています。グラフのバーが正の方向なら左半球優位、負の方向なら右半球優位を意味します。</p>
+<p>(c) は、LH-RH非対称性とモデルのパフォーマンスの関係を調べています。散布図の各点は個々のLLMを示し、相関の差とモデル性能の関係性（例えば、左半球優位性が高いほどモデル性能が高いか）を見ています。</p>
+</div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-yin-yang"></i> 左右半球の非対称性と言語機能</h3>
+<p><strong class="keyword">左右半球の非対称性</strong>は、人間の脳の基本的な組織原理であり、言語や認知機能の専門化を形成します。これは、脳の左側と右側で得意な仕事が分かれている、ということです。</p>
+<div class="two-column">
+<div class="column glass-card" style="padding: 15px;">
+<h4><i class="fas fa-comments" style="color: var(--color-primary);"></i> 左半球の役割</h4>
+<p><strong class="keyword">IFG（下前頭回）</strong>と<strong class="keyword">PostTemp（後側頭部）</strong>における<strong class="highlight">左半球優位性</strong>は、これらが中核的な言語機能（Hu et al., 2023）において確立された役割、つまり<strong class="highlight">構文エンコーディング</strong>（文の構造の処理）と<strong class="highlight">意味統合</strong>（単語の意味を組み合わせて文全体の意味を理解すること）を支持していることと一致します。つまり、言語の基本的な処理は主に左脳で行われている、という従来の知見を裏付けています。</p>
+<ul class="unstyled-list">
+<li><span class="badge red">IFG (左)</span>: 構文処理、言語生成</li>
+<li><span class="badge red">PostTemp (左)</span>: 意味理解、聴覚情報処理</li>
+</ul>
+</div>
+<div class="column glass-card" style="padding: 15px;">
+<h4><i class="fas as fa-lightbulb" style="color: var(--color-secondary);"></i> 右半球の役割</h4>
+<p>対照的に、<strong class="keyword">MFG（中前頭回）</strong>と<strong class="keyword">AntTemp（前側頭部）</strong>における<strong class="highlight">右半球の関与</strong>は、<strong class="highlight">比喩の理解</strong>、<strong class="highlight">文脈統合</strong>（Japee et al., 2015）、および<strong class="highlight">マルチモーダルな意味表現</strong>（言語だけでなく視覚など他の情報も統合した意味の表現）といった専門的なプロセスを反映している可能性があります。右脳は、より高次で複雑な言語ニュアンスの理解に関わっているようです。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">MFG (右)</span>: 比喩理解、認知制御</li>
+<li><span class="badge blue">AntTemp (右)</span>: 文脈統合、マルチモーダル意味表現</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i> 注意点：専門用語解説</p>
+<ul>
+<li><strong>IFG (Inferior Frontal Gyrus)</strong>: 下前頭回。ブローカ野などを含み、言語生成や文法処理に重要。</li>
+<li><strong>PostTemp (Posterior Temporal)</strong>: 後部側頭領域。ウェルニッケ野などを含み、言語理解に重要。</li>
+<li><strong>MFG (Middle Frontal Gyrus)</strong>: 中前頭回。高次の認知機能、ワーキングメモリ、注意制御などに関与。</li>
+<li><strong>AntTemp (Anterior Temporal)</strong>: 前部側頭領域。意味記憶、概念知識、社会認知などに関与。</li>
+<li><strong>AngG (Angular Gyrus)</strong>: 角回。意味処理、数処理、記憶、空間認知など多様な機能に関与。</li>
+<li><strong>IFGorb (Orbital part of IFG)</strong>: 眼窩部下前頭回。情動処理や意思決定などに関与。</li>
+<li><strong>Syntactic Encoding</strong>: 構文符号化。文の文法的構造を処理し、表現すること。</li>
+<li><strong>Semantic Integration</strong>: 意味統合。個々の単語や句の意味を組み合わせて、文全体の包括的な意味を構築するプロセス。</li>
+<li><strong>Multimodal Semantic Representations</strong>: マルチモーダル意味表現。言語情報だけでなく、視覚、聴覚、触覚など複数のモダリティ（様相）からの情報を統合した意味の表現。</li>
+</ul>
+</div>
+<div class="content-box">
+<p><strong class="keyword">IFG/MFG</strong>の左方への非対称性とモデルのパフォーマンスの間の<strong class="highlight">正の傾向</strong>は、これらの領域における神経専門化の強化が、半球間の干渉を減らし、処理効率を向上させる可能性を示唆しています (Cai et al., 2013; Friedman and Robbins, 2022)。つまり、左脳のIFGやMFGがより専門的に働くことで、LLMの性能も向上するかもしれない、ということです。特に、<strong class="highlight">左IFGのより強い活性化</strong>は、以前から優れた言語能力と関連付けられています (Gotts et al., 2013; Arredondo et al., 2019)。</p>
+<p>他の領域（例えばAngG: 角回）で有意な相関が見られなかったことは、<strong class="highlight">両半球の協調</strong>や、<strong class="highlight">ドメイン一般的なプロセス</strong>（特定の機能に特化しない、より広範な認知プロセス）を示している可能性があります。例えば、AngGは<strong class="keyword">デフォルトモードネットワーク</strong>（安静時や内省時に活動する脳領域ネットワーク）における役割や、左右差のない意味統合に関与しているとされています (Kuhnke et al., 2023)。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-puzzle-piece"></i> 複雑な脳機能</p>
+<p>脳の機能は非常に複雑で、特定の領域が一つの機能だけを担っているわけではありません。多くの場合は複数の領域がネットワークとして協調して働いています。相関が見られないからといって、その領域が言語処理に関与していないとは限りません。</p>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-brain"></i> まとめ：LLM処理と脳の関与</p>
+<p>これらの発見は、LLMの処理が、<strong class="highlight">保存された左半球の言語システム</strong>（伝統的に言語処理の中心と考えられてきた部分）と、<strong class="highlight">より高次の認知的要求をサポートする右半球のネットワーク</strong>の両方を利用していることを強調しています。</p>
+<p>半球非対称性の機能的特異性は、LLMのパフォーマンスへの明確な神経的寄与を解きほぐす必要性を強調しており、それを単一のメカニズムに帰するのではなく、多様な脳領域がそれぞれ異なる役割を果たしていることを示唆しています。🔍</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-arrow-down fa-2x" style="color: var(--color-primary);"></i>
+</div>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 1.1em; color: var(--color-secondary);">つまり、LLMの賢さは、脳の左半球と右半球がそれぞれの得意分野を活かして協力することで成り立っているのかもしれませんね！</p>
+</div>
+</div>
+<div class="section-card" id="6_Conclusion">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i> 6 Conclusion</h2>
+<div class="bubble-box">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; line-height: 1.6;">
+<i class="fas fa-rocket" style="color: var(--color-primary); margin-right: 5px;"></i>この「結論」セクションへようこそ！
+            ここでは、本研究で明らかになった重要なポイントをギュッとまとめて解説します。この研究は、<span class="keyword">大規模言語モデル（LLM）</span>というAIと、私たち<span class="keyword">人間の脳</span>が、文を理解するときにどのように似ているのか、あるいは違うのかを探求したものです。
+            <span class="highlight">特注の文理解タスク</span>と、<span class="highlight">fMRIという脳活動計測データ</span>を組み合わせることで、AIと脳の興味深い関係性が見えてきました。さあ、一緒に見ていきましょう！ 📝🧠
+        </p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> 研究の核心：LLMと脳活動の比較分析</h3>
+<div class="content-box">
+<p>本研究の大きな目的は、<strong>大規模言語モデル（LLMs）</strong>と<strong>人間の脳活動</strong>との間に存在するかもしれない「つながり」を見つけ出すことでした。これを実現するために、私たちは次のようなユニークな実験計画を立てました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-tasks fa-2x" style="color: var(--color-accent1);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent1);">1. <span class="badge green">独自開発</span> 文理解タスク ✏️</h4>
+<p>LLMがどれだけ文の意味を正しく捉えているかを測るため、<span class="highlight">専用のテスト問題</span>（文理解タスク）を作成しました。これにより、一般的なデータセットだけでは分からない、LLMの深い理解度を評価できます。</p>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-brain fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent2);">2. <span class="badge purple">リアルタイム</span> fMRIデータ 🧠</h4>
+<p>人間が物語を聞いている最中の脳活動を、<span class="highlight">fMRI（機能的磁気共鳴画像法）</span>という装置で計測しました。これは、脳のどの部分が活発に動いているかを視覚化できる技術で、より<span class="keyword">自然な状態</span>での言語理解プロセスを捉えることができます。</p>
+</div>
+</div>
+<div style="text-align: center; margin: 25px 0;">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.3em; color: var(--color-primary);">
+<i class="fas fa-puzzle-piece" style="color: var(--color-accent1);"></i> 文理解タスク  <i class="fas fa-plus" style="color: var(--color-gray); margin: 0 10px;"></i> <i class="fas fa-head-side-cough" style="color: var(--color-accent2);"></i> fMRIデータ <i class="fas fa-long-arrow-alt-right" style="color: var(--color-gray); margin: 0 10px;"></i> <span class="highlight">LLMと脳の比較分析</span> <i class="fas fa-search-dollar" style="color: var(--color-secondary);"></i>
+</p>
+</div>
+<p>このアプローチにより、14種類のオープンソースLLMを評価し、その結果を脳活動データと比較分析しました。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> 主要な発見：LLMと脳に関する新たな知見</h3>
+<div class="feature-card-grid" style="grid-template-columns: 1fr; gap: 25px;">
+<!-- 発見1: Instruction Tuning -->
+<div class="feature-item glass-card" style="flex-direction: column; align-items: stretch; text-align: left; padding: 25px;">
+<div style="display: flex; align-items: center; margin-bottom: 15px;">
+<span style="font-size: 2.5em; color: var(--color-accent1); margin-right: 15px;">💡</span>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1); margin-top:0; font-size: 1.3em;">発見1: 「命令チューニング」は効果絶大！ <span class="badge green">統計的有意</span></h4>
+</div>
+<p>LLMの訓練手法の一つである<span class="keyword">命令チューニング (Instruction Tuning)</span> を施すと、LLMの性能が格段に向上することがわかりました。具体的には、以下の2点で大きな改善が見られました。</p>
+<ul style="list-style-type: '👉'; padding-left: 25px; margin-bottom: 15px;">
+<li style="margin-bottom: 8px;">文理解タスクの成績（<span class="highlight">タスクパフォーマンス</span>）が向上</li>
+<li style="margin-bottom: 8px;">LLMの内部表現と人間の脳活動パターンとの類似度（<span class="highlight">神経応答とのアラインメント</span>）が向上</li>
+</ul>
+<p>そして、これらの向上は<span class="highlight">統計的にも有意な相関</span>を示していました。つまり、偶然ではない、意味のある改善だったということです。</p>
+<div class="definition-box" style="margin-top:15px;">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語ピックアップ</p>
+<p><strong>命令チューニング (Instruction Tuning):</strong> 既存のLLMに対して、「この文章を要約して」「この質問に答えて」といった具体的な指示（命令）とそれに対する模範解答を大量に学習させる追加訓練法です。これにより、LLMがユーザーの多様な指示を理解し、適切に応答する能力が高まります。</p>
+<p><strong>神経応答とのアラインメント (Alignment with neural responses):</strong> LLMが文章を処理する際の内部の動き（数学的な表現）と、人間が同じ文章を処理する際の実際の脳の活動（fMRIで計測された信号）が、どれだけ似ているかを示す度合いです。この値が高いほど、LLMと人間の脳が似たような方法で言語を処理している可能性を示唆します。</p>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+<i class="fas fa-chalkboard-teacher" style="font-size: 2em; color: var(--color-accent1);"></i> <span style="font-family: 'Yomogi', cursive; font-size: 1.1em;"> 命令チューニング <i class="fas fa-arrow-right" style="margin: 0 5px;"></i> <i class="fas fa-brain" style="color: var(--color-primary);"></i> <i class="fas fa-chart-line" style="color: var(--color-primary);"></i> (LLMの賢さ &amp; 脳とのソックリ度UP!)</span>
+</div>
+</div>
+<!-- 発見2: 中間層の優位性 -->
+<div class="feature-item glass-card" style="flex-direction: column; align-items: stretch; text-align: left; padding: 25px;">
+<div style="display: flex; align-items: center; margin-bottom: 15px;">
+<span style="font-size: 2.5em; color: var(--color-secondary); margin-right: 15px;">🎯</span>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary); margin-top:0; font-size: 1.3em;">発見2: LLMの「中間層」が脳との連携に強い！</h4>
+</div>
+<p>LLMはたくさんの層（レイヤー）が重なってできています。驚いたことに、LLMの<span class="keyword">最終出力層</span>よりも、その手前にある<span class="keyword">中間層</span>の方が、人間の脳活動とより強く関連している（つまり性能が良い）ことが観察されました。</p>
+<div class="note-box" style="background-color: rgba(255, 126, 95, 0.05); border-left-color: var(--color-secondary); margin-top:15px;">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-layer-group"></i> LLMの層構造と情報の抽象度</p>
+<p>LLMの層構造をビルの階層に例えると、入力に近い初期層は1階で、単語などの基本的な情報を扱います。層が深くなる（階が上がる）につれて、文法構造や文脈、意味といった、より高度で抽象的な情報を処理するようになります。今回の発見は、脳が言語を理解する際に使っている情報と最も似ている情報が、LLMの「最上階（最終層）」ではなく、その少し下の「中間階（中間層）」にあることを示しています。これは、最終層が特定のタスク（例：次に続く単語を予測する）に特化しすぎているのに対し、中間層はより汎用的で豊かな意味表現を持っているためかもしれません。</p>
+</div>
+<div style="text-align: center; margin-top: 20px; font-family: 'Yomogi', cursive; font-size: 1.1em;">
+<span style="display:inline-block; padding: 5px 10px; border: 1px dashed var(--color-gray); border-radius: 5px; margin: 5px;">入力層</span> <i class="fas fa-arrow-right" style="color: var(--color-gray);"></i>
+<span style="display:inline-block; padding: 8px 15px; background-color: var(--color-secondary); color: white; border-radius: 8px; margin: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"><strong>✨中間層✨ (脳と高相関!)</strong></span> <i class="fas fa-arrow-right" style="color: var(--color-gray);"></i>
+<span style="display:inline-block; padding: 5px 10px; border: 1px dashed var(--color-gray); border-radius: 5px; margin: 5px;">最終層</span>
+</div>
+</div>
+<!-- 発見3: 脳の半球優位性 -->
+<div class="feature-item glass-card" style="flex-direction: column; align-items: stretch; text-align: left; padding: 25px;">
+<div style="display: flex; align-items: center; margin-bottom: 15px;">
+<span style="font-size: 2.5em; color: var(--color-accent2); margin-right: 15px;">🧠</span>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent2); margin-top:0; font-size: 1.3em;">発見3: 人間の脳は言語処理のスペシャリスト！</h4>
+</div>
+<p>人間の脳活動を詳しく見てみると、言語を処理する際に非常に興味深い働き方をしていることがわかりました。</p>
+<ul class="unstyled-list" style="padding-left: 0px; margin-bottom: 15px;">
+<li style="margin-bottom:12px; background-color: rgba(149, 117, 205, 0.05); padding:10px; border-radius: 5px; border-left: 3px solid var(--color-accent2);">
+<i class="fas fa-brain" style="color: var(--color-accent2); margin-right: 5px;"></i><strong>左脳の優位性:</strong> 特に言語処理において重要な役割を担うとされる脳の領域（<span class="keyword">主要言語野</span>）では、<span class="highlight">左半球が優位に活動する</span>明確なパターンが確認されました。これは、言語処理をより効率的に、専門的に行うための脳の仕組みだと考えられます。
+                </li>
+<li style="background-color: rgba(149, 117, 205, 0.05); padding:10px; border-radius: 5px; border-left: 3px solid var(--color-accent2);">
+<i class="fas fa-tasks" style="color: var(--color-accent2); margin-right: 5px;"></i><strong>機能特異的な非対称性:</strong> さらに、脳の特定の領域では、左右の半球がそれぞれ異なる役割を担っている（<span class="keyword">機能特異的な非対称性</span>）ことも明らかになりました。これは、言語理解という複雑なタスクをサポートするために、脳の各部分が専門化し、協力し合っていることを示唆しています。例えば、文法処理は主に左脳、比喩の理解や文脈の統合は右脳が関与するなど、役割分担があるイメージです。
+                </li>
+</ul>
+<div style="text-align: center; margin-top: 20px;">
+<img alt="脳の半球イメージ図" src="https://via.placeholder.com/300x150/f0f8ff/2c3e50?text=左脳 vs 右脳の役割分担イメージ" style="border: 2px dashed var(--color-accent2); border-radius: 8px; width: 50%; max-width: 300px; margin: 0 auto; display: block;"/>
+<p style="font-family: 'Yomogi', cursive; font-size: 0.9em; color: var(--color-gray); margin-top: 5px;">（イメージ図：左脳が言語処理の主要エンジン、右脳が文脈理解などをサポート）</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box">
+<h4 class="framework-title"><i class="fas fa-sitemap"></i> 総括：研究成果の意義と今後の展望 📊</h4>
+<p>これらの発見を総合すると、以下の2つの重要な点が明らかになります。</p>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-primary);">1</div>
+<div class="step-content">
+<strong>モデルの設計と訓練が鍵 <i class="fas fa-cogs" style="color: var(--color-primary);"></i></strong><br/>
+                LLMの<span class="keyword">アーキテクチャ（構造）</span>や<span class="keyword">訓練目標（何を学習させるか）</span>が、そのモデルが人間の脳の働きとどれだけ似るか（<span class="highlight">脳とのアラインメント度合い</span>）を大きく左右することが示されました。つまり、より脳に近いLLMを作るためには、モデルの内部構造や学習方法を工夫する必要があるということです。
+            </div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">2</div>
+<div class="step-content">
+<strong>認知科学と神経科学の融合価値 <i class="fas fa-handshake" style="color: var(--color-secondary);"></i></strong><br/>
+                認知科学的な観点から設計されたタスク（今回の文理解タスクなど）と、脳画像技術（fMRIなど）を統合することの価値が浮き彫りになりました。このアプローチは、人間が言語を理解する際の<span class="highlight">神経基盤（脳の仕組み）</span>をより深く理解し、将来の<span class="highlight">より優れたLLM開発</span>を導く上で非常に有効です。
+            </div>
+</div>
+<div class="note-box" style="margin-top: 20px;">
+<p class="note-title"><i class="fas fa-bullseye"></i> 今後の方向性</p>
+<p>この研究は、AIと言語理解のメカニズム解明に向けた大きな一歩です。将来的には、これらの知見を活かして、より人間のように自然で、文脈を深く理解できるAIの開発が進むことが期待されます。また、脳の言語処理メカニズムの解明にも繋がり、教育や医療といった分野への応用も考えられます。</p>
+</div>
+</div>
+<div style="text-align: center; margin-top: 30px;">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 1.2em; color: var(--color-dark);">
+<i class="fas fa-infinity" style="color: var(--color-primary);"></i> LLMと脳科学の探求は、まだまだ続きます... <i class="fas fa-search" style="color: var(--color-secondary);"></i>
+</p>
+</div>
+</div>
+<div class="section-card" id="Limitations">
+<h2 class="section-title"><i class="fas fa-exclamation-circle"></i> Limitations</h2>
+<div class="content-box" style="text-align: center; margin-bottom: 30px; padding: 15px; border: 2px dashed var(--color-secondary); border-radius: 8px; background-color: rgba(255, 126, 95, 0.05);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; color: var(--color-secondary); margin-bottom:10px;">
+<i class="fas fa-bullseye"></i> <strong>このセクションの目的</strong> <i class="fas fa-lightbulb"></i>
+</p>
+<p style="line-height: 1.6;">このセクションでは、本研究が抱えるいくつかの<span class="keyword">限界点</span>を率直に検討し、それらが研究結果の解釈や一般化にどのような影響を与えうるかを考察します。さらに、<span class="highlight">今後の研究でこれらの限界をどのように克服していくべきか</span>、その具体的な方向性を示すことを目指しています。✏️</p>
+</div>
+<div class="info-grid" style="grid-template-columns: 1fr; gap: 30px;">
+<!-- 制限1: 参加者の神経典型性 -->
+<div class="info-card glass-card">
+<h3 class="subsection-title" style="color: var(--color-accent2); border-left-color: var(--color-accent2);"><i class="fas fa-user-friends"></i> 参加者の特性１：神経学的な偏り</h3>
+<div class="content-box">
+<p>本研究の大きな制約の一つは、参加者が<span class="highlight">神経典型的な (neurotypical)</span> 方々に限定されていた点です。つまり、言語機能に障害を持つ方々や、自閉症スペクトラム、ADHD（注意欠如・多動症）といった<span class="keyword">神経発達の多様性 (neurodevelopmental diversity)</span> を持つ方々は、今回の調査対象に含まれていませんでした。🔬</p>
+<div class="definition-box" style="margin-top: 15px; margin-bottom:15px;">
+<h4 class="definition-title"><i class="fas fa-book-open"></i> ここで出てくる重要な用語 📝</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+<li><i class="fas fa-brain" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">神経典型的 (Neurotypical)</span>: 一般的に多数派とされる神経発達のパターンを持つ人々を指します。特定の神経発達症の診断がない状態です。</li>
+<li><i class="fas fa-comment-slash" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">言語障害 (Language impairments)</span>: 言葉の理解（聞く、読む）や表出（話す、書く）に困難が生じる状態の総称です。代表的なものに<span class="keyword">失語症 (Aphasia)</span> があります。</li>
+<li><i class="fas fa-puzzle-piece" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">神経発達の多様性 (Neurodevelopmental diversity)</span>: 人間の脳の発達や機能には個人差があり、そのバリエーションを指す言葉です。例えば、自閉症スペクトラム (ASD) や注意欠如・多動症 (ADHD)、<span class="keyword">失読症 (Dyslexia)</span> などが含まれます。</li>
+</ul>
+</div>
+<div class="challenge-box" style="margin-top: 20px;">
+<h4 class="challenge-title"><i class="fas fa-cogs"></i> この制約がもたらす影響は？</h4>
+<p><i class="fas fa-clinic-medical" style="color: var(--color-secondary); margin-right: 5px;"></i> <span class="keyword">臨床的妥当性の制約</span>: 失語症や失読症など、特定の言語処理の困難を抱える方々の脳では、神経典型的な方々とは異なる言語処理パターンが見られることが知られています。本研究では、こうした<span class="highlight">非典型的な言語処理パターンを捉えることができていません</span>。そのため、研究結果をそのまま臨床現場（例：言語リハビリテーション）に応用する際の妥当性が限定的になってしまいます。</p>
+<div style="text-align: center; margin-top:20px; padding:10px; background-color: rgba(255,255,255,0.5); border-radius: 8px;">
+<span style="font-size: 2em; vertical-align: middle;">🧠</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.5em; color: var(--color-secondary); margin: 0 10px; vertical-align: middle;">→</span>
+<span style="font-size: 1.2em; vertical-align: middle; font-family: 'Kaisei Decol', serif;">主に健常者のパターン</span>
+<br>
+<span style="font-size: 2em; vertical-align: middle; opacity: 0.5;">🧩🗣️</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.5em; color: var(--color-gray); margin: 0 10px; vertical-align: middle;">→</span>
+<span style="font-size: 1.2em; vertical-align: middle; font-family: 'Kaisei Decol', serif; color: var(--color-gray);">多様な脳・言語のパターンは未解明</span>
+<p style="font-size: 0.9em; color: var(--color-gray); margin-top: 5px;">（LLMと脳の比較において、多様なケースでの検証が不足）</p>
+</br></div>
+</div>
+</div>
+</div>
+<!-- 制限2: 参加者の文化的均質性 -->
+<div class="info-card glass-card" style="margin-top:30px;">
+<h3 class="subsection-title" style="color: var(--color-accent1); border-left-color: var(--color-accent1);"><i class="fas fa-users"></i> 参加者の特性２：文化・言語的な偏り</h3>
+<div class="content-box">
+<p>もう一つの重要な制約として、研究に参加してくださった方々が<span class="highlight">文化的に均質 (culturally homogeneous)</span> であり、主に<span class="keyword">中国語を母語とする話者</span>で構成されていた点が挙げられます。🌏</p>
+<div class="definition-box" style="margin-top: 15px; margin-bottom:15px;">
+<h4 class="definition-title"><i class="fas fa-book-open"></i> ここで出てくる重要な用語 📝</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+<li><i class="fas fa-users-cog" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">文化的均質性 (Culturally homogeneous)</span>: 参加者グループが、特定の文化背景を持つ人々でほぼ占められている状態。多様な文化背景が反映されていないこと。</li>
+<li><i class="fas fa-globe" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">一般化可能性 (Generalizability)</span>: ある研究で得られた結果が、その研究の対象となった特定の集団や状況だけでなく、より広い範囲の人々や状況にもどの程度当てはまるか、という度合い。</li>
+<li><i class="fas fa-language" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">異文化間 (Cross-linguistic)</span>: 異なる言語間、または異なる言語を話す文化の間を比較検討すること。</li>
+<li><i class="fas fa-user-graduate" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">バイリンガル (Bilingual)</span>: 二つの言語を習得し、使用することができる人。</li>
+</ul>
+</div>
+<div class="challenge-box" style="background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1); margin-top: 20px;">
+<h4 class="challenge-title" style="color: var(--color-accent1);"><i class="fas fa-project-diagram"></i> この制約がもたらす影響は？</h4>
+<p><i class="fas fa-map-marked-alt" style="color: var(--color-accent1); margin-right: 5px;"></i> <span class="keyword">結果の一般化可能性の限定</span>: この研究で示されたLLMと脳活動の関連性に関する知見は、主に中国語を母語とする人々の言語処理に基づいています。そのため、この結果を<span class="highlight">異なる言語を母語とする人々 (cross-linguistic populations)</span> や、<span class="highlight">複数の言語を操る人々 (bilingual populations)</span> にそのまま一般化するには限界があります。言語構造や文化背景が異なれば、脳の言語処理の仕方も影響を受ける可能性があるためです。</p>
+<div style="text-align: center; margin-top:20px; padding:10px; background-color: rgba(255,255,255,0.5); border-radius: 8px;">
+<span style="font-size: 1.5em; font-family: 'Kaisei Decol', serif; vertical-align: middle;">🇨🇳 (中国語話者)</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.5em; color: var(--color-accent1); margin: 0 10px; vertical-align: middle;">→</span>
+<span style="font-size: 1.2em; vertical-align: middle; font-family: 'Kaisei Decol', serif;">今回の研究結果</span>
+<br>
+<span style="font-size: 1.5em; font-family: 'Kaisei Decol', serif; vertical-align: middle; opacity: 0.5;">🇺🇸🇬🇧🇯🇵🇫🇷... (他言語話者)</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.5em; color: var(--color-gray); margin: 0 10px; vertical-align: middle;">→</span>
+<span style="font-size: 1.2em; vertical-align: middle; font-family: 'Kaisei Decol', serif; color: var(--color-gray);">同様の結果かは不明</span>
+<p style="font-size: 0.9em; color: var(--color-gray); margin-top: 5px;">（言語・文化の多様性を考慮した検証が不足）</p>
+</br></div>
+</div>
+</div>
+</div>
+</div>
+<!-- 結論への影響と今後の展望 -->
+<div class="bubble-box" style="margin-top: 40px; border-color: var(--color-primary);">
+<h3 class="subsection-title" style="color: var(--color-dark); border-left: none; padding-left:0; margin-bottom: 10px;"><i class="fas fa-chart-line"></i> 結論への影響と今後の研究への提言 🚀</h3>
+<p>これらの制約は、本研究の結論を解釈する上で注意が必要であることを示唆しています。特に、<span class="keyword">臨床的な応用</span>や<span class="keyword">異文化間の文脈</span>での知見の適用性については慎重に考える必要があります。</p>
+<div style="display: flex; align-items: center; margin-top: 15px; padding: 10px; background-color: rgba(74, 111, 165, 0.05); border-radius: 8px;">
+<i class="fas fa-search-plus fa-2x" style="color: var(--color-primary); margin-right: 15px;"></i>
+<div>
+<p style="font-family: 'Yomogi', cursive; font-size: 1.1em; color: var(--color-dark);">今後の研究では…</p>
+<ul class="unstyled-list" style="margin-top: 5px; line-height: 1.6;">
+<li><span class="badge blue">より包括的な参加者選定</span>: 言語障害を持つ方々や、多様な神経発達の背景を持つ方々を対象に含める。</li>
+<li><span class="badge purple">文化的多様性の確保</span>: 様々な言語的・文化的背景を持つ参加者をリクルートする。</li>
+</ul>
+<p style="margin-top: 10px;">…といった取り組みを通じて、より頑健で一般化可能な知見を得ることが重要です。これにより、LLMと人間の言語処理の関連性についての理解を深め、より広範な応用へと繋げることができるでしょう。📈</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="Ethics_Statements">
+<h2 class="section-title"><i class="fas fa-gavel"></i> Ethics Statements</h2>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+        この「倫理に関する声明」セクションは、この研究が倫理的な規範と手順をきちんと守って行われたことを示すために非常に重要です。特に、人間の脳活動というセンシティブなデータ（fMRIデータ）を扱うため、研究参加者の権利保護やプライバシーへの配慮が不可欠となります。ここでは、その点について具体的にどのような対応がなされたのかが説明されています。
+    </p>
+<div class="glass-card" style="margin-bottom: 25px;">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-database"></i> データの出所について <span class="badge yellow">ポイント1</span></h3>
+<div class="content-box">
+<p><i class="fas fa-file-alt"></i> この研究で使用された<span class="keyword">fMRI（機能的磁気共鳴画像法）データ</span>は、全く新しい実験で取得されたものではなく、<span class="highlight">既に公開されているリソース</span>から利用されています。</p>
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p style="font-weight: bold; color: var(--color-accent1); display: flex; align-items: center;"><i class="fas fa-book-open" style="margin-right: 8px;"></i>出典情報</p>
+<p>具体的には、<strong style="color: var(--color-primary);">Liらが2022年に発表した研究論文 (Li et al., 2022)</strong> で提供されている公開データセットです。このデータセットは「"The Little Prince" multilingual naturalistic fMRI corpus」として知られています。</p>
+<p><i class="fas fa-info-circle"></i> <span class="badge blue">補足</span> このように公開データを利用することは、研究の再現性を高めるだけでなく、新たな被験者募集や実験実施に伴う倫理的負担やコストを軽減するメリットがあります。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card" style="margin-bottom: 25px;">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-university"></i> 倫理審査委員会の審査 <span class="badge yellow">ポイント2</span></h3>
+<div class="content-box">
+<p><i class="fas fa-stamp"></i> この研究自体は、<strong style="color: var(--color-primary);">江蘇師範大学 (Jiangsu Normal University) のIRB (Institutional Review Board：施設内倫理審査委員会)</strong> によって正式にレビュー（審査）を受けています。</p>
+<div class="note-box" style="background-color: rgba(255, 126, 95, 0.1); border-left-color: var(--color-secondary);">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-balance-scale"></i> IRB（施設内倫理審査委員会）とは？</p>
+<p>研究機関内に設置される独立した委員会です。人間を対象とする研究（医学研究、心理学実験、社会調査など）が、倫理的観点（被験者の人権擁護、安全確保、プライバシー保護など）および科学的妥当性の両面から適切であるかを審査する役割を担います。研究者は研究開始前にIRBの承認を得る必要があります。</p>
+</div>
+<p><i class="fas fa-check-circle"></i> <span class="badge green">意義</span> IRBによる審査と承認は、研究が倫理的な基準や規制を遵守していることを客観的に示すものであり、研究の信頼性を高める上で不可欠な手続きです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-shield-alt"></i> 倫理的懸念の不存在 <span class="badge yellow">結論</span></h3>
+<div class="content-box">
+<p><i class="fas fa-thumbs-up"></i> 以上の2つのポイント（公開データの利用、IRBによる審査）を踏まえ、著者らは「<span class="highlight">この研究自体は、いかなる倫理的な懸念も引き起こさない (The study itself does not raise any ethical concerns)</span>」と結論付けています。</p>
+<div class="framework-box" style="border-color: var(--color-accent2); background-color: rgba(149, 117, 205, 0.05); margin-top:15px;">
+<p class="framework-title" style="color: var(--color-accent2); border-bottom-color: var(--color-accent2);"><i class="fas fa-list-check"></i>倫理的妥当性の根拠</p>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">1</div>
+<div class="step-content">使用データが<strong class="keyword">一般にアクセス可能な公開リソース</strong>であること。これにより、元データの収集段階での倫理的審査が既に行われていることが期待されます。</div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">2</div>
+<div class="step-content">今回の研究計画（公開データの分析）が、所属機関の<strong class="keyword">IRBによって適切に審査され、承認されている</strong>こと。</div>
+</div>
+</div>
+<p style="margin-top: 15px;"><i class="fas fa-feather-alt"></i> この声明により、研究成果の信頼性と共に、研究プロセスにおける倫理的配慮が適切になされたことが読者に伝えられます。</p>
+</div>
+</div>
+<div class="note-box" style="margin-top: 30px; background-color: rgba(74, 111, 165, 0.08); border-left-color: var(--color-primary);">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-lightbulb"></i> まとめ：研究倫理の重要性</p>
+<p>特に人間参加者を対象とする研究や個人情報に関わるデータを扱う研究において、倫理綱領の遵守は極めて重要です。</p>
+<ul class="unstyled-list" style="padding-left: 15px;">
+<li style="margin-bottom: 8px;"><span class="badge purple"><i class="fas fa-user-shield"></i></span> <strong>被験者の権利と福祉の保護：</strong> プライバシー、尊厳、安全を守ります。</li>
+<li style="margin-bottom: 8px;"><span class="badge purple"><i class="fas fa-microscope"></i></span> <strong>研究の科学的・社会的信頼性の確保：</strong> 倫理的な研究は、その成果に対する信頼を高めます。</li>
+<li style="margin-bottom: 8px;"><span class="badge purple"><i class="fas fa-handshake"></i></span> <strong>法的・規制的要件の遵守：</strong> 国や機関の定める法律やガイドラインに従います。</li>
+</ul>
+<p>この論文の「Ethics Statements」セクションは、これらの倫理的責任が果たされていることを簡潔に、かつ明確に示しています。</p>
+</div>
+</div>
+<div class="section-card" id="A_Details_on_Regions_of_Interest_(ROIs)">
+<h2 class="section-title"><i class="fas fa-brain"></i>A Details on Regions of Interest (ROIs)</h2>
+<div class="content-box">
+<p>このセクションでは、人間の脳における言語処理の神経基盤、特に<span class="keyword">「関心領域（Regions of Interest, ROIs）」</span>として知られる特定の脳領域群（これらを総称して<span class="keyword">言語ネットワーク</span>と呼びます）について詳しく解説します。言語ネットワークがどのような脳の部位から構成され、どのような特性（例えば、特定の機能に特化していることや、異なる言語間でも共通して見られることなど）を持っているのか、そして、なぜそれが本研究における大規模言語モデル（LLM）と脳活動の比較分析において重要な対象となるのかを明らかにしていきます。✏️🧠</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説：関心領域 (Regions of Interest, ROIs)</p>
+<p>fMRI（機能的磁気共鳴画像法）などの脳機能イメージング研究において、特定の認知機能や精神活動に関連して活動パターンを分析するために注目する、脳の特定の部分や領域のことを指します。研究者は仮説に基づいてこれらの領域を定義し、その活動を詳細に調べます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-map-marked-alt"></i> 言語ネットワークの構成と機能的側在化</h3>
+<div class="content-box">
+<p>言語ネットワークは、人間の脳において言語を理解したり話したりする上で中心的な役割を担っています。主に以下の領域から構成されています：</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="icon-item"><i class="fas fa- cervello"></i><strong>外側前頭皮質 (Lateral Frontal Cortex)</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <span class="keyword">下前頭回 (Inferior Frontal Gyrus, IFG)</span>: しばしばブローカ野と関連付けられ、話すことや文法処理に重要です。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <span class="keyword">中前頭回 (Middle Frontal Gyrus, MFG)</span>: より複雑な思考や計画など、高次の認知機能に関わります。</li>
+</ul>
+</div>
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-ear-listen"></i><strong>外側側頭皮質 (Lateral Temporal Cortex)</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <span class="keyword">上側頭回 (Superior Temporal Gyri)</span>: 聞こえてくる言葉の音声を処理したり、言葉の意味を理解するのに重要です（ウェルニッケ野の一部を含む）。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <span class="keyword">中側頭回 (Middle Temporal Gyri)</span>: 言葉の意味理解に深く関わっています。これらの領域は、側頭葉の先端（側頭極）から後方（後部側頭葉）にまで広がっています。</li>
+</ul>
+</div>
+</div>
+<div style="text-align: center; margin: 20px 0;">
+<img alt="脳の言語ネットワーク模式図" src="https://i.imgur.com/gYgQ9wW.png" style="width: 70%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);"><em>図解：言語ネットワークの主要な構成要素（イメージ）</em></p>
+</div>
+<p>興味深いことに、これらの言語領域の活動は、ほとんどの人で<span class="highlight">左右非対称（機能的側在化）</span>を示します。具体的には、言語を処理する際には<span class="keyword">左半球</span>がより強く、より広範囲に活動する傾向があります。これは古くから知られている事実です。</p>
+<p>しかし、最近の研究では、<span class="keyword">右半球</span>も言語情報の処理に非常に重要な貢献をしていることが明らかになってきました。特に、以下のような、より高度な言語機能においては、右半球が特有の活動パターンを示すことが分かっています：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-comments" style="color: var(--color-accent2);"></i> <strong>語用論的推論 (Pragmatic Inference)</strong>: 言葉の文字通りの意味だけでなく、文脈や話し手の意図を読み取ること。</li>
+<li><i class="fas fa-lightbulb" style="color: var(--color-accent2);"></i> <strong>隠喩理解 (Metaphor Comprehension)</strong>: 「心は硝子だ」のような比喩表現を理解すること。</li>
+<li><i class="fas fa-microphone-alt" style="color: var(--color-accent2);"></i> <strong>情動プロソディ処理 (Affective Prosody Processing)</strong>: 声のトーンや抑揚から怒りや喜びといった感情を読み取ること。</li>
+</ul>
+<div class="two-column" style="align-items: center;">
+<div class="column" style="text-align: center;">
+<img alt="左半球の役割" src="https://i.imgur.com/w9rS4fB.png" style="width: 80%; max-width: 200px; margin-bottom: 10px;"/>
+<p><strong>左半球</strong><br/>基本的な言語処理（文法、単語の意味など）で優位</p>
+</div>
+<div class="column" style="text-align: center;">
+<img alt="右半球の役割" src="https://i.imgur.com/3hB9eKV.png" style="width: 80%; max-width: 200px; margin-bottom: 10px;"/>
+<p><strong>右半球</strong><br/>高次な言語機能（文脈理解、比喩、感情など）で重要</p>
+</div>
+</div>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説：機能的側在化 (Functional Lateralization)</p>
+<p>特定の認知機能（例：言語、空間認識）が、脳の左右どちらかの半球に偏って処理される現象のことです。言語機能の多くは左半球に側在していると言われますが、右半球も独自の役割を果たしています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> ネットワークの機能的特異性</h3>
+<div class="content-box">
+<p>この言語ネットワークは、<span class="highlight">驚くほど言語処理に特化している</span>という特徴があります。これを調べるためによく用いられるのが<span class="keyword">「文 &gt; 非単語列」コントラストパラダイム</span>という実験手法です。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-flask"></i> 「文 &gt; 非単語列」コントラストパラダイムとは？</p>
+<p>参加者に意味のある文（例：「猫が窓辺で日向ぼっこをしている」）を読んでもらい、その時の脳活動を計測します。次に、意味をなさない単語の羅列（例：「がたねぼこっひまどでひるなをてい」のような、文を構成する文字は同じだが順序がバラバラなもの）を見てもらい、同様に脳活動を計測します。そして、前者の活動から後者の活動を引き算する（コントラストをとる）のです。</p>
+<p><strong>目的</strong>: この操作により、文字の視覚的処理や単純な音韻処理といった、言語特有でない活動が相殺され、純粋に<span class="highlight">言語情報（特に構文構造の組み立てや単語の意味の統合）</span>に対する脳の選択的な応答を分離することができます。</p>
+<div style="text-align: center; margin: 15px 0;">
+<img alt="文 &gt; 非単語列パラダイム概念図" src="https://i.imgur.com/qE2Hq4x.png" style="width: 80%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);"><em>図解：「文 &gt; 非単語列」コントラストパラダイムの概念</em></p>
+</div>
+</div>
+<p>このパラダイムを用いると、言語ネットワークは、算術計算、ワーキングメモリ（情報を一時的に記憶し操作する能力）、空間処理といった、<span class="highlight">言語以外の認知タスク</span>ではあまり活動しないことが示されています。つまり、これらの活動は抑制されるのです。</p>
+<p>このように、言語ネットワークが他の一般的な認知処理を担う<span class="keyword">多重要求ネットワーク (multiple-demand network)</span> (Fedorenko et al., 2024 が詳述) から機能的に分離していることは非常に重要です。なぜなら、これにより、物語を読むといった複雑な状況でも、<span class="highlight">知覚的な情報処理（文字を見る、音を聞くなど）や一般的な注意・記憶といった実行機能による影響（交絡効果）を排除</span>し、純粋な<span class="keyword">談話理解の中核プロセス</span>（文と文を繋げて全体の意味を理解するプロセスなど）に焦点を当てた分析が可能になるからです。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> なぜ「星の王子さま」のような物語分析に有利なのか？</p>
+<p>「星の王子さま」のような文学作品は、複雑な隠喩表現や精巧な物語構造を持っています。これを理解するためには、文法構造を深く解析し（<span class="keyword">構文的統合</span>）、単語や文の意味を巧みに結びつける（<span class="keyword">意味的統合</span>）能力が高度に要求されます。言語ネットワークのこのような機能的特異性は、まさにこれらの深い統合プロセスを分析するのに特に有利なのです。</p>
+</div>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説：多重要求ネットワーク (Multiple-demand Network)</p>
+<p>様々な種類の認知的に難しい課題を実行する際に共通して活動する、脳の前頭葉や頭頂葉に広がる領域のネットワークです。課題の解決、計画、モニタリングなど、広範な実行機能に関与すると考えられています。言語ネットワークは、この多重要求ネットワークとは異なる、より専門化されたネットワークです。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-globe-americas"></i> 神経表象の普遍性</h3>
+<div class="content-box">
+<p>第二に、この言語ネットワークにおける神経活動のパターン（神経表象）は、<span class="highlight">驚くべき普遍性</span>を示します。具体的には、以下の2つの点で普遍的です。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-eye"></i><i class="fas fa-headphones-alt"></i> <strong>クロスモーダル普遍性 (Cross-modal Universality)</strong></p>
+<p>言語情報を目で読む（視覚モダリティ）場合でも、耳で聞く（聴覚モダリティ）場合でも、言語ネットワーク内の活動パターンや領域間の連携（トポロジカル組織）は安定しています。</p>
+</div>
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-language"></i> <strong>クロスリンギスティック普遍性 (Cross-linguistic Universality)</strong></p>
+<p>45もの異なる言語（12の語族にまたがる）を対象とした大規模な神経画像データを用いた研究 (Malik-Moraleda et al., 2022) によると、話す言語が異なっていても、言語を理解したり産出したりする際には、共通の言語ネットワークが活動し、その基本的な構造は安定していることが示されています。</p>
+</div>
+</div>
+<div style="text-align: center; margin: 20px 0;">
+<img alt="言語ネットワークの普遍性イメージ" src="https://i.imgur.com/T0a1wzK.png" style="width: 70%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);"><em>図解：言語ネットワークの普遍性（モダリティと言語を超えて共通）</em></p>
+</div>
+<p>このような、処理する情報の種類（視覚か聴覚か）や言語の種類によらない<span class="highlight">領域横断的な一貫性 (domain-general consistency)</span> は、この言語ネットワークが人間の言語能力の根底にある基本的なメカニズムを探求するための理想的な枠組みであることを示しています。さらに、この普遍性は、<span class="keyword">多言語間での翻訳処理メカニズム</span>を分析する上での重要な理論的基盤も提供してくれます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 方法論的アプローチと意義</h3>
+<div class="content-box">
+<p>fMRI研究では、人によって脳の形や機能領域の正確な位置が微妙に異なるという<span class="keyword">個人差（機能的・解剖学的変動性）</span>が問題となることがあります。Fedorenko博士らの研究チームは、この問題に対処するために画期的なアプローチを開発しました。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-users-cog"></i> 確率論的機能的局在化 (Probabilistic Functional Localization)</p>
+<p>これは、800人もの多数の参加者から得られたfMRIデータに基づいて、言語機能に関連する脳領域を確率的に特定する手法です (Lipkin et al., 2022)。個々の被験者の脳に標準的な脳地図を当てはめる伝統的な解剖学的ROI定義（例えば、「下前頭回のこの部分」と構造だけで決める方法）と比較して、このアプローチは大きな利点があります。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-chart-line" style="color: var(--color-accent1);"></i> <strong>機能的領域の再現性向上</strong>: 異なる被験者間で同じ言語機能を担う領域をより一貫して特定できるようになります。実際、被験者間での相関係数は0.85を超えるという高い再現性が報告されています。</li>
+<li><i class="fas fa-check-double" style="color: var(--color-accent1);"></i> <strong>生態学的妥当性の向上</strong>: より現実に即した、信頼性の高い機能領域の同定が可能になります。</li>
+</ul>
+<div style="text-align: center; margin: 15px 0;">
+<img alt="伝統的ROI定義 vs 確率論的機能的局在化" src="https://i.imgur.com/uNnvYgW.png" style="width: 80%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);"><em>図解：伝統的なROI定義と確率論的機能的局在化の比較イメージ</em></p>
+</div>
+</div>
+<p>実証的な証拠も、この言語ネットワークの有効性を示しています。例えば、自然な言語（物語など）を処理する際に、文を読み進めながら徐々に構文を解析していく<span class="keyword">漸進的構文解析 (incremental parsing)</span> や、物語全体の文脈を統合していく<span class="keyword">物語統合 (narrative integration)</span> に対して、このネットワークが高い感受性を示すことが確認されています (Fedorenko et al., 2016)。これにより、隠喩の理解のような高度な意味処理の際に現れる脳の活動（神経シグネチャ）を効果的に捉えることができます。</p>
+<div class="bubble-box">
+<p><i class="fas fa-link" style="color: var(--color-primary);"></i> <strong>Transformerアーキテクチャとの関連</strong></p>
+<p>特筆すべきは、この言語ネットワーク内で観測される神経表象の幾何学的構造と、近年の大規模言語モデルで広く用いられている<span class="keyword">Transformerアーキテクチャ</span>の深層（出力に近い層）における埋め込み表現（単語や文の意味的・構文的情報を数値ベクトルで表現したもの）との間に、<span class="highlight">幾何学的な同型性 (geometric isomorphism)</span> が存在することが示されている点です (Tuckute et al., 2024)。</p>
+<p>これは、脳の言語処理とLLMの言語処理が、抽象的なレベルで類似した情報表現の構造を持っている可能性を示唆しています。この<span class="keyword">表象的対応 (representational correspondence)</span> は、人間の脳（生物学的ニューラルネットワーク）とAI（人工ニューラルネットワーク）が行う言語処理のメカニズムを、統一された機能的枠組みの中で比較分析するための、非常に重要な理論的サポートとなるのです。</p>
+<div style="text-align: center; margin: 15px 0;">
+<img alt="脳とTransformerの表象対応イメージ" src="https://i.imgur.com/B7V0A7s.png" style="width: 70%; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);"><em>図解：脳の神経表象とTransformerの埋め込み表現の幾何学的同型性（イメージ）</em></p>
+</div>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-project-diagram"></i> このセクションのまとめ</p>
+<p>このセクションでは、fMRI研究で注目する脳の「関心領域（ROIs）」、特に言語処理に特化した「言語ネットワーク」について解説しました。主なポイントは以下の通りです：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check" style="color: var(--color-accent2);"></i> <strong>構成</strong>: 外側前頭皮質（下前頭回、中前頭回）と外側側頭皮質（上・中側頭回）から成る。</li>
+<li><i class="fas fa-check" style="color: var(--color-accent2);"></i> <strong>側在化</strong>: 左半球優位が基本だが、右半球も高次機能（比喩、文脈理解など）に重要。</li>
+<li><i class="fas fa-check" style="color: var(--color-accent2);"></i> <strong>機能的特異性</strong>: 言語処理に特化し、他の認知機能とは分離。これにより純粋な言語理解プロセスを分析可能。</li>
+<li><i class="fas fa-check" style="color: var(--color-accent2);"></i> <strong>普遍性</strong>: 視覚/聴覚モダリティや異なる言語間でも安定した構造を持つ。</li>
+<li><i class="fas fa-check" style="color: var(--color-accent2);"></i> <strong>方法論</strong>: 確率論的機能的局在化により、個人差を超えた再現性の高いROI同定が可能。</li>
+<li><i class="fas fa-check" style="color: var(--color-accent2);"></i> <strong>LLMとの関連</strong>: 言語ネットワークの神経表象とTransformerモデルの埋め込み表現に幾何学的同型性が見られ、脳とAIの比較研究の基盤となる。</li>
+</ul>
+<p>これらの特性により、言語ネットワークは人間の言語能力の核心を探る上で、また本研究のようにLLMと脳の処理メカニズムを比較する上で、非常に優れた分析対象となるのです。📊🔍</p>
+</div>
+</div>
+<div class="section-card" id="B_Details_of_General_Linear_Model_(GLM)">
+<h2 class="section-title"><i class="fas fa-brain"></i>B Details of General Linear Model (GLM)</h2>
+<div class="bubble-box">
+<p>🧠 このセクションへようこそ！ここでは、fMRI（機能的磁気共鳴画像法）のデータ分析で大活躍する「<span class="keyword">一般線形モデル（General Linear Model, GLM）</span>」について、その仕組みを詳しく見ていきます。論文では、このGLMを使って、被験者が物語を聞いているときの脳の活動（特に<span class="keyword">BOLD信号</span>という指標を使います）をどのように推定しているのかを解説しています。特に、一つ一つの文に対して脳がどう反応したかを精密に捉えるための「<span class="keyword">LS-S法</span>」というテクニックが鍵となります。さあ、脳活動分析の舞台裏を覗いてみましょう！</p>
+</div>
+<div class="content-box">
+<p>この神経画像解析では、<span class="keyword">タスク誘発性の神経活動</span>を<span class="keyword">血中酸素濃度依存性（BOLD）信号</span>から推定するために、<span class="keyword">マス単変量一般線形モデル（mass-univariate General Linear Model, GLM）</span>フレームワークが用いられています。これは、脳の各微小領域（ボクセル）ごとに個別のGLMを適用する方法です。</p>
+<p>その中心となるモデルは、以下の式で表されます。</p>
+</div>
+<div class="formula">
+<p>📝 <strong>GLMの基本式:</strong></p>
+        $$ \mathbf{Y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}, \quad \boldsymbol{\epsilon} \sim \mathcal{N}(\mathbf{0}, \sigma^2\mathbf{I}) $$
+    </div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-calculator"></i> 数式の詳細解説</div>
+<ul class="unstyled-list">
+<li><p>$\mathbf{Y} \in \mathbb{R}^{T \times V}$: <span class="highlight">観測されたデータ</span>です。これは、前処理済みのBOLD時系列信号を表します。</p>
+<ul>
+<li>$T$: <span class="keyword">時間点の数</span>（TRs、反復時間）。fMRIスキャンの「コマ数」のようなものです。</li>
+<li>$V$: <span class="keyword">ボクセル数</span>。脳を構成する小さな3Dピクセルの数です。</li>
+<li><i class="fas fa-puzzle-piece"></i> イメージ：各ボクセル $v$ について、時間 $t$ ごとのBOLD信号値 $Y_{tv}$ が記録された巨大なデータテーブルのようなものです。</li>
+</ul>
+<div style="text-align: center; margin: 10px 0;">
+<span style="font-size: 30px;">🧠</span> <i class="fas fa-arrow-right" style="margin: 0 10px;"></i> <span style="font-size: 20px;">📈</span> (BOLD信号)
+                </div>
+</li>
+<li><p>$\mathbf{X} \in \mathbb{R}^{T \times P}$: <span class="highlight">デザイン行列</span>（計画行列とも呼ばれます）。</p>
+<ul>
+<li>$P$: <span class="keyword">リグレッサー（説明変数）の数</span>。</li>
+<li>この行列は、実験の各条件（例：特定の文を聞いたタイミング）や、考慮すべき<span class="keyword">ノイズ要因</span>（例：頭の動き、スキャナーのドリフト）が、各時間点でどのように変動するかを符号化したものです。</li>
+<li><i class="fas fa-tasks"></i> イメージ：「この時点では文Aが提示された」「この時点では頭がこれだけ動いた」といった情報を数値で表現した設計図です。</li>
+</ul>
+</li>
+<li><p>$\boldsymbol{\beta} \in \mathbb{R}^{P \times V}$: <span class="highlight">未知の回帰係数</span>。</p>
+<ul>
+<li>これが私たちが推定したいものです！各ボクセル $v$ において、各リグレッサー $p$ がBOLD信号にどれだけの影響を与えるか（活動を上げるか下げるか、その強さ）を示します。</li>
+<li><i class="fas fa-cogs"></i> イメージ：各実験条件やノイズ要因が、脳の各部位の活動に与える「重み」や「影響度」です。</li>
+</ul>
+</li>
+<li><p>$\boldsymbol{\epsilon}$: <span class="highlight">残差誤差</span>。</p>
+<ul>
+<li>モデルで説明できなかった部分、つまりノイズです。</li>
+<li>$\mathcal{N}(\mathbf{0}, \sigma^2\mathbf{I})$: 誤差は平均が0で、分散が $\sigma^2$ の正規分布に従い、各時間点で独立である（<span class="keyword">等分散性</span>、<span class="keyword">ホモセダスティシティ</span>）と仮定されます。$\mathbf{I}$ は単位行列です。</li>
+<li><i class="fas fa-random"></i> イメージ：予測と実際のデータのズレ。</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-drafting-compass"></i> デザイン行列 $\mathbf{X}$ の構築</h3>
+<div class="content-box">
+<p>デザイン行列 $\mathbf{X}$ は、実験試行の開始時刻（オンセット）と<span class="keyword">標準的な血行動態応答関数（canonical hemodynamic response function, HRF）</span>を<span class="keyword">畳み込む（convolution）</span>ことによって構築されます。</p>
+<p>HRFとは？ 🧠💨</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-lightbulb"></i> 血行動態応答関数 (HRF)</div>
+<p>神経細胞が活動すると、その領域への血流が増加し、酸素供給が増えます。この血流変化に伴うBOLD信号の典型的な時間的パターンをHRFといいます。神経活動直後にすぐに信号がピークになるのではなく、数秒遅れてピークに達し、その後ゆっくりとベースラインに戻る、という釣鐘を歪ませたような形をしています。この論文では、SPM12（統計的パラメトリックマッピング・ソフトウェアパッケージ）で用いられる<span class="keyword">二重ガンマ関数（double-gamma function）</span>をHRFとして使用しています。</p>
+<div style="text-align: center; padding: 10px;">
+<svg height="100" style="border: 1px solid var(--color-gray); background-color: #f9f9f9;" viewbox="0 0 200 100" width="200">
+<path d="M 20 80 Q 50 10, 80 50 T 150 70 Q 170 75, 180 80" fill="none" stroke="var(--color-primary)" stroke-width="2"></path>
+<text font-family="Yomogi" font-size="10" x="5" y="15">BOLD信号</text>
+<text font-family="Yomogi" font-size="10" x="80" y="95">時間</text>
+<line stroke="var(--color-gray)" stroke-dasharray="2,2" stroke-width="1" x1="20" x2="180" y1="80" y2="80"></line>
+<line stroke="var(--color-gray)" stroke-dasharray="2,2" stroke-width="1" x1="20" x2="20" y1="80" y2="20"></line>
+<circle cx="20" cy="80" fill="var(--color-secondary)" r="2"></circle>
+<text font-family="Yomogi" font-size="8" x="25" y="75">刺激</text>
+</svg>
+<p style="font-size:12px; color:var(--color-gray);">手書き風HRFのイメージ図</p>
+</div>
+</div>
+<p>各実験条件 $j$（例えば、特定の文の提示）が $K_j$ 回のイベント（試行）を持ち、それぞれの開始時刻が $\{t_{\mathrm{onset}}^{(j,k)}\}_{k=1}^{K_j}$ である場合、対応するリグレッサー $\mathbf{x}_j$ は以下のように生成されます。</p>
+</div>
+<div class="formula">
+<p>📝 <strong>リグレッサーの生成式:</strong></p>
+        $$ \mathbf{x}_j(t) = \sum_{k=1}^{K_j} \mathrm{HRF}(t - t_{\mathrm{onset}}^{(j,k)}) + \sum_{m=1}^{M} \gamma_m \mathbf{n}_m(t) $$
+    </div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-sitemap"></i> 数式の詳細解説</div>
+<ul class="unstyled-list">
+<li><p>$\mathbf{x}_j(t)$: 条件 $j$ の時刻 $t$ におけるリグレッサーの値。</p></li>
+<li><p>$\sum_{k=1}^{K_j} \mathrm{HRF}(t - t_{\mathrm{onset}}^{(j,k)})$:</p>
+<ul>
+<li>これは、条件 $j$ に関連する<span class="highlight">全てのイベントのBOLD応答をモデル化したもの</span>です。</li>
+<li>各イベント $k$ の開始時刻 $t_{\mathrm{onset}}^{(j,k)}$ から経過した時間 $(t - t_{\mathrm{onset}}^{(j,k)})$ におけるHRFの値を計算し、それらを全て足し合わせます。</li>
+<li><i class="fas fa-layer-group"></i> イメージ：ある文が提示されるたびにHRFが誘発されると考え、それらのHRFを時間軸上で重ね合わせたものが、この文の刺激に対する予測されるBOLD信号パターンとなります。</li>
+</ul>
+</li>
+<li><p>$\sum_{m=1}^{M} \gamma_m \mathbf{n}_m(t)$:</p>
+<ul>
+<li>これは、<span class="highlight">ノイズ要因（nuisance confounds）</span>をモデルに組み込む部分です。</li>
+<li>$\{\mathbf{n}_m(t)\}_{m=1}^M$ は、$M$ 個のノイズ要因（例：被験者の頭の動きのパラメータ、時間経過に伴う信号のゆっくりとした変動である<span class="keyword">ドリフト項</span>など）を表します。</li>
+<li>$\gamma_m$ は、各ノイズ要因 $\mathbf{n}_m(t)$ の影響の大きさを調整する係数です。</li>
+<li><i class="fas fa-eraser"></i> イメージ：実験条件とは無関係な変動（頭の動きなど）がBOLD信号に与える影響を取り除くための補正項です。</li>
+</ul>
+</li>
+</ul>
+<div style="text-align:center; margin-top:15px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 14px;">🎨 デザイン行列のイメージ:</p>
+<div style="display: flex; justify-content: center; align-items: center; gap: 5px; background-color: #f0f8ff; padding:10px; border-radius: 8px; border: 1px dashed var(--color-primary);">
+<span style="writing-mode: vertical-rl; transform: rotate(180deg); font-family: 'Yomogi', cursive;">時間点 (TR)</span>
+<div style="border: 1px solid var(--color-gray); padding: 5px; display: inline-block;">
+<span style="font-family: 'Kaisei Decol', serif; font-size:24px; color: var(--color-primary);">X</span> = 
+                </div>
+<div style="display: grid; grid-template-columns: repeat(4, 40px); grid-template-rows: repeat(5, 20px); border: 1px solid var(--color-gray); font-size: 10px; text-align:center; line-height:20px;">
+<!-- Header -->
+<div style="border-bottom:1px solid var(--color-gray); border-right:1px solid var(--color-gray); font-weight:bold;">文A</div>
+<div style="border-bottom:1px solid var(--color-gray); border-right:1px solid var(--color-gray); font-weight:bold;">文B</div>
+<div style="border-bottom:1px solid var(--color-gray); border-right:1px solid var(--color-gray); font-weight:bold;">頭の動き</div>
+<div style="border-bottom:1px solid var(--color-gray); font-weight:bold;">ドリフト</div>
+<!-- Data rows (example) -->
+<div>0.1</div><div style="border-right:1px solid var(--color-gray);">0</div><div style="border-right:1px solid var(--color-gray);">0.2</div><div>1</div>
+<div>0.5</div><div style="border-right:1px solid var(--color-gray);">0</div><div style="border-right:1px solid var(--color-gray);">-0.1</div><div>0.9</div>
+<div>0.8</div><div style="border-right:1px solid var(--color-gray);">0.2</div><div style="border-right:1px solid var(--color-gray);">0</div><div>0.8</div>
+<div>0.4</div><div style="border-right:1px solid var(--color-gray);">0.6</div><div style="border-right:1px solid var(--color-gray);">0.1</div><div>0.7</div>
+<div>0.1</div><div style="border-right:1px solid var(--color-gray);">0.9</div><div style="border-right:1px solid var(--color-gray);">-0.2</div><div>0.6</div>
+</div>
+</div>
+<p style="font-size:12px; color:var(--color-gray); margin-top:5px;">各列が特定のリグレッサー（実験条件やノイズ）に対応し、各行が時間点に対応します。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> シングル試行モデリング: LS-S法</h3>
+<div class="content-box">
+<p>この研究では、複雑な言語刺激（物語の文など）によって誘発される神経応答を推定するために、<span class="keyword">Mumfordら（2014）</span>によって提案された<span class="keyword">Least-Squares Separate (LS-S)法</span>に基づく<span class="keyword">シングル試行モデリング</span>フレームワークが使用されています。</p>
+</div>
+<div class="framework-box">
+<div class="framework-title">🔍 Least-Squares Separate (LS-S) 法とは？</div>
+<p>LS-S法は、<span class="highlight">各文（試行）を独立したリグレッサーとしてモデル化する</span>戦略です。具体的には、ある1つのターゲット文に対する応答を推定する際には、その文に対応するリグレッサーと、その他の全ての文（非ターゲット試行）をまとめて1つのリグレッサーとして扱い、GLMを組みます。これを全てのターゲット文に対して繰り返します。</p>
+<div class="two-column" style="margin-top:15px;">
+<div class="column" style="text-align:center;">
+<i class="fas fa-file-alt fa-2x" style="color:var(--color-accent1);"></i>
+<p style="font-family: 'Yomogi', cursive;">ターゲット文 (1つ)</p>
+<p style="font-size:12px;">専用のリグレッサー</p>
+</div>
+<div class="column" style="text-align:center;">
+<i class="fas fa-archive fa-2x" style="color:var(--color-accent2);"></i>
+<p style="font-family: 'Yomogi', cursive;">その他全ての文</p>
+<p style="font-size:12px;">まとめて1つのリグレッサー</p>
+</div>
+</div>
+<p>このアプローチにより、個々の試行に起因するBOLD信号をより精密に分離することが可能になります。</p>
+<p><strong>🌟 LS-S法の主な利点:</strong></p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">🎯 <span class="keyword">条件間の共線性（collinearity）の低減</span>: 多くの試行が連続して提示される自然な実験では、各試行のBOLD応答が時間的に重なり合い、区別が難しくなる「共線性」という問題が生じやすいです。LS-S法は、各ターゲット文を個別にモデル化し、他の試行による分散を制御することで、この問題を大幅に軽減します。これは、従来のブロックデザインや条件平均デザインでは困難でした。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">⏱️ <span class="keyword">試行間の時間的変動性の保持</span>: 各試行のパラメータを個別に推定するため、試行ごとの応答のばらつきを捉えることができます。</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">⚡ <span class="keyword">一過性の事象関連認知プロセスへの感度向上</span>: 短時間で起こる認知プロセスに関連した脳活動の変化を検出しやすくなります。</div>
+</li>
+</ul>
+<p>対照的に、<span class="keyword">Least-Squares All (LS-A)法</span>は、全ての試行イベントを同時に1つのGLMでモデル化する手法です。LS-S法はLS-A法と比較して、上記のような利点があり、特に自然な言語入力条件下での文レベルの処理に関連する神経活動パターンの信頼性と解釈可能性を向上させます。</p>
+<div class="note-box" style="background-color: rgba(255, 126, 95, 0.1); border-left-color: var(--color-secondary);">
+<div class="note-title" style="color: var(--color-secondary);"><i class="fas fa-balance-scale"></i> LS-S vs LS-A</div>
+<p><strong>LS-S (Least-Squares Separate):</strong></p>
+<ul>
+<li>各ターゲット試行に対して個別のGLMを構築。</li>
+<li>ターゲット試行 vs. その他全ての試行。</li>
+<li>個々の試行の応答を精密に分離しやすい。</li>
+<li>計算コストは高い（試行数だけGLMを回す）。</li>
+</ul>
+<p><strong>LS-A (Least-Squares All):</strong></p>
+<ul>
+<li>全ての試行を1つのGLMで同時にモデル化。</li>
+<li>各条件タイプ（例：文A、文B）ごとに1つのリグレッサー。</li>
+<li>試行間の応答が平均化されやすい。</li>
+<li>計算コストは低い。</li>
+</ul>
+<p>本研究では、文ごとの詳細な脳活動パターンを捉えるため、LS-S法が採用されています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> パラメータ推定と仮説検定</h3>
+<div class="content-box">
+<p>通常の最小二乗法（Ordinary Least Squares, OLS）を用いたLS-S法によるパラメータ推定は、ボクセルごとの係数マップ（$\hat{\boldsymbol{\beta}}$）を生成します。</p>
+</div>
+<div class="formula">
+<p>📝 <strong>回帰係数の推定式 (OLS):</strong></p>
+        $$ \hat{\boldsymbol{\beta}} = (\mathbf{X}^{\top}\mathbf{X})^{-1}\mathbf{X}^{\top}\mathbf{Y} $$
+    </div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-key"></i> 数式の意味</div>
+<ul class="unstyled-list">
+<li><p>$\hat{\boldsymbol{\beta}}$: 推定された回帰係数。各ボクセルにおいて、各リグレッサー（実験条件やノイズ要因）がBOLD信号にどれだけ影響を与えるかを示します。</p></li>
+<li><p>$(\mathbf{X}^{\top}\mathbf{X})^{-1}\mathbf{X}^{\top}$: これは<span class="keyword">擬似逆行列（pseudo-inverse）</span>とも関連し、観測データ $\mathbf{Y}$ から $\boldsymbol{\beta}$ を推定するための「変換器」のような役割を果たします。最小二乗法では、予測誤差の二乗和を最小にするように $\hat{\boldsymbol{\beta}}$ が決定されます。</p></li>
+<li><i class="fas fa-bullseye"></i> 直感的には、$\mathbf{Y}$ (実際の脳活動データ) を、$\mathbf{X}$ (実験デザイン) を使って最もよく説明できる $\boldsymbol{\beta}$ (影響度) を見つける操作です。</li>
+</ul>
+</div>
+<p style="margin-top: 15px;">次に、線形コントラスト $\mathbf{c} \in \mathbb{R}^P$ に関する仮説検定のために、$t$統計量が計算されます。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-question-circle"></i> 線形コントラストとは？</div>
+<p>線形コントラスト $\mathbf{c}$ は、特定の仮説を検証するために使用される重みベクトルです。例えば、「条件Aの活動は条件Bの活動よりも大きいか？」を調べたい場合、条件Aに対応する係数に +1、条件Bに対応する係数に -1、その他の条件に 0 を割り当てるようなベクトル $\mathbf{c}$ を作成します。これにより、$\mathbf{c}^{\top}\hat{\boldsymbol{\beta}}$ は「条件Aの推定活動量 - 条件Bの推定活動量」を意味します。</p>
+</div>
+<div class="formula">
+<p>📝 <strong>$t$統計量の計算式:</strong></p>
+        $$ t_v = \frac{\mathbf{c}^{\top}\hat{\boldsymbol{\beta}}_v}{\sqrt{\hat{\sigma}_v^2 \cdot \mathbf{c}^{\top}(\mathbf{X}^{\top}\mathbf{X})^{-1}\mathbf{c}}} $$
+        <p>📝 <strong>残差分散の推定式:</strong></p>
+        $$ \hat{\sigma}_v^2 = \frac{\|\mathbf{Y}_v - \mathbf{X}\hat{\boldsymbol{\beta}}_v\|^2}{T - \mathrm{rank}(\mathbf{X})} $$
+    </div>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-primary); font-weight: bold;"><i class="fas fa-calculator"></i> $t_v$ の詳細:</p>
+<ul class="unstyled-list">
+<li>$t_v$: ボクセル $v$ における $t$統計量の値。</li>
+<li>$\mathbf{c}^{\top}\hat{\boldsymbol{\beta}}_v$: ボクセル $v$ における<span class="highlight">コントラストの推定値（効果の大きさ）</span>。例えば、「文A提示時の活動量」など。</li>
+<li>$\sqrt{\hat{\sigma}_v^2 \cdot \mathbf{c}^{\top}(\mathbf{X}^{\top}\mathbf{X})^{-1}\mathbf{c}}$: コントラスト推定値の<span class="highlight">標準誤差</span>。推定値のばらつき具合を示します。</li>
+<li><i class="fas fa-balance-scale-right"></i> 全体として、$t_v$ は、ボクセル $v$ における効果の大きさが、その推定の不確かさ（標準誤差）に対してどれだけ大きいか、つまり<span class="keyword">標準化された効果量</span>を定量化します。$t$値が大きいほど、その効果が偶然ではない（統計的に有意である）可能性が高まります。</li>
+</ul>
+</div>
+<div class="info-card">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-secondary); font-weight: bold;"><i class="fas fa-wave-square"></i> $\hat{\sigma}_v^2$ の詳細:</p>
+<ul class="unstyled-list">
+<li>$\hat{\sigma}_v^2$: ボクセル $v$ における<span class="highlight">残差分散の推定値</span>。モデルで説明できなかった変動の大きさを示します。</li>
+<li>$\|\mathbf{Y}_v - \mathbf{X}\hat{\boldsymbol{\beta}}_v\|^2$: ボクセル $v$ における<span class="highlight">残差平方和 (RSS)</span>。実際のデータ $\mathbf{Y}_v$ とモデルによる予測値 $\mathbf{X}\hat{\boldsymbol{\beta}}_v$ の差の二乗和です。</li>
+<li>$T - \mathrm{rank}(\mathbf{X})$: <span class="highlight">自由度</span>。時間点の数 $T$ から、デザイン行列 $\mathbf{X}$ のランク（実質的な独立した説明変数の数）を引いたものです。</li>
+<li><i class="fas fa-chart-pie"></i> 残差平方和を自由度で割ることで、不偏分散推定量が得られます。</li>
+</ul>
+</div>
+</div>
+<div class="glass-card" style="margin-top:20px;">
+<p><i class="fas fa-microchip" style="color:var(--color-accent1);"></i> この定式化により、生理学的ノイズ（心拍や呼吸に伴う信号変動など）やスキャナーのドリフト（時間経過に伴う装置由来の信号変動）を制御しつつ、<span class="highlight">条件特異的な活性化パターンに関する統計的推論</span>が可能になります。つまり、特定の文を処理しているときに、脳のどの部分が特異的に活動したのかを、ノイズの影響を減らした上で評価できるということです。</p>
+</div>
+<div class="bubble-box" style="margin-top:25px;">
+<p>🎉 <strong>まとめ:</strong> GLMは、fMRIデータから脳活動を解読するための強力なツールです。実験デザインとノイズ要因を考慮したモデル（デザイン行列 $\mathbf{X}$）を構築し、それによって観測されたBOLD信号（$\mathbf{Y}$）を説明する脳活動のパターン（$\boldsymbol{\beta}$）を推定します。特にこの論文では、LS-S法を用いることで、個々の文に対する脳の応答をより精密に捉えようとしています。算出された$t$値は、どの脳領域が特定の言語処理タスクに有意に関与しているかを示す重要な手がかりとなります。</p>
+</div>
+</div>
+<div class="section-card" id="C_Details_of_Cross-Validated_Ridge_Regression_for_Layer-wise_Encoding_Analysis">
+<h2 class="section-title"><i class="fas fa-sitemap"></i> C Details of Cross-Validated Ridge Regression for Layer-wise Encoding Analysis</h2>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bullseye"></i> このセクションの目的と概要</p>
+<p>このセクションでは、論文で採用されている<span class="keyword">層ごとのエンコーディング分析</span>における<span class="keyword">交差検証済みリッジ回帰</span>（Cross-Validated Ridge Regression）の技術的な詳細について掘り下げていきます。主な目的は、深層ニューラルネットワーク（DNN）の各層が持つ意味表現と、fMRI（機能的磁気共鳴画像法）によって計測された脳活動パターンとの関連性を定量的に評価する手法を明らかにすることです。</p>
+<p>具体的には、以下の内容をステップバイステップで解説します：</p>
+<ul>
+<li><i class="fas fa-brain" style="color: var(--color-accent1);"></i> fMRIデータとDNNの埋め込み表現をどのように関連付けるか</li>
+<li><i class="fas fa-cogs" style="color: var(--color-secondary);"></i> <span class="keyword">リッジ回帰</span>を用いた予測モデルの構築方法</li>
+<li><i class="fas fa-arrows-alt-h" style="color: var(--color-accent2);"></i> 過学習を防ぐための<span class="keyword">正則化</span>と特徴量の<span class="keyword">正規化</span></li>
+<li><i class="fas fa-chart-line" style="color: var(--color-accent3);"></i> モデルの予測性能を評価するための指標と<span class="keyword">交差検証</span></li>
+<li><i class="fas fa-tasks" style="color: var(--color-primary);"></i> 多数のモデルを効率的に処理するための計算並列化戦略</li>
+</ul>
+<p>この解説を通じて、計算論的神経科学と人工知能の融合領域における洗練された分析パイプラインを理解することを目指します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> エンコーディングパイプラインの基本設定</h3>
+<p>この研究における<span class="keyword">神経認知エンコーディングパイプライン</span>は、<span class="keyword">正則化回帰</span>という統計的手法を用いて、深層ニューラルネットワークの特定の層が学習した<span class="keyword">意味表現</span>と、fMRIから得られる脳活動パターンとの関連を定量化します。これは、計算論的神経科学とAIの知見を統合し、脳の反応と深層学習モデルが生み出す表現との関係性を体系的に分析するためのフレームワークです。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="icon-item" style="text-align: center;"><i class="fas fa-brain fa-2x" style="color: var(--color-primary);"></i></p>
+<h4 style="text-align: center; color: var(--color-primary);">脳活動データ (fMRI)</h4>
+<p>特定の脳領域（<span class="keyword">ROI</span>: Region of Interest）$r$ から得られるfMRI応答ベクトルを $\mathbf{y}$ とします。</p>
+<div class="formula" style="background-color: rgba(74, 111, 165, 0.05); border: 1px dashed var(--color-primary);">
+                $\mathbf{y} \in \mathbb{R}^{T}$
+            </div>
+<ul class="unstyled-list">
+<li><i class="fas fa-clock" style="color: var(--color-gray);"></i> $T$: 時点 (time points) の数。fMRIのスキャン回数に相当します。</li>
+</ul>
+</div>
+<div class="info-card">
+<p class="icon-item" style="text-align: center;"><i class="fas fa-robot fa-2x" style="color: var(--color-secondary);"></i></p>
+<h4 style="text-align: center; color: var(--color-secondary);">深層学習モデルの埋め込み表現</h4>
+<p>深層学習モデルから抽出される埋め込み（embeddings）を $\mathbf{X}$ とします。</p>
+<div class="formula" style="background-color: rgba(255, 126, 95, 0.05); border: 1px dashed var(--color-secondary);">
+                $\mathbf{X} \in \mathbb{R}^{T \times L \times D}$
+            </div>
+<ul class="unstyled-list">
+<li><i class="fas fa-clock" style="color: var(--color-gray);"></i> $T$: 時点の数（fMRIデータと対応）</li>
+<li><i class="fas fa-layer-group" style="color: var(--color-gray);"></i> $L$: ニューラルネットワークの層の数</li>
+<li><i class="fas fa-ruler-combined" style="color: var(--color-gray);"></i> $D$: 埋め込みの次元数</li>
+</ul>
+</div>
+</div>
+<p>これらのデータを用いて、モデルの<span class="keyword">層ごとの予測性能</span>を計算していきます。</p>
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<h4 style="color: var(--color-accent1);"><i class="fas fa-table"></i> 参考情報：脳領域について (Table 2)</h4>
+<p>論文中では、分析対象となる脳領域に関する情報がTable 2として示されています。この表は、言語処理に関連する主要な脳領域、その略称、およびそれぞれの機能的役割をまとめたものです。エンコーディング分析では、これらのROIごとの脳活動を予測しようと試みます。</p>
+</div>
+<img alt="Table 2: Brain regions, their abbreviations, and associated functional domains in language processing." class="section-image" src="table2.png" style="width: 80%; margin-bottom: 20px;"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray);">表2: 脳領域、その略称、および言語処理における関連機能ドメイン。<br/>略語: LH – 左半球; RH – 右半球; IFG – 下前頭回; MFG – 中前頭回; AntTemp – 前部側頭葉; PostTemp – 後部側頭葉; AngG – 角回。</p>
+<h3 class="subsection-title"><i class="fas fa-calculator"></i> 層ごとの予測性能の評価</h3>
+<p>ニューラルネットワークの各層 $l$ の埋め込み表現 $\mathbf{X}^{(l)}$ が、脳活動 $\mathbf{y}$ をどれだけうまく予測できるかを評価します。この評価は、<span class="keyword">交差検証</span> (Cross-Validation) を用いて行われ、性能指標 $\mathcal{L}$ は以下のように定義されます。</p>
+<div class="formula glass-card">
+<p>層 $l$ の予測性能:</p>
+        $$ \mathcal { L } ( \mathbf { X } ^ { ( l ) } , \mathbf { y } ) = \frac { 1 } { K } \sum _ { k = 1 } ^ { K } \rho \left( \mathbf { y } _ { \mathrm { t e s t } } ^ { ( k ) } , \hat { \mathbf { y } } _ { \mathrm { t e s t } } ^ { ( k ) } \right) $$
+    </div>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-arrows-rotate" style="color:var(--color-accent1)"></i></p>
+<p><strong>$K$</strong>: <span class="keyword">交差検証</span>のフォールド数。データをK個のサブセットに分割し、K回の学習と評価を繰り返します。</p>
+</div>
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-brain" style="color:var(--color-primary)"></i></p>
+<p><strong>$\mathbf{y}_{\text{test}}^{(k)}$</strong>: $k$番目のフォールドにおける<span class="keyword">実際のfMRI応答</span>（テストデータ）。</p>
+</div>
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-lightbulb" style="color:var(--color-secondary)"></i></p>
+<p><strong>$\hat{\mathbf{y}}_{\text{test}}^{(k)}$</strong>: $k$番目のフォールドにおけるリッジ回帰モデルによる<span class="keyword">予測されたfMRI応答</span>。</p>
+</div>
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-chart-bar" style="color:var(--color-accent2)"></i></p>
+<p><strong>$\rho(\cdot)$</strong>: <span class="keyword">ピアソン相関係数</span>。実際の応答と予測された応答の間の線形な関連の強さを示します。-1から1の値をとり、1に近いほど強い正の相関、-1に近いほど強い負の相関、0に近いほど相関がないことを意味します。</p>
+</div>
+</div>
+<p>この $\mathcal{L}$ は、全ての交差検証フォールドにおけるピアソン相関係数の平均値を表しており、モデルの汎化性能を示します。</p>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> リッジ回帰 (Ridge Regression) による予測</h3>
+<p>予測されたfMRI応答 $\hat{\mathbf{y}}$ は、<span class="keyword">リッジ回帰</span>モデルを用いて計算されます。リッジ回帰は、特に説明変数の数が多い（高次元）データセットにおいて、モデルが訓練データに過剰に適合してしまう<span class="keyword">過学習 (overfitting)</span> を防ぐために、回帰係数 $\boldsymbol{\beta}$ にペナルティを課す正則化手法の一つです。</p>
+<p>層 $l$ における回帰係数 $\hat{\boldsymbol{\beta}}^{(l)}$ は、以下の最小化問題の解として求められます。</p>
+<div class="formula glass-card">
+<p>リッジ回帰の目的関数:</p>
+        $$ \hat { \boldsymbol { \beta } } ^ { ( l ) } = \arg \operatorname* { m i n } _ { \boldsymbol { \beta } } \left\| \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l ) } \boldsymbol { \beta } - \mathbf { y } _ { \mathrm { t r a i n } } \right\| ^ { 2 } + \alpha \| \boldsymbol { \beta } \| ^ { 2 } $$
+    </div>
+<div class="note-box" style="border-left-color: var(--color-secondary);">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-balance-scale"></i> 数式の解説</p>
+<ul>
+<li>✏️ $\mathbf{X}_{\text{train}}^{(l)}$: 層 $l$ の訓練データにおけるDNN埋め込み（入力特徴量）。</li>
+<li>🧠 $\mathbf{y}_{\text{train}}$: 訓練データにおけるfMRI応答（目的変数）。</li>
+<li>⚖️ $\left\| \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l ) } \boldsymbol { \beta } - \mathbf { y } _ { \mathrm { t r a i n } } \right\| ^ { 2 }$: <span class="keyword">残差平方和</span>。モデルの予測 $\mathbf{X}_{\text{train}}^{(l)}\boldsymbol{\beta}$ と実際の値 $\mathbf{y}_{\text{train}}$ との間の誤差を表します。これを小さくすることが通常の回帰分析の目的です。</li>
+<li>🔗 $\alpha \| \boldsymbol { \beta } \| ^ { 2 }$: <span class="keyword">L2正則化項</span>（リッジペナルティ）。回帰係数 $\boldsymbol{\beta}$ の各要素の二乗和に、正則化パラメータ $\alpha$ を掛けたものです。
+                <ul>
+<li>$\alpha$: <span class="keyword">正則化パラメータ</span>。この値が大きいほど、係数 $\boldsymbol{\beta}$ が大きくなることに対するペナルティが強くなり、係数の値は0に近づきます。これにより、モデルの複雑さが抑制され、過学習が防がれます。$\alpha=0$ の場合は通常の最小二乗法と一致します。</li>
+<li>$\|\boldsymbol{\beta}\|^2 = \sum_j \beta_j^2$: 回帰係数ベクトルのL2ノルムの二乗。</li>
+</ul>
+</li>
+</ul>
+<p>この式は、「データへの適合度（残差平方和の最小化）」と「モデルの複雑さ（係数の大きさの抑制）」との間の<span class="keyword">トレードオフ</span>を制御します。$\alpha$ の値は、モデルがノイズに頑健であり、未知のテストデータに対してより良く<span class="keyword">汎化</span>できるように調整されます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-magic"></i> 特徴量の正規化 (Feature Normalization)</h3>
+<p>リッジ回帰を行う前に、数値的な安定性を確保し、fMRI応答 $\mathbf{y}$ とモデルの埋め込み $\mathbf{X}$ の間のスケールを合わせるために、全ての変数を<span class="keyword">Zスコア化 (z-score normalization)</span> します。これは、各特徴量の平均を0、標準偏差を1にする変換です。</p>
+<div class="two-column">
+<div class="column glass-card" style="padding:15px;">
+<h4 style="color: var(--color-primary); text-align:center;"><i class="fas fa-brain"></i> fMRI応答 $\mathbf{y}$ の正規化</h4>
+<div class="formula" style="font-size: 1.1em;">
+            $$ \mathbf { y } \to \frac { \mathbf { y } - \mu _ { y } } { \sigma _ { y } } $$
+            </div>
+<p>ここで、</p>
+<ul>
+<li>$\mu_y$: 全時点にわたるfMRI信号 $\mathbf{y}$ の平均値。</li>
+<li>$\sigma_y$: 全時点にわたるfMRI信号 $\mathbf{y}$ の標準偏差。</li>
+</ul>
+<p>結果として、正規化された $\mathbf{y}$ は平均0、単位分散（標準偏差1）を持ちます。</p>
+</div>
+<div class="column glass-card" style="padding:15px;">
+<h4 style="color: var(--color-secondary); text-align:center;"><i class="fas fa-robot"></i> DNN埋め込み $\mathbf{X}^{(l)}$ の正規化</h4>
+<div class="formula" style="font-size: 1.1em;">
+            $$ \mathbf { X } ^ { ( l ) } \to \frac { \mathbf { X } ^ { ( l ) } - \pmb { \mu } _ { X } } { \pmb { \sigma } _ { X } } $$
+            </div>
+<p>ここで、</p>
+<ul>
+<li>$\pmb{\mu}_X$: ニューラル埋め込み $\mathbf{X}^{(l)}$ の各チャネル（次元）ごとの平均値ベクトル。</li>
+<li>$\pmb{\sigma}_X$: ニューラル埋め込み $\mathbf{X}^{(l)}$ の各チャネル（次元）ごとの標準偏差ベクトル。</li>
+</ul>
+<p>これにより、各次元の特徴量が平均0、単位分散を持つようになります。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> <strong>なぜ正規化が必要か？</strong></p>
+<p>正規化を行うことで、異なるスケールを持つ特徴量（例えば、fMRI信号の単位と埋め込みベクトルの値）が同等に扱われるようになります。これにより、リッジ回帰の係数 $\boldsymbol{\beta}$ の推定が安定し、結果の解釈もしやすくなります。特に、正則化項は係数の大きさに依存するため、特徴量のスケールが異なると、特定の係数だけが不当に大きくまたは小さくペナルティを受ける可能性があります。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-layer-group"></i> 層ごとの回帰分析 (Layer-wise Regression Analysis)</h3>
+<p>ニューラルネットワークの各層 $l$ ($l \in \{1, \dots, L\}$) について、その層の埋め込み表現がfMRI応答をどの程度予測できるか、モデルの性能を評価します。このために、各層の（正規化された）埋め込み $\bar{\mathbf{X}}^{(l)}$ を用いて、独立にリッジ回帰モデルを訓練データに適合させます。</p>
+<p>層 $l$ の予測品質は、前述の通り、$K$分割交差検証におけるテストデータに対するピアソン相関係数の平均 $\rho_l$ として定量化されます。</p>
+<div class="formula glass-card">
+<p>層 $l$ の平均ピアソン相関係数:</p>
+        $$ \rho _ { l } = \frac { 1 } { K } \sum _ { k = 1 } ^ { K } \mathrm { c o r r } \left( \mathbf { y } _ { \mathrm { t e s t } } ^ { ( k ) } , \mathbf { X } _ { \mathrm { t e s t } } ^ { ( l , k ) } \hat { \boldsymbol { \beta } } ^ { ( l , k ) } \right) $$
+    </div>
+<p>ここで重要なのは、回帰係数 $\hat{\boldsymbol{\beta}}^{(l,k)}$ の計算方法です。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge blue">ステップ1</span>
+<p><strong>訓練サブセットによる係数推定</strong>: 各交差検証フォールド $k$ において、そのフォールドの訓練サブセット $(\mathbf{X}_{\text{train}}^{(l,k)}, \mathbf{y}_{\text{train}}^{(k)})$ を用いて、リッジ回帰の<span class="keyword">閉形式解 (closed-form solution)</span> により係数 $\hat{\boldsymbol{\beta}}^{(l,k)}$ を計算します。</p>
+<div class="formula" style="background-color: rgba(230, 230, 250, 0.5); border: 1px dashed #9575cd;">
+                $$ \hat { \boldsymbol { \beta } } ^ { ( l , k ) } = ( \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l , k ) \top } \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l , k ) } + \alpha \mathbf { I } ) ^ { - 1 } \mathbf { X } _ { \mathrm { t r a i n } } ^ { ( l , k ) \top } \mathbf { y } _ { \mathrm { t r a i n } } ^ {(k)} $$
+                <!-- 論文の数式では y_train の上付き文字 (k) が抜けているように見えるが、文脈から補完 -->
+</div>
+<div class="note-box" style="border-left-color: var(--color-accent2);">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-microchip"></i> 閉形式解の解説</p>
+<ul>
+<li>$\mathbf{X}_{\text{train}}^{(l,k)\top}$: $\mathbf{X}_{\text{train}}^{(l,k)}$ の転置行列。</li>
+<li>$\mathbf{X}_{\text{train}}^{(l,k)\top} \mathbf{X}_{\text{train}}^{(l,k)}$: 訓練データの特徴量の共分散行列に似たもの（正確にはグラム行列）。データへの適合度合いに関連します。</li>
+<li>$\alpha \mathbf{I}$: 正則化項。$\mathbf{I}$ は単位行列で、$\alpha$ は正則化の強さを制御するハイパーパラメータです。この項があることで、逆行列 $(\cdot)^{-1}$ が常に計算可能になる（行列が正則になる）効果もあります。</li>
+<li>$(\cdot)^{-1}$: 行列の逆行列。</li>
+</ul>
+<p>この式は、データへの適合度 $(\mathbf{X}^{\top}\mathbf{X})$ と正則化 $(\alpha\mathbf{I})$ のバランスを取る形で係数を決定します。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<span class="badge orange">ステップ2</span>
+<p><strong>ハイパーパラメータ $\alpha$ の最適化</strong>: 正則化パラメータ $\alpha$ の値は、モデルの性能に大きく影響します。最適な $\alpha$ を見つけるために、<span class="keyword">グリッドサーチ (grid search)</span> を行います。例えば、$\alpha$ の候補として $\{10^{-3}, 10^{-2}, \dots, 10^1\}$ のような値の集合を設定します。</p>
+<p>この最適化は、<span class="keyword">入れ子式交差検証 (nested cross-validation)</span> ループ内で行われます。外側のループがモデルの最終的な性能評価用、内側のループがハイパーパラメータチューニング用です。内側のループで各 $\alpha$ 候補についてモデルを訓練し、検証セットでの予測精度（例えばピアソン相関係数）が最大となる $\alpha$ を選択します。</p>
+<div style="text-align: center; margin: 15px 0;">
+<i class="fas fa-search fa-2x" style="color: var(--color-secondary);"></i> <span style="font-family: 'Yomogi', cursive; font-size: 1.2em;"> $\alpha$ の探索 </span> <i class="fas fa-long-arrow-alt-right fa-2x" style="color: var(--color-gray);"></i> <i class="fas fa-trophy fa-2x" style="color: var(--color-accent3);"></i> <span style="font-family: 'Yomogi', cursive; font-size: 1.2em;"> 最適な $\alpha^*$ </span>
+</div>
+</div>
+</div>
+<p>このプロセス全体を通して、各ニューラルネットワーク層 $l$ について、その層の埋め込みが特定の脳領域（ROI）の活動をどれだけよく予測できるかを示す<span class="keyword">層ごとの相関指標 $\rho_l$</span> が得られます。</p>
+<h3 class="subsection-title"><i class="fas fa-project-diagram"></i> 階層的計算並列化 (Hierarchical Computational Parallelization)</h3>
+<p>この層ごとのエンコーディング分析は、複数の被験者、複数の脳領域（ROI）、そしてニューラルネットワークの複数の層にわたって実行する必要があります。そのため、計算パイプラインは<span class="keyword">入れ子構造の並列ループ</span>として構成されます。</p>
+<div class="framework-box glass-card">
+<p class="framework-title" style="text-align: center;"><i class="fas fa-cogs"></i> 計算構造の概要</p>
+<div class="formula" style="font-family: 'Yomogi', cursive; font-size: 1.3em; background:none; box-shadow:none; padding: 5px;">
+        $$ \underbrace { \mathrm { Subjects } } _ { \mathrm { Outer \ loop } } \times \underbrace { \mathrm { ROIs } } _ { \mathrm { Middle \ loop } } \times \underbrace { \mathrm { Layers } } _ { \mathrm { Inner \ loop } } \to \mathcal { O } ( S \cdot R \cdot L ) \mathrm { \ models } $$
+        </div>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+<div class="info-card" style="background-color: rgba(74, 111, 165, 0.1);">
+<p style="text-align:center;"><strong class="keyword" style="font-size:1.1em; color:var(--color-primary);">Subjects (被験者)</strong></p>
+<p style="text-align:center; font-size:2em; color:var(--color-primary);"><i class="fas fa-users"></i></p>
+<p style="text-align:center;">$S$: 被験者の数</p>
+<p style="text-align:center; font-size:0.9em;">最も外側のループ</p>
+</div>
+<div class="info-card" style="background-color: rgba(255, 126, 95, 0.1);">
+<p style="text-align:center;"><strong class="keyword" style="font-size:1.1em; color:var(--color-secondary);">ROIs (脳領域)</strong></p>
+<p style="text-align:center; font-size:2em; color:var(--color-secondary);"><i class="fas fa-brain"></i></p>
+<p style="text-align:center;">$R$: 分析対象のROIの数</p>
+<p style="text-align:center; font-size:0.9em;">中間のループ</p>
+</div>
+<div class="info-card" style="background-color: rgba(92, 184, 92, 0.1);">
+<p style="text-align:center;"><strong class="keyword" style="font-size:1.1em; color:var(--color-accent1);">Layers (層)</strong></p>
+<p style="text-align:center; font-size:2em; color:var(--color-accent1);"><i class="fas fa-layer-group"></i></p>
+<p style="text-align:center;">$L$: ニューラルネットワークの層の数</p>
+<p style="text-align:center; font-size:0.9em;">最も内側のループ</p>
+</div>
+</div>
+<p>実際には、これは非常に多数のリッジ回帰モデル（<span class="keyword">オーダー $\mathcal{O}(S \cdot R \cdot L)$</span>）を訓練し評価することを意味します。例えば、被験者が30人、ROIが10箇所、ネットワークの層が20層あれば、$30 \times 10 \times 20 = 6000$ 個のモデルを処理する必要があります。この膨大な計算量を効率的に処理するために、<span class="keyword">効率的な並列実装</span>が不可欠となります。</p>
+</div>
+<div class="challenge-box" style="margin-top: 25px;">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> まとめ：このセクションのポイント</p>
+<p>このセクションでは、fMRI脳活動データと深層学習モデルの層ごとの埋め込み表現を関連付けるための、<span class="highlight">交差検証済みリッジ回帰</span>を用いた詳細なエンコーディング分析手法が解説されました。重要な要素は以下の通りです：</p>
+<ul>
+<li>🧠 <strong>データ</strong>: fMRI応答ベクトル $\mathbf{y}$ とDNN埋め込み $\mathbf{X}^{(l)}$。</li>
+<li>📊 <strong>評価指標</strong>: 層ごとの予測性能 $\mathcal{L}$ は、交差検証におけるピアソン相関係数 $\rho$ の平均で算出。</li>
+<li>⚙️ <strong>モデル</strong>: 過学習を防ぐためにL2正則化項を持つリッジ回帰を使用。係数 $\boldsymbol{\beta}$ は目的関数を最小化することで求められる。</li>
+<li>⚖️ <strong>正規化</strong>: fMRIデータと埋め込み特徴量は、平均0・標準偏差1にZスコア化され、数値的安定性と比較可能性を確保。</li>
+<li>🔄 <strong>最適化</strong>: 正則化パラメータ $\alpha$ は、入れ子式交差検証とグリッドサーチにより最適化。</li>
+<li>💻 <strong>計算効率</strong>: 被験者、ROI、層にわたる多数のモデル処理のため、階層的な並列計算パイプラインを構築。</li>
+</ul>
+<p>これらの手法により、ニューラルネットワークの各層が持つ表現と、脳の特定の領域の活動との間にどのような関連があるかを、頑健かつ定量的に評価することが可能になります。</p>
+</div>
+</div>
+<div class="section-card" id="D_Input_Perturbations">
+<h2 class="section-title"><i class="fas fa-random"></i>D Input Perturbations (入力の摂動)</h2>
+<div class="glass-card">
+<p>📝 このセクションでは、私たちが実施した大規模言語モデル（LLM）の文理解性能評価タスク（セクション4.1で詳述）で用いた、入力文に対する具体的な「<span class="keyword">摂動（perturbations）</span>」について詳しく解説します。摂動とは、元の文に意図的な変更を加えることで、LLMがどの程度文の構造や意味を深く理解しているかを試すためのものです。いわば、LLMへの「挑戦状」ですね！</p>
+<p>この実験では、元の中国語の文に対して、英語の翻訳案を5つの異なるタイプ（オプション A～E）で作成しました。それぞれのオプションがどのような特徴を持ち、LLMの何を試そうとしているのか、一緒に見ていきましょう！</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-check-circle fa-2x" style="color: var(--color-accent1);"></i></div>
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-flag-checkered"></i>Option A: 正解の翻訳</h3>
+<div class="content-box">
+<p>📌 これは、<span class="highlight">中国語の原文に対する完璧な英語の翻訳</span>です。いわば、LLMが目指すべき「正解」のターゲットとなります。他のオプションは、このOption Aを基準にして様々な変更が加えられています。</p>
+<div class="bubble-box">
+<p style="font-family: 'Kaisei Decol', serif;">例：</p>
+<p>中国語の文: <span class="keyword">「小王子」</span> (Xiǎo wángzǐ)</p>
+<p>Option A (英語): <span class="keyword">"The Little Prince"</span></p>
+</div>
+<p>このオプションは、LLMが基本的な翻訳能力、つまりクロスリンガルな意味理解ができているかの基準となります。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-exchange-alt fa-2x" style="color: var(--color-secondary);"></i></div>
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-puzzle-piece"></i>Option B: 単語順序のシャッフル</h3>
+<div class="content-box">
+<p>🔄 Option Aの<span class="highlight">単語の順序をランダムに入れ替えて</span>作成されます。この操作により、文の<span class="keyword">構文構造 (syntactic structure)</span> は破壊されますが、使われている<span class="keyword">語彙内容 (lexical content)</span> は保持されます。</p>
+<div class="bubble-box">
+<p style="font-family: 'Kaisei Decol', serif;">例：Option A が "The Little Prince looked at the sky." だとしたら...</p>
+<p>Option B: <span class="keyword">"sky The Prince at looked Little the."</span> のような形になります。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>このオプションの目的</p>
+<p>LLMが単に単語の袋（bag-of-words）として文を理解しているのか、それとも単語の順序、つまり<span class="highlight">構文情報を適切に処理できているか</span>を試すためです。人間なら単語の順序がめちゃくちゃだと意味を理解しにくいですが、LLMはどうでしょうか？</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-pen-nib fa-2x" style="color: var(--color-accent2);"></i></div>
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-spell-check"></i>Option C: 類義語・同品詞語への置換</h3>
+<div class="content-box">
+<p>🎨 Option Aの一部の単語を、その<span class="highlight">類義語 (synonyms) や同じ品詞 (part of speech) の別の単語に置き換えて</span>作成されます。これにより、文の<span class="keyword">表層的な意味 (surface semantics)</span> が変化します。</p>
+<div class="bubble-box">
+<p style="font-family: 'Kaisei Decol', serif;">例：Option A が "The Little Prince was <span class="keyword">sad</span>." だとしたら...</p>
+<p>Option C: <span class="keyword">"The Little Prince was <span class="highlight">unhappy</span>."</span> (類義語置換) や <span class="keyword">"The Little Prince was <span class="highlight">quiet</span>."</span> (同品詞の別単語置換) のような形になります。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>このオプションの目的</p>
+<p>LLMが単語の微妙な意味の違いやニュアンスを区別できるか、また、文全体の意味がどのように変化するかを捉えられるかを評価するためです。<span class="highlight">語彙レベルの深い理解</span>が試されます。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-retweet fa-2x" style="color: var(--color-accent3);"></i></div>
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-recycle"></i>Option D: 文構造の変換</h3>
+<div class="content-box">
+<p>⚖️ Option Aの<span class="highlight">文構造 (sentence structure) を変換</span>して生成されます。例えば、能動態から受動態へ変更するなどです。この際、<span class="keyword">元の文が持つ意味は保持</span>されるように努めます。</p>
+<div class="bubble-box">
+<p style="font-family: 'Kaisei Decol', serif;">例：Option A が "The fox <span class="keyword">taught</span> the Little Prince a secret." (能動態) だとしたら...</p>
+<p>Option D: <span class="keyword">"A secret <span class="highlight">was taught</span> to the Little Prince by the fox."</span> (受動態) のような形になります。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>このオプションの目的</p>
+<p>LLMが文の表面的な形式の違いに惑わされず、<span class="highlight"> underlying meaning（根底にある意味）を理解しているか</span>を評価するためです。同じ内容でも表現方法が変わった場合に、LLMがそれを同一の意味として認識できるかがポイントです。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-edit fa-2x" style="color: var(--color-primary);"></i></div>
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-plus-minus"></i>Option E: 情報の挿入・削除</h3>
+<div class="content-box">
+<p>➕➖ Option Aに対して、<span class="highlight">情報を挿入したり、逆に一部の情報を削除したり</span>して作成されます。これにより、文に<span class="keyword">意味的なノイズ (semantic noise) を導入</span>したり、<span class="keyword">重要な詳細を欠落 (omitting key details)</span> させたりします。</p>
+<div class="bubble-box">
+<p style="font-family: 'Kaisei Decol', serif;">例：Option A が "The Little Prince met a pilot." だとしたら...</p>
+<p>Option E (挿入): <span class="keyword">"The Little Prince, <span class="highlight">who came from asteroid B-612</span>, met a pilot."</span></p>
+<p>Option E (削除): <span class="keyword">"The Little Prince met <span class="highlight">someone</span>."</span></p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>このオプションの目的</p>
+<p>LLMが文の意味内容の完全性や関連性をどの程度評価できるか、また、<span class="highlight">情報の過不足に対してどれだけ頑健 (robust) か</span>を試すためです。ノイズが多い文や情報が欠けた文でも、元の文との意味的な関連性を見抜けるでしょうか？</p>
+</div>
+</div>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 25px;">
+<p class="framework-title"><i class="fas fa-cogs"></i>これらの摂動を用いる意義</p>
+<p>これらの多様な入力摂動を用いることで、LLMの文理解能力を単なる翻訳精度だけでなく、以下のような多角的な側面から評価することができます：</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">統語的理解</span>：単語の順序や文法構造の重要性を認識しているか (Option B, D)</li>
+<li><span class="badge orange">語彙的理解</span>：単語の微妙な意味の違いを区別できるか (Option C)</li>
+<li><span class="badge purple">意味的頑健性</span>：情報の過不足やノイズがあっても、中心的な意味を捉えられるか (Option E)</li>
+<li><span class="badge green">意味的等価性</span>：表現が異なっても同じ意味を認識できるか (Option D)</li>
+</ul>
+<p>これらのオプションに対するLLMの応答（具体的には、§4.1で説明する<span class="keyword">CSAA指標</span>を通じて、どのオプションを元の中国語文に最も意味的に近いと判断するか）を分析することで、LLMが人間の言語理解にどれだけ近づいているのか、その特性や限界を探ることができるのです。</p>
+</div>
+</div>
+<div class="section-card" id="E_Details_on_the_LLMs">
+<h2 class="section-title"><i class="fas fa-cogs"></i>E Details on the LLMs</h2>
+<p style="margin-bottom: 20px;">このセクションでは、本研究で使用された<span class="keyword">大規模言語モデル（LLM）</span>に関する具体的な技術情報と、実験を実施した際の環境について詳しく見ていきます。論文全体の実験結果や考察を理解する上で、どのようなモデルが、どのようなツールやハードウェア基盤の上で評価されたのかを知ることは非常に重要です。それでは、詳細を紐解いていきましょう！ 🚀</p>
+<div class="subsection-title"><i class="fas fa-tools"></i>🛠️ 使用されたライブラリとツール</div>
+<p>実験では、以下の主要なライブラリが活用されました。これらは現代の機械学習、特にLLMの研究開発において広く用いられているものです。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<div style="text-align: center; font-size: 2em; color: var(--color-primary); margin-bottom: 10px;">🤗</div>
+<h4 style="text-align: center;"><span class="keyword">Transformers</span> ライブラリ</h4>
+<p><a class="keyword" href="https://huggingface.co/docs/transformers/index" target="_blank">Hugging Face社</a>によって開発された、最先端の機械学習モデル（特にTransformerアーキテクチャに基づくモデル）を容易にダウンロードし、訓練・利用できるようにするためのPythonライブラリです。BERT, GPT, T5など、数多くの<span class="highlight">事前学習済みモデル</span>が提供されており、研究やアプリケーション開発の効率を大幅に向上させます。(Wolf et al., 2020)</p>
+<div class="note-box" style="background-color: rgba(74, 111, 165, 0.05);">
+<span class="note-title" style="color: var(--color-primary);"><i class="fas fa-magic"></i> 特徴</span>
+<p>LLMを扱う上で、モデルの読み込み、トークナイズ、訓練ループの構築などを統一的なインターフェースで実行できるため、非常に便利です。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<div style="text-align: center; font-size: 2em; color: var(--color-secondary); margin-bottom: 10px;"><i class="fas fa-fire"></i></div>
+<h4 style="text-align: center;"><span class="keyword">PyTorch</span> ライブラリ</h4>
+<p>FacebookのAI研究グループ（現Meta AI）によって主導開発された、オープンソースの機械学習ライブラリです。<span class="highlight">柔軟性の高さ</span>と<span class="highlight">直感的なAPI</span>が特徴で、特に学術研究コミュニティで広く採用されています。テンソル計算（GPU上での高速な数値計算）や自動微分機能（ニューラルネットワークの勾配計算を自動化）を提供し、複雑なモデルの設計と学習をサポートします。(Paszke et al., 2019)</p>
+<div class="note-box" style="background-color: rgba(255, 126, 95, 0.05);">
+<span class="note-title" style="color: var(--color-secondary);"><i class="fas fa-rocket"></i> 強み</span>
+<p>動的な計算グラフをサポートしているため、可変長の入力や複雑な制御フローを持つモデルの構築に適しています。</p>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="margin-top: 25px; border-color: var(--color-accent1);">
+<p style="font-weight: bold; color: var(--color-accent1);"><i class="fas fa-lightbulb"></i>ポイント：これらのライブラリの組み合わせ</p>
+<p><code>Transformers</code>ライブラリで提供されるモデルの多くは<code>PyTorch</code>（またはTensorFlow）バックエンドで動作するように設計されています。このため、両者はLLM研究において非常に強力なタッグを組むことになります。研究者はこれらのツールを活用することで、モデル構築や実験の複雑さを軽減し、より本質的な研究課題に集中することができます。</p>
+</div>
+<div class="subsection-title"><i class="fas fa-desktop"></i>🖥️ 実験環境</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-memory"></i> ハードウェア</div>
+<p>本研究における全ての実験は、<span class="keyword">NVIDIA® A100 80GB RAM GPU</span> で実施されました。</p>
+<div style="text-align: center; margin: 15px 0;">
+<i class="fas fa-server" style="font-size: 3.5em; color: var(--color-primary);"></i>
+<p style="font-size: 0.9em; color: var(--color-gray); margin-top: 5px;">NVIDIA A100: LLM研究を支えるパワフルなGPU</p>
+</div>
+<p>このGPUは、以下のような特徴を持ち、大規模言語モデルの訓練や推論タスクに不可欠な存在です：</p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '⚡ '; ">
+<li><span class="highlight">高い計算性能</span>: 大量の並列計算を高速に処理できます。</li>
+<li><span class="highlight">大容量メモリ (80GB RAM)</span>: 数十億から数百億パラメータを持つような巨大なLLMモデルをメモリ上に展開し、効率的に処理するために必須です。</li>
+</ul>
+<p>このような高性能な計算資源があることで、本論文で扱われるような複数のLLMに対する詳細な評価実験が可能になります。</p>
+</div>
+<div class="subsection-title"><i class="fas fa-table"></i>📊 表3: LLMの詳細情報</div>
+<p>このセクションの核となるのが、研究で使用された14種類のLLMに関する詳細をまとめた表3です。この表は、Transformerベースのモデルたちが、それぞれどの程度のパラメータ規模で、何層のネットワーク構造を持っているかを示しています。</p>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-info-circle"></i> 表のキャプション解説</span>
+<p>「Table 3: Layer numbers of transformer-based models across different parameter scaling levels. <span class="highlight">Model names link to their Hugging Face repositories.</span>」</p>
+<p>注目すべきは、「モデル名はHugging Faceリポジトリへのリンクになっている」という記述です。これは、研究で用いられたモデルが公開されており、誰でもアクセスして詳細を確認したり、自身の研究で利用したりできることを意味します（このHTML内では実際のリンクは設定されていません）。Hugging Face (🤗) は、機械学習モデルやデータセットを共有するためのハブとして機能しており、AI分野の<span class="keyword">オープン性</span>と<span class="keyword">再現性</span>を高める上で非常に重要な役割を果たしています。</p>
+</div>
+<img alt="Table 3: Layer numbers of transformer-based models across different parameter scaling levels." class="table-image" src="table3.png" style="border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 20px; margin-bottom:20px;"/>
+<div class="content-box" style="margin-top:20px;">
+<h4><i class="fas fa-search-plus"></i> 表3の読み解き方 🔍</h4>
+<p>この表を理解するために、各列が何を示しているのかを見ていきましょう。</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="icon-item" style="color:var(--color-primary);"><i class="fas fa-signature"></i></div>
+<h5 class="keyword">Model Name</h5>
+<p>モデルの固有の名称です。例えば、「Llama-3.1-8B-Instruct」や「gemma-2-9b」などがあります。</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="color:var(--color-secondary);"><i class="fas fa-layer-group"></i></div>
+<h5 class="keyword">Layers</h5>
+<p>モデル内のTransformerブロック（層）の総数を示します。一般的に、層の数が多いほどモデルはより複雑なパターンや抽象的な特徴を学習できる可能性がありますが、計算コストも増加します。</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="color:var(--color-accent1);"><i class="fas fa-brain"></i></div>
+<h5 class="keyword">Parameters (B)</h5>
+<p>モデルが持つ学習可能なパラメータの総数を、十億単位（Billion）で示しています。例えば、「8B」は80億パラメータを意味します。パラメータ数はモデルの「容量」や「表現力」の指標の一つとされます。</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="color:var(--color-accent2);"><i class="fas fa-tags"></i></div>
+<h5 class="keyword">Type</h5>
+<p>モデルのタイプを示します。この表では主に2つのタイプが見られます：</p>
+<ul class="unstyled-list" style="margin-top:5px;">
+<li><i class="fas fa-cube" style="color:var(--color-gray);"></i> <strong class="highlight">Base</strong>: 大規模なテキストコーパスで事前学習された基本的なモデルです。汎用的な言語理解能力を持ちますが、特定のタスクや対話形式に特化してはいません。</li>
+<li><i class="fas fa-chalkboard-teacher" style="color:var(--color-gray);"></i> <strong class="highlight">Instruct</strong> (Instruction-tuned): Baseモデルに対して、指示（instruction）に従って応答を生成するように追加のファインチューニング（指示チューニング）を施したモデルです。よりユーザーの意図を汲み取り、対話的に振る舞う能力が向上しています。</li>
+</ul>
+</div>
+</div>
+<div class="bubble-box" style="margin-top: 30px; border-color: var(--color-accent2); background-color: rgba(149, 117, 205, 0.05);">
+<p style="font-weight: bold; color: var(--color-accent2);"><i class="fas fa-binoculars"></i> 表から読み取れること &amp; 論文との関連</p>
+<p>📝 この表を見ると、例えば <span class="keyword">Llama-3.1-8B</span> と <span class="keyword">Llama-3.1-8B-Instruct</span> のように、同じモデルファミリーで同じパラメータ数でも「Base」版と「Instruct」版が存在することが分かります。論文の他のセクション（§4.1や§4.2）では、これらの <span class="highlight">InstructモデルがBaseモデルよりもタスク性能や脳活動との相関において優れた結果を示す</span>ことが報告されています。</p>
+<p>🧠 この表で示されるモデルの層数やパラメータ数といったアーキテクチャの違い、そしてBase/Instructといった訓練方法の違いが、モデルの言語理解能力や脳との類似性にどのように影響するのかを探求することが、この論文の中心的なテーマの一つです。この表は、それらの議論の基礎となる各モデルのスペックを提供する重要な役割を担っています。</p>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 30px; border-style: solid; border-color: var(--color-primary);">
+<div class="framework-title" style="border-bottom-style: dashed;"><i class="fas fa-check-circle"></i> このセクションのまとめ</div>
+<p>セクションE「Details on the LLMs」は、研究の根幹をなすLLMに関する技術的な詳細を提供する、短くも重要な補足情報です。</p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '📌 '; ">
+<li><span class="highlight">使用したLLMのリストと特性</span> (Table 3)</li>
+<li><span class="highlight">実験に使用したプログラミングライブラリ</span> (Transformers, PyTorch)</li>
+<li><span class="highlight">実験を支えた計算環境</span> (NVIDIA A100 GPU)</li>
+</ul>
+<p>これらの情報は、研究の<span class="keyword">透明性</span>を確保し、他の研究者による<span class="keyword">追試（再現性）</span>を可能にする上で不可欠です。特にTable 3に記載されたモデルのスペックは、論文全体を通して展開されるLLMの性能評価や脳活動との比較分析を理解するための基礎データとなります。</p>
+</div>
+</div>
+<div class="section-card" id="F_Additional_Experimental_Results">
+<h2 class="section-title"><i class="fas fa-chart-bar"></i> F Additional Experimental Results</h2>
+<div class="content-box">
+<p>この「F Additional Experimental Results」セクションへようこそ！✏️</p>
+<p>このセクションでは、論文の主要な実験結果（特に<span class="keyword">セクション4.2</span>で議論された内容）をさらに深掘りし、<span class="highlight">大規模言語モデル（LLM）</span>のような計算モデルと、<span class="highlight">人間の脳活動</span>との間に見られる関連性について、より<span class="keyword">包括的</span>かつ<span class="keyword">詳細な分析</span>を展開します。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bullseye"></i> このセクションの主な目的</p>
+<p>さまざまなLLMが、脳の<span class="highlight">異なる特定領域（ROI）</span>において、またモデル自体の<span class="highlight">異なる層</span>において、どの程度人間の脳活動を正確に予測できるのかを比較検討することです。これにより、LLMの情報処理メカニズムと人間の脳の言語理解プロセスとの間の類似性や相違点について、より深い洞察を得ることを目指しています。一言で言えば、「LLMは脳のどの部分と、どのくらい似た働き方をしているの？」を探る追加調査です。</p>
+</div>
+</div>
+<div class="subsection-title"><i class="fas fa-brain"></i> モデル性能と脳活動の相関：詳細分析</div>
+<div class="content-box">
+<p>計算モデルと脳活動の対応関係を網羅的に評価するために、研究チームはセクション4.2の結果に加えて、<span class="keyword">複数の脳領域</span>と<span class="keyword">モデルの複数の層</span>にわたるモデル性能を比較しました。</p>
+<p>その核心となるのが、以下の<span class="highlight">図9</span>です。この図は、非常に重要な情報を含んでいますので、じっくり見ていきましょう！</p>
+</div>
+<img alt="Figure 9: Multi-model performance distribution across bilateral brain regions" src="multi_model_performance_distribution_rois.jpg" style="width: 80%; margin-bottom: 20px;"/>
+<div class="glass-card">
+<h3 class="subsection-title" style="color: var(--color-dark); border-color: var(--color-dark);"><i class="fas fa-search-plus"></i> 図9の徹底解説：脳領域ごとのLLM性能分布</h3>
+<p>図9は「<span class="keyword">複数の脳領域におけるマルチモデルの性能分布</span>」を示しており、具体的には<span class="highlight">左右両半球にまたがる12個の関心領域（ROI）</span>における相関係数を表示しています。これらの相関係数の範囲は <span class="badge yellow">-0.05 から 0.15</span> です。図は<span class="badge blue">4行×3列のグリッドレイアウト</span>で構成されています。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説コーナー</p>
+<ul>
+<li><i class="fas fa-map-marker-alt"></i> <strong>ROI (Region of Interest / 関心領域)</strong>: 脳機能イメージング研究において、特定の機能や構造的特徴に基づいて定義される脳の特定の部分領域のことです。この研究では、言語処理に深く関わるとされる12の領域が対象となっています。これらの領域は脳の左右両半球に存在します（両側性）。🧠</li>
+<li><i class="fas fa-link"></i> <strong>相関係数 (Correlation Coefficient)</strong>: 2つの異なるデータセット（この場合は、LLMの内部表現から予測された脳活動と、fMRIで実際に観測された脳活動）が、どの程度似たようなパターンで変動するかを示す統計的な指標です。値が1に近いほど強い正の相関（一方が増えれば他方も増える）、-1に近いほど強い負の相関（一方が増えれば他方は減る）、0に近いほど相関が弱い（関連がない）ことを意味します。この論文では、この相関係数を用いてLLMの予測精度を評価しています。📊</li>
+<li><i class="fas fa-arrows-alt-h"></i> <strong>両側性 (Bilateral)</strong>: 左右対称に存在する構造や機能のこと。この文脈では、脳の左半球 (Left Hemisphere, LH) と右半球 (Right Hemisphere, RH) の両方に存在するROIを指します。</li>
+</ul>
+</div>
+<div class="info-grid" style="grid-template-columns: 1fr;">
+<div class="info-card">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-th-large"></i> 図9の構造：何が描かれているの？</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-braille"></i> <strong>グリッドレイアウト</strong>: 図は12個の小さなプロット（箱ひげ図の集まり）が、4行3列の形で並んでいます。</li>
+<li><i class="fas fa-puzzle-piece"></i> <strong>各プロット = 1つの脳領域 (ROI)</strong>:
+                        <ul class="unstyled-list" style="margin-left: 20px;">
+<li>各プロットの上部には、対応する脳領域の名称が記されています（例: <span class="badge">LH_AngG</span>, <span class="badge">RH_IFG</span> など）。</li>
+<li><span class="badge gray">LH</span> は左半球 (Left Hemisphere)、<span class="badge gray">RH</span> は右半球 (Right Hemisphere) を意味します。</li>
+<li><span class="badge">AngG</span> (Angular Gyrus: 角回), <span class="badge">AntTemp</span> (Anterior Temporal: 前部側頭葉), <span class="badge">IFG</span> (Inferior Frontal Gyrus: 下前頭回), <span class="badge">IFGorb</span> (IFG, orbital part: 下前頭回眼窩部), <span class="badge">MFG</span> (Middle Frontal Gyrus: 中前頭回), <span class="badge">PostTemp</span> (Posterior Temporal: 後部側頭葉) など、各略語は特定の脳部位を示します。これらの部位は言語処理において重要な役割を担うことが知られています。</li>
+</ul>
+</li>
+<li><i class="fas fa-chart-line"></i> <strong>縦軸 (Y軸)</strong>: 各プロットの縦軸は「<span class="keyword">Correlation Coefficient（相関係数）</span>」を表し、値の範囲は<span class="highlight">-0.05から0.15</span>です。この値が高いほど、そのLLMがその脳領域の活動をより良く予測できた（＝LLMの表現と脳活動がより強く関連している）ことを示します。</li>
+<li><i class="fas fa-ellipsis-h"></i> <strong>横軸 (X軸) &amp; 箱ひげ図</strong>:
+                        <ul class="unstyled-list" style="margin-left: 20px;">
+<li>各プロットの横軸には、評価対象となった<span class="highlight">様々なLLMの名称</span>がリストされています（例: Baichuan2-7B-Chat, Llama-3.1-8B-Instructなど）。</li>
+<li>それぞれのLLMについて、<span class="keyword">箱ひげ図</span>（ボックスプロット）で相関係数の分布が示されています。
+                                <ul class="unstyled-list" style="margin-left: 20px;">
+<li><i class="fas fa-square-full" style="color: #ff7e5f;"></i> <span class="badge orange">箱（ボックス）</span>: データの中央50%（第一四分位数～第三四分位数）の範囲。</li>
+<li><i class="fas fa-minus" style="color: #ff7e5f;"></i> <span class="badge orange">箱の中の線</span>: 中央値（メディアン）。</li>
+<li><i class="fas fa-grip-lines-vertical" style="color: #ff7e5f;"></i> <span class="badge orange">ひげ（ウィスカー）</span>: 箱から上下に伸びる線で、データの広がり（外れ値を除いた最小値・最大値など）を示します。</li>
+<li><i class="fas fa-circle" style="color: #6c757d; font-size: 0.7em;"></i> <span class="badge orange">点（ドット）</span>: 個々のデータポイントや外れ値を示していると考えられます。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> この図から何がわかるの？</p>
+<p>この図9は非常に強力なツールで、研究者はこれを使って以下の点を<span class="keyword">直接比較</span>することができます：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color:var(--color-accent1);"></i> <strong>モデル間の性能比較</strong>: 特定の脳領域において、どのLLMが他のLLMよりも高い（または低い）相関を示しているか。</li>
+<li><i class="fas fa-check-circle" style="color:var(--color-accent1);"></i> <strong>脳領域間の性能比較</strong>: あるLLMが、特定の脳領域では高い相関を示す一方で、別の脳領域では低い相関しか示さない、といった傾向があるか。</li>
+<li><i class="fas fa-check-circle" style="color:var(--color-accent1);"></i> <strong>全体的な傾向の把握</strong>: 全体として相関が高い脳領域はどこか、あるいは低い脳領域はどこか。モデルファミリー（例：Gemma系、Llama系）ごとに特徴的なパターンがあるかなど。</li>
+</ul>
+<p>このように、図9はLLMの予測精度が脳のどの領域でどのように現れるかを詳細にマッピングし、<span class="highlight">モデルの特性と脳機能の局在との関連</span>を明らかにする上で非常に重要な役割を果たしています。</p>
+</div>
+<p>以上が、このセクションF「Additional Experimental Results」の解説です。図9が示すように、LLMと脳活動の関連性を多角的に分析することで、両者の情報処理メカニズムの理解を一層深めることができますね！ 🧐</p>
+</div>
+</div>
+</div>
+</body>
+</html>

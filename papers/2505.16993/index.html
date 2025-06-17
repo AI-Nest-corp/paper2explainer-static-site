@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Native Segmentation Vision Transformers解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">Native Segmentation Vision Transformers</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="research.nvidia.com/labs/dvl/projects/native-segmentation">
+<h2 class="section-title"><i class="fas fa-microscope"></i> research.nvidia.com/labs/dvl/projects/native-segmentation</h2>
+<div class="content-box">
+<p>このセクションでは、論文の中心的なアイデアである「<span class="keyword">Native Segmentation Vision Transformer (SeNaTra)</span>」が、どのようにして画像の特徴を階層的にグループ化し、セグメンテーション情報を<span class="highlight">「生まれながらに」抽出していくのか</span>、そのコンセプトを視覚的なイメージと共に提示しています。まさに、論文の顔となるイントロダクション部分です！🖼️✨</p>
+<p>主な目的は、入力された画像パッチがネットワークの各ステージを通過するたびに、どのように解像度が変化し、意味のあるまとまり（<span class="keyword">グループ</span>）が形成されていくか、そのダイナミックな過程を示すことです。このセクションのテキストは、その様子を表す図のキャプションの役割を果たしていると考えられます。</p>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-bullseye"></i> <strong>このセクションの核心：</strong> SeNaTraは、従来の画一的なダウンサンプリング手法（例えば、均等にピクセルを間引くプーリング層など）とは一線を画し、画像の<span class="highlight">内容に応じてトークンを賢くグループ化</span>します。この<span class="keyword">階層的なグループ化</span>こそが、追加の複雑なデコーダー（セグメンテーションマスクを生成するための専用モジュール）なしにセグメンテーションを実現する鍵となります。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-image"></i> キャプション詳細解説</h3>
+<p>このセクションで提示されているテキストは、SeNaTraの処理フローと各ステージでの特徴マップの状態を示唆するものです。具体的には、以下のような情報が含まれています。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4><i class="fas fa-layer-group"></i> 処理ステージと解像度</h4>
+<p>SeNaTraのアーキテクチャは、複数のステージ（Stage 2, Stage 3, Stage 4）で構成されています。各ステージを経るごとに、特徴マップの解像度が段階的に低下していく様子が示されています。</p>
+<ul class="unstyled-list">
+<li>✏️ <strong>Input patches:</strong> ネットワークへの入力となる画像パッチ群。これが処理の出発点です。</li>
+<li>➡️ <strong>Stage 2 output:</strong> 第2ステージの出力。解像度が <span class="badge blue">56x56</span> になっています。入力と比較して、ある程度空間情報が圧縮されつつ、特徴が集約され始めている段階です。</li>
+<li>➡️ <strong>Stage 3 output:</strong> 第3ステージの出力。解像度が <span class="badge blue">28x28</span> にさらに低下。より大域的な特徴が捉えられ、意味的なまとまりが形成されつつあります。</li>
+<li>➡️ <strong>Stage 4 output:</strong> 第4ステージの出力。解像度が <span class="badge blue">14x14</span> (最初の例では7x7とありますが、論文の図2ではStage 4の出力は7x7となっているため、ここでは7x7と解釈します。2番目の例では14x14、7x7と複数の解像度が示されており、これは異なる設定やモデルバリアントを示唆している可能性があります) と最も低くなります。この段階では、画像全体のコンテキストを捉えた、より抽象的で意味のあるグループが形成されていることが期待されます。</li>
+</ul>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-sitemap"></i> 階層的なグループ化のイメージ</h4>
+<p>テキストは2つの例を並べて提示しており、これはおそらく異なる入力画像や、処理の異なる側面を示していると考えられます。重要なのは、「<span class="keyword">group hierarchy</span>」という言葉です。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-lightbulb"></i> キーワード解説: group hierarchy</div>
+<p><span class="keyword">グループ階層 (group hierarchy)</span> とは、初期のステージでは小さな局所的な領域（スーパーピクセルのようなもの）がグループ化され、後のステージに進むにつれて、それらの小さなグループがさらに大きな、意味のある領域（例えば、物体の一部や背景領域など）へと統合されていく、階層的な構造を指します。ピラミッドのように、底辺では細かい情報が、頂点に近づくにつれて集約された情報が得られるイメージです。</p>
+</div>
+<p>論文の図1 (Figure 1) や図3 (Figure 3) を見ると、この階層的なグループ化の様子が視覚的に表現されており、初期ステージでは細かなスーパーピクセル様の構造が現れ、最終ステージではそれらが意味のある領域へとまとまっていく様子が確認できます。このセクションのテキストは、これらの図で示される概念を簡潔に要約していると言えます。</p>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-project-diagram"></i> 処理フローの概念図 (テキストからの推測)</div>
+<div class="pipeline">
+<div class="pipeline-step">
+<strong>入力パッチ群 (Input patches)</strong><br/>
+<small>最初の画像情報</small>
+</div>
+<div class="pipeline-step">
+<strong>ステージ2出力 (Stage 2 output)</strong><br/>
+<small>解像度: 56x56 (例1, 例2)</small><br/>
+<small>📝 初期グループ形成の開始</small>
+</div>
+<div class="pipeline-step">
+<strong>ステージ3出力 (Stage 3 output)</strong><br/>
+<small>解像度: 28x28 (例1, 例2)</small><br/>
+<small>📝 中間的なグループ形成</small>
+</div>
+<div class="pipeline-step">
+<strong>ステージ4出力 (Stage 4 output)</strong><br/>
+<small>解像度: 14x14 or 7x7 (例による)</small><br/>
+<small>📝 最終的な意味的グループ形成</small>
+</div>
+</div>
+<p style="text-align: center; margin-top: 10px;">... これらが <span class="highlight">階層的なグループ (group hierarchy)</span> を形成 ...</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 謎のコード「R3373131」について</h3>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-question-circle"></i> 「R3373131」とは？</div>
+<p>テキストの最後に記載されている「<span class="keyword">R3373131</span>」という文字列は、このセクションの文脈だけでは具体的な意味を特定することが困難です。</p>
+<p>考えられる可能性としては：</p>
+<ul class="unstyled-list">
+<li>📌 <strong>実験IDやバージョン管理コード：</strong> 特定の実験設定や、モデルのバージョンを示す内部的な識別子かもしれません。</li>
+<li>📌 <strong>図の参照番号やプレースホルダー：</strong> 論文執筆過程で、後から図や詳細情報を挿入するためのメモ書きや、特定の図を参照するための内部コードである可能性があります。</li>
+<li>📌 <strong>乱数シードや設定パラメータの一部：</strong> 実験の再現性のために使用された乱数シードや、特定のハイパーパラメータの組み合わせを短縮して表現したものかもしれません。</li>
+</ul>
+<p>論文の他の部分や、公開されているコード・プロジェクトページに、この文字列に関する補足情報がないか確認する必要があります。現時点では、この文字列がSeNaTraのアーキテクチャや動作原理に直接関わる重要な情報であるとは断定できません。</p>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-glasses"></i> 大学院生へのアドバイス</div>
+<p>このセクションは、SeNaTraの動作の<span class="highlight">「予告編」</span>のようなものです。具体的なアルゴリズムや数式はここでは示されていませんが、<span class="keyword">「入力画像がどのように意味のある塊に分割されていくのか」</span>という直感的なイメージを掴むことが重要です。特に「<span class="keyword">group hierarchy</span>」という言葉が、この論文の核心的なコンセプトである<span class="keyword">Native Segmentation</span>（生まれながらのセグメンテーション）を理解する上で非常に重要になります。</p>
+<p>後に続くセクションで、この階層的なグループ化を実現するための「<span class="keyword">Content-aware Spatial Grouping Layer</span>」という具体的な手法が説明されますので、このセクションで示された大まかな流れを頭に入れておくと、理解が深まるでしょう。</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-scroll"></i> Abstract</h2>
+<div class="bubble-box" style="border-color: var(--color-accent1); margin-bottom: 30px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-accent1);"><i class="fas fa-bullseye"></i> <strong>このAbstractの目的と論旨</strong></p>
+<p>このAbstractは、従来の画像認識モデル（Vision Backbone）における特徴量の空間解像度を低減させる手法（ダウンサンプリング）が、画像の内容に関わらず一律に行われている現状を指摘しています。これに対し、<span class="keyword">画像内の境界線や意味的な内容を理解し、それに基づいて動的に情報を集約（グルーピング）する新しいレイヤー構造</span>を提案します。このグルーピングレイヤーを複数重ねることで、特別なセグメンテーション用モジュールを追加することなく、バックボーン自体が画像の領域分割（セグメンテーション）を「<span class="highlight">ネイティブに</span>」行う能力を持つ「<span class="keyword">Native Segmentation Vision Transformer (SeNaTra)</span>」という新しいアーキテクチャを提唱しています。そして、このSeNaTraが、セグメンテーションマスクの教師データなしでの高いゼロショット性能や、下流タスクにおける効率的なモデル設計に貢献することを示すのが主な論旨です。</p>
+</div>
+<div class="arrow-connector">↓</div>
+<div class="challenge-box">
+<h3 class="subsection-title" style="color: var(--color-secondary); border-left-color: var(--color-secondary);"><i class="fas fa-map-signs" style="color: var(--color-secondary);"></i> 現状の手法とその限界</h3>
+<p>多くのVision Backbone（画像認識モデルの根幹部分）では、入力画像の情報量を扱いやすくするために、空間的な解像度を下げる処理が行われます。この際、<span class="keyword">「一様なダウンサンプリング (uniform downsampling)」</span>が長らく標準的な手法として採用されてきました。</p>
+<div class="definition-box" style="margin-top:15px; margin-bottom:15px; border-color: var(--color-secondary);">
+<p class="definition-title" style="color: var(--color-secondary); border-bottom-color: var(--color-secondary);"><i class="fas fa-ruler-combined"></i> 用語解説：一様なダウンサンプリング (Uniform Downsampling)</p>
+<p>画像内のすべての位置やピクセル値を<span class="highlight">区別なく一律に処理</span>して、空間解像度を小さくする手法です。例えば、特定の領域内のピクセル値の平均を取る「プーリング」や、一定の間隔を空けてピクセルをサンプリングする「ストライド付き畳み込み」などがこれに該当します。画像の内容（例えば、重要な物体の境界があるか、細かいテクスチャがあるかなど）を考慮せず、機械的に解像度を落とします。</p>
+</div>
+<div style="text-align: center; margin: 15px 0;">
+<img alt="均一なダウンサンプリングの概念図" src="https://via.placeholder.com/450x150/FFF3E0/FB8C00?text=Uniform+Downsampling+Concept" style="width: 70%; border-radius: 8px; border: 2px dashed var(--color-secondary);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);">（概念図：画像がグリッドで分割され、各グリッドが内容に関わらず均等に縮小・代表される様子）</p>
+</div>
+<p><i class="fas fa-exclamation-circle" style="color: var(--color-secondary);"></i> この「一様な」アプローチはシンプルですが、画像の重要な境界や細かいディテールを保持するのが苦手という課題があります。</p>
+</div>
+<div class="arrow-connector">↓</div>
+<div class="info-card" style="background-color: rgba(92, 184, 92, 0.05); border: 1px solid var(--color-accent1);">
+<h3 class="subsection-title" style="color: var(--color-accent1); border-left-color: var(--color-accent1);"><i class="fas fa-lightbulb" style="color: var(--color-accent1);"></i> 提案：コンテンツ認識型の空間グルーピングレイヤー</h3>
+<p>この課題に対応するため、本研究では従来の一様なダウンサンプリングに代わる新しい設計アプローチとして、<span class="keyword">「コンテンツ認識型の空間グルーピングレイヤー (content-aware spatial grouping layer)」</span>を提案します。このレイヤーは、画像の内容を"見て"、より賢くダウンサンプリングを行います。</p>
+<div class="two-column">
+<div class="column">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">🧠</div>
+<div class="step-content">
+<strong>認識：画像の境界と意味内容</strong><br/>
+                        このレイヤーは、まず画像内の物体の<span class="highlight">境界線 (image boundaries)</span> <i class="fas fa-draw-polygon"></i> や、それぞれの領域が「何」であるかといった<span class="highlight">意味的内容 (semantic content)</span> <i class="fas fa-tag"></i> を捉えます。
+                    </div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">➡️</div>
+<div class="step-content">
+<strong>割当：トークンを動的にグルーピング</strong><br/>
+                        Vision Transformerで基本単位として扱われる画像パッチ（<span class="keyword">トークン</span>）を、認識した情報に基づいて<span class="highlight">動的に</span>関連性の高いグループへと割り当てます。これにより、削減されたトークンの集合を生成します。
+                    </div>
+</div>
+</div>
+<div class="column" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+<img alt="コンテンツ認識型グルーピングのイラスト" src="https://via.placeholder.com/400x200/E8F5E9/4CAF50?text=Content-Aware+Grouping+Illustration" style="width: 100%; border-radius: 8px; border: 2px dashed var(--color-accent1);"/>
+<p style="font-size: 0.9em; color: var(--color-gray); text-align: center;">（概念図：左が一様ダウンサンプリングで情報が均一に失われるのに対し、右の提案手法では猫の形状（境界や意味内容）に沿ってトークンが賢くグループ化され、情報が保持される様子）</p>
+</div>
+</div>
+<div class="definition-box" style="border-color: var(--color-accent1); margin-top:15px;">
+<p class="definition-title" style="color: var(--color-accent1); border-bottom-color: var(--color-accent1);"><i class="fas fa-cubes"></i> 用語解説：トークン (Token)</p>
+<p>Vision Transformer (ViT) において、入力画像はまず小さな正方形のパッチに分割されます。これらの各パッチは、線形変換を経てベクトル表現に変換されます。このベクトル化された画像パッチのことを<span class="keyword">トークン</span>と呼びます。Transformerモデルが画像情報を処理するための基本的な単位となります。</p>
+</div>
+</div>
+<div class="arrow-connector">↓</div>
+<div class="framework-box" style="border-color: var(--color-accent2);">
+<h3 class="subsection-title" style="color: var(--color-accent2); border-left-color: var(--color-accent2);"><i class="fas fa-rocket" style="color: var(--color-accent2);"></i> Native Segmentation Vision Transformer (SeNaTra) の誕生</h3>
+<p>提案する「コンテンツ認識型の空間グルーピングレイヤー」を、Vision Transformerの連続するステージ（層）に積み重ねていくと、興味深い現象が起こります。それは、特徴抽出プロセス自体の中で、<span class="keyword">階層的なセグメンテーション (hierarchical segmentation)</span> が<span class="highlight">「ネイティブに (natively)」</span>、つまり自然発生的に生じるのです。この特性を持つ新しいアーキテクチャを、本研究では<span class="keyword">「Native Segmentation Vision Transformer (SeNaTra)」</span>と名付けました。</p>
+<div class="feature-card-grid">
+<div class="feature-item" style="background-color: rgba(121, 85, 72, 0.05); border: 1px dashed #795548;">
+<i class="fas fa-sitemap" style="color: #795548; font-size: 28px; margin-bottom: 10px;"></i>
+<p><strong>階層的セグメンテーション</strong><br/>
+                初期のステージでは大まかな領域、後のステージに進むにつれてより細かい、意味のある領域へと分割されていく様子。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(121, 85, 72, 0.05); border: 1px dashed #795548;">
+<i class="fas fa-cogs" style="color: #795548; font-size: 28px; margin-bottom: 10px;"></i>
+<p><strong>ネイティブに発生</strong><br/>
+                特別なセグメンテーション用モジュールを後付けするのではなく、バックボーンの設計自体からセグメンテーション能力が生まれる。</p>
+</div>
+</div>
+<div style="text-align: center; margin: 20px 0;">
+<img alt="階層的ネイティブセグメンテーションの概念図" src="https://via.placeholder.com/500x250/EDE7F6/673AB7?text=Hierarchical+Native+Segmentation" style="width: 80%; border-radius: 8px; border: 2px dashed var(--color-accent2);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);">（概念図：SeNaTraの複数ステージを通して、入力画像（左）が大まかなグループ（中央左）、次に少し細かいグループ（中央右）、最終的に意味のある領域（右）へと階層的にセグメント化されていく様子）</p>
+</div>
+</div>
+<div class="arrow-connector">↓</div>
+<div class="info-grid">
+<div class="info-card" style="background-color: rgba(255, 243, 224, 0.5);">
+<h3 class="subsection-title" style="color: var(--color-secondary); border-left-color: var(--color-secondary);"><i class="fas fa-magic" style="color: var(--color-secondary);"></i> セグメンテーションヘッド不要の強力なマスク生成</h3>
+<p>SeNaTraアーキテクチャを注意深く設計することで、驚くべきことに、グルーピングレイヤー<span class="keyword">のみ</span>から強力なセグメンテーションマスク（画像の各ピクセルがどの領域に属するかを示す情報）が生成されることが示されました。これは、従来一般的だったセグメンテーション専用の追加モジュール（<span class="keyword">セグメンテーションヘッド</span>）を必要としないことを意味します。</p>
+<div class="definition-box" style="border-color: var(--color-secondary); margin-top:10px;">
+<p class="definition-title" style="color: var(--color-secondary); border-bottom-color: var(--color-secondary);"><i class="fas fa-puzzle-piece"></i> 用語解説：セグメンテーションヘッド (Segmentation Head)</p>
+<p>Vision Backboneから抽出された特徴マップを受け取り、それを最終的なセグメンテーションマスク（ピクセルごとのクラス分類結果など）に変換するための専用のニューラルネットワークモジュールです。多くの場合、アップサンプリング層や追加の畳み込み層などで構成されます。</p>
+</div>
+<div style="text-align: center; margin-top: 15px;">
+<img alt="グルーピングレイヤーから強力なマスク" src="https://via.placeholder.com/400x150/FFF9C4/FBC02D?text=Grouping+Layer+→+Strong+Masks" style="width: 80%; border-radius: 8px; border: 2px dashed var(--color-secondary);"/>
+<p style="font-size: 0.9em; color: var(--color-gray);">（図：SeNaTraのグルーピングレイヤーが直接、高品質なセグメンテーションマスクを生成するイメージ）</p>
+</div>
+</div>
+<div class="info-card" style="background-color: rgba(232, 245, 233, 0.5);">
+<h3 class="subsection-title" style="color: var(--color-accent1); border-left-color: var(--color-accent1);"><i class="fas fa-seedling" style="color: var(--color-accent1);"></i> 新しいパラダイムの基礎</h3>
+<p>この発見は、<span class="keyword">「ネイティブなバックボーンレベルのセグメンテーション (native, backbone-level segmentation)」</span>という新しいパラダイムの基礎を築くものです。つまり、セグメンテーションタスクが、バックボーン自体に内在する能力として実現されるという考え方です。これにより、以下のような利点が期待されます。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-fighter-jet" style="color: var(--color-accent1); margin-right: 5px;"></i><strong>強力なゼロショット性能</strong>: マスクに関する教師データ（正解ラベル）なしで学習した場合でも、高いセグメンテーション性能を発揮します（<span class="keyword">ゼロショットセグメンテーション</span>）。</li>
+<li><i class="fas fa-compress-arrows-alt" style="color: var(--color-accent1); margin-right: 5px;"></i><strong>効率的なモデル設計</strong>: 下流のセグメンテーションタスクに対して、よりシンプルで効率的なスタンドアロンモデルの設計が可能になります。</li>
+</ul>
+<div class="definition-box" style="border-color: var(--color-accent1); margin-top:10px;">
+<p class="definition-title" style="color: var(--color-accent1); border-bottom-color: var(--color-accent1);"><i class="fas fa-search-minus"></i> 用語解説：ゼロショットセグメンテーション (Zero-shot Segmentation)</p>
+<p>モデルの学習時にはセグメンテーションマスクの正解データを一切使用せず、例えば画像全体のラベル情報（例：「この画像には猫が写っている」）のみで学習したモデルが、推論時に未知の画像に対してピクセルレベルのセグメンテーションを行う能力のことです。非常に困難なタスクとされています。</p>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top: 30px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-primary);"><i class="fas fa-clipboard-check"></i> <strong>まとめると...</strong></p>
+<p>このAbstractは、従来の均一なダウンサンプリング手法の限界を克服するために、<span class="keyword">コンテンツ認識型の空間グルーピングレイヤー</span>を提案し、これを基盤とした新しいVision Transformerアーキテクチャ「<span class="keyword">SeNaTra</span>」を紹介しています。SeNaTraは、特別なセグメンテーションヘッドなしで、バックボーン自体が階層的なセグメンテーションを<span class="highlight">「ネイティブに」</span>実行できる点が革新的です。これにより、マスク教師なしでの優れたゼロショットセグメンテーション性能や、効率的なモデル設計が実現可能になることを示唆しています。</p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-microscope"></i> 1 Introduction</h2>
+<div class="content-box">
+<p>このセクションでは、論文の導入部として、既存のコンピュータビジョン技術、特に画像セグメンテーションにおける課題を概説し、本研究が提案する新しいアプローチ「<span class="keyword">Native Segmentation Vision Transformer (SeNaTra)</span>」の基本的なアイデアとその重要性を説明します。このセクションを読むことで、なぜ新しい手法が必要とされているのか、そしてSeNaTraがどのような革新をもたらそうとしているのかが明確になるでしょう。🚀</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-question-circle"></i> 現状の課題：階層的ビジョンバックボーンとダウンサンプリング</h3>
+<div class="content-box">
+<p>現在の最先端のコンピュータビジョンモデル、特に画像認識タスクで用いられるものは、<span class="keyword">階層的ビジョンバックボーン (hierarchical vision backbones)</span> [1, 2, 3] と呼ばれる構造を持っています。これは、初期の<span class="keyword">畳み込みニューラルネットワーク (Convolutional Neural Networks, CNNs)</span> [4] の設計思想を踏襲しており、画像を処理する際に複数のステージ（段階）を経て、徐々に空間的な解像度を下げながら特徴を抽出していきます。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fas fa-layer-group fa-2x" style="color: var(--color-primary);"></i>
+<h4>階層的処理</h4>
+<p>入力画像を大きな解像度から小さな解像度へと段階的に処理。各ステージで特徴をより抽象的に。</p>
+<div style="font-family: 'Yomogi', cursive; font-size: 12px; margin-top:10px; padding: 5px; border: 1px dashed var(--color-gray); border-radius: 4px;">
+                    例: 224x224 <i class="fas fa-arrow-right"></i> 112x112 <i class="fas fa-arrow-right"></i> 56x56 <i class="fas fa-arrow-right"></i> 28x28 ...
+                </div>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-secondary);"></i>
+<h4>特徴抽出</h4>
+<p>畳み込み層や自己注意機構 (Self-Attention) などで画像の特徴を学習。</p>
+</div>
+</div>
+<p>この特徴抽出の方法自体は、畳み込みから自己注意機構へと進化するなど、活発に研究されてきましたが、空間解像度を下げる<span class="keyword">ダウンサンプリングステージ (downsampling stage)</span> の手法は、実はあまり変わっていません。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説：ダウンサンプリング</div>
+<p>画像や特徴マップの空間的な解像度（縦横のピクセル数）を小さくする操作のことです。これにより、計算量を削減したり、より大域的な特徴を捉えたりすることができます。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-compress-arrows-alt" style="color: var(--color-accent1);"></i> <span class="keyword">プーリング (pooling)</span>: 代表的な手法で、例えば2x2の領域の最大値や平均値を取ることで解像度を半分にします。</li>
+<li><i class="fas fa-shoe-prints" style="color: var(--color-accent1); transform: rotate(90deg);"></i> <span class="keyword">ストライド付き畳み込み (strided convolutions)</span> [1]: 畳み込み演算を数ピクセル飛ばし（ストライド）で行うことで、結果的に出力される特徴マップの解像度を下げます。</li>
+</ul>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> ダウンサンプリングの問題点</div>
+<p>これらの伝統的なダウンサンプリング手法は、<span class="highlight">画像の内容に関わらず、すべての空間的位置を一様に扱います</span>。つまり、画像のエッジ部分であろうと平坦な領域であろうと、同じルールで解像度を下げてしまうのです。</p>
+<div style="text-align: center; margin: 15px 0;">
+<div style="display: inline-block; padding: 10px; border: 2px dashed var(--color-secondary); border-radius: 8px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-th-large" style="color: var(--color-gray); font-size: 24px;"></i> <span style="font-size: 18px; margin: 0 10px;">グリッドを一様に処理</span> <i class="fas fa-arrow-right" style="color: var(--color-secondary); font-size: 24px;"></i> <i class="fas fa-border-none" style="color: var(--color-gray); font-size: 24px;"></i>
+<p style="font-size: 12px; color: var(--color-gray); margin-top: 5px;">画像のどこでも同じルールで縮小！</p>
+</div>
+</div>
+<p>このような階層的な特徴抽出は、最新の画像セグメンテーション（画像を意味のある領域に分割するタスク）手法の基礎となっています。セグメンテーションでは、<span class="keyword">セグメンテーションヘッド (segmentation heads)</span> [5, 6] と呼ばれる専用のモジュールが、バックボーンによって抽出・圧縮された特徴をアップサンプリング（解像度を上げる）し、意味のある領域にグループ化します。</p>
+<p>しかし、ダウンサンプリング時に特徴を一様に扱ってしまうと、アップサンプリング時に<span class="keyword">特徴量の不整合 (feature misalignment)</span> が生じやすくなります。これは、物体の境界情報などが失われたり、ぼやけたりしてしまう問題です。その結果、<span class="keyword">デコーダヘッド (decoder heads)</span> （セグメンテーションヘッドの一種）は、バックボーン設計の限界を補うという余計な負担を強いられることになります [7, 8]。</p>
+<div style="text-align: center; margin: 15px 0;">
+<div style="font-family: 'Yomogi', cursive; display: inline-block; padding: 10px; background-color: rgba(255,126,95,0.05); border: 1px solid var(--color-secondary); border-radius: 8px;">
+<p><i class="fas fa-puzzle-piece" style="color: var(--color-primary);"></i> 元画像 <i class="fas fa-arrow-right"></i> <i class="fas fa-compress" style="color: var(--color-secondary);"></i> 均一ダウンサンプリング <i class="fas fa-arrow-right"></i> <i class="fas fa-expand" style="color: var(--color-primary);"></i> アップサンプリング <i class="fas fa-arrow-right"></i> <i class="far fa-sad-tear" style="color: var(--color-secondary);"></i> 特徴のズレ・ぼやけ</p>
+<p style="font-size:12px; color: var(--color-gray);">境界が曖昧に...デコーダ頑張れ！💦</p>
+</div>
+</div>
+</div>
+<p>この問題に対処するため、最近の研究 [9, 10, 11, 12] では、<span class="keyword">データ駆動型のボトムアップピクセルグルーピング (data-driven bottom-up pixel grouping)</span>、つまり画像の意味内容に基づいてピクセルをグループ化する新しいセグメンテーションネットワーク設計や戦略が探求されています。</p>
+<p>これらのアプローチは概念的には魅力的ですが、既存の最新アーキテクチャに比べて性能が劣ることがあります。その主な理由は以下の2点です：</p>
+<div class="info-grid">
+<div class="info-card">
+<div style="text-align:center;"><i class="fas fa-calculator fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4><span class="badge purple">課題1</span> 計算コスト</h4>
+<p>入力解像度に対して<span class="keyword">2次の計算複雑性 (quadratic computational complexity)</span> を持つアルゴリズム [9, 10] は、高解像度画像への適用が難しい。</p>
+<p style="font-family: 'Kaisei Decol', serif; font-size: 12px; text-align: center;">例：入力サイズ N なら N<sup>2</sup> の計算量 <i class="fas fa-bolt" style="color: var(--color-accent3);"></i></p>
+</div>
+<div class="info-card">
+<div style="text-align:center;"><i class="fas fa-unlink fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4><span class="badge purple">課題2</span> 微分不可能性</h4>
+<p><span class="keyword">微分不可能なグルーピング操作 (non-differentiable grouping operations)</span> [11, 12] は、ネットワーク全体の学習（特にEnd-to-End学習）を難しくし、スケーラビリティや実用性を制限する。そのため、ピクセルグルーピング能力を活かせず、結局セグメンテーションヘッドに頼らざるを得ない。</p>
+</div>
+</div>
+<p class="reference">Preprint. Under review.</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> 提案：ネイティブセグメンテーション</h3>
+<div class="content-box">
+<p>そこで本研究では、<span class="keyword">Native Segmentation Vision Transformer (SeNaTra)</span> という新しいバックボーンアーキテクチャを提案します。SeNaTraの中核となるのは、<span class="keyword">空間グルーピング層 (spatial grouping layer)</span> です。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-magic"></i> 空間グルーピング層とは？</div>
+<p>従来の均一なグリッドベースのダウンサンプリング（プーリングやストライド付き畳み込みなど）を置き換えるものです。この層は、画像の内容に基づいて、<span class="keyword">視覚トークン (visual tokens)</span>（画像パッチや特徴ベクトルなど）を意味的にまとまりのあるグループへと動的に割り当てることを学習します。</p>
+<div style="text-align: center; margin: 15px 0;">
+<div style="font-family: 'Yomogi', cursive; display: inline-block; padding: 10px; border: 2px dashed var(--color-primary); border-radius: 8px;">
+<i class="fas fa-images" style="color: var(--color-gray); font-size: 24px;"></i> <span style="font-size: 18px; margin: 0 10px;">画像内容に応じて賢くグループ化</span> <i class="fas fa-arrow-right" style="color: var(--color-primary); font-size: 24px;"></i> <i class="fas fa-object-group" style="color: var(--color-primary); font-size: 24px;"></i>
+<p style="font-size: 12px; color: var(--color-gray); margin-top: 5px;">「これは猫の一部だニャ😺」「これは背景だゾ🐘」</p>
+</div>
+</div>
+</div>
+<p>バックボーンの各ステージでこのグルーピング操作を連続して行うことにより、入力ピクセルから最終的なトークンへのマッピングが自然に構成されます。これにより、各バックボーンステージのトークンに対する<span class="keyword">マルチスケール階層セグメンテーションマスク (multi-scale hierarchy of segmentation masks)</span> が効果的に生成されます。</p>
+<p>この能力を、我々は<span class="keyword">ネイティブセグメンテーション (native segmentation)</span> と呼びます。なぜなら、セグメンテーション能力が、外部のセグメンテーションヘッド [13, 6, 5] ではなく、バックボーン自身の内在的な<span class="keyword">領域を認識する表現 (region-aware representation)</span> から自然に生じるからです。これにより、外部ヘッドは必ずしも必要ではなくなりますが、経験的には依然として有益である場合もあります。</p>
+<div class="glass-card" style="margin-top:20px;">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-primary); text-align:center;"><i class="fas fa-seedling"></i> ネイティブセグメンテーションの核心</h4>
+<div style="display: flex; align-items: center; justify-content: space-around; font-family: 'Zen Kurenaido', sans-serif;">
+<div style="text-align: center; padding: 10px;">
+<i class="fas fa-brain fa-3x" style="color: var(--color-accent1);"></i>
+<p>バックボーン自体が<br/>セグメンテーションを理解！</p>
+</div>
+<i class="fas fa-arrow-right fa-2x" style="color: var(--color-gray); margin: 0 20px;"></i>
+<div style="text-align: center; padding: 10px;">
+<i class="fas fa-puzzle-piece fa-3x" style="color: var(--color-accent2);"></i>
+<p>特別なセグメンテーション<br/>ヘッドへの依存を低減！</p>
+</div>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> SeNaTraの設計と利点</h3>
+<div class="content-box">
+<p>SeNaTraの設計は、従来のバックボーンレベルでのグルーピング手法と比較して、主に2つの方法論的な利点があります。</p>
+<div class="info-grid">
+<div class="info-card">
+<div style="text-align:center;"><i class="fas fa-microchip fa-2x" style="color: var(--color-primary);"></i></div>
+<h4><span class="badge blue">利点1</span> 微分可能な反復的クラスタリング ✨</h4>
+<p>標準的な<span class="keyword">クロスアテンション (vanilla cross-attention)</span> [9, 10] や<span class="keyword">微分不可能なクラスタリング (non-differentiable clustering)</span> [11, 12] を用いる手法とは異なり、SeNaTraは<span class="keyword">知覚的グルーピングアルゴリズム (perceptual grouping algorithms)</span> [14, 15] に着想を得た、<span class="keyword">微分可能な反復的クラスタリング (differentiable, iterative clustering)</span> を採用しています。</p>
+<p>これにより、構造化された<span class="keyword">帰納的バイアス (inductive bias)</span>（モデルが学習しやすくするための事前知識や制約）が組み込まれ、直接的な教師なしでも一貫性のあるグループが形成されるのを可能にします。</p>
+<div class="note-box" style="margin-top:10px;">
+<div class="note-title"><i class="fas fa-lightbulb"></i> ポイント</div>
+<p>人間が物を見るときのように、自然にまとまりを見つける能力を模倣しています。</p>
+</div>
+</div>
+<div class="info-card">
+<div style="text-align:center;"><i class="fas fa-expand-arrows-alt fa-2x" style="color: var(--color-primary);"></i></div>
+<h4><span class="badge blue">利点2</span> スケーラビリティの確保 🚀</h4>
+<p>高解像度入力に対応するため、初期のステージでは<span class="keyword">制限されたコンテキストウィンドウ (restricted context windows)</span> を持つ<span class="keyword">ローカルグルーピング層 (local grouping layers)</span> を使用します。これにより、入力解像度に対して<span class="keyword">線形スケーリング (linear scaling)</span> を実現します（計算量が入力サイズに比例して増加）。</p>
+<p>一方、最終ステージでは<span class="keyword">密なグルーピング (dense grouping)</span>（画像全体を考慮するグルーピング）を採用し、効率的に<span class="keyword">画像全体のセグメンテーションマスク (whole-image segmentation masks)</span> を生成します。</p>
+<div style="font-family: 'Yomogi', cursive; margin-top:10px; text-align: center;">
+<p><i class="fas fa-magnifying-glass-plus"></i> 初期ステージ: 局所的に賢くグルーピング (計算効率◎)</p>
+<p><i class="fas fa-globe-americas"></i> 最終ステージ: 全体を見て大きくグルーピング (大局的理解◎)</p>
+</div>
+</div>
+</div>
+<p>全体として、SeNaTraの設計は、スケーラブルなネイティブセグメンテーションを可能にしつつ、効率性を保ち、<span class="keyword">エンドツーエンドで微分可能 (end-to-end differentiable)</span>（ネットワーク全体を一括で学習可能）なままです。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-search-plus"></i> 主要な発見</h3>
+<div class="content-box">
+<p>本研究を通じて、いくつかの重要な発見がありました。</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<h4><i class="fas fa-paint-brush" style="color: var(--color-accent1);"></i> スーパーピクセル様構造の創発</h4>
+<p>驚くべきことに、<span class="keyword">マスク教師あり学習 (mask supervision)</span>（ピクセル単位での正解ラベルを与える学習）を一切行わなくても、ネットワーク設計の結果として、<span class="keyword">スーパーピクセル様の構造 (super-pixel-like structures)</span> が現れることを観測しました（Figure 1, bottom）。これは、手作業で作られたり [19]、明示的に入力として使われたり [11] するのではなく、古典的な<span class="keyword">スーパーピクセルアルゴリズム (classical superpixel algorithms)</span> [16, 17, 18, 14] に似た構造が自動的に形成されることを意味します。</p>
+</div>
+</div>
+<img alt="ImageNet事前学習によるセグメンテーションの創発を示す図。Stage 2, 3 Groups がスーパーピクセル様構造を示唆。" src="senatra_segmentation_emergence.jpg"/>
+<p style="text-align:center; font-size:12px; color:var(--color-gray);">（上図は論文中のFigure 3ですが、初期ステージ (Stage 2 Groups, Stage 3 Groups) でのグループ形成が、Figure 1 (bottom)で言及されているスーパーピクセル様構造の創発の様子を示しています。）</p>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<h4><i class="fas fa-object-group" style="color: var(--color-accent1);"></i> 意味的な領域へのグループ化</h4>
+<p>これらのスーパーピクセル様構造は、最終的な密なグルーピング層において、さらに意味的にまとまりのある領域へとグループ化されます。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<h4><i class="fas fa-chart-line" style="color: var(--color-accent1);"></i> ゼロショットセグメンテーションでの高性能</h4>
+<p>SeNaTraのネイティブセグメンテーション能力を、複数の標準的なベンチマークを用いた<span class="keyword">ゼロショットセグメンテーション (zero-shot segmentation)</span>（学習時に見たことのない物体クラスをセグメンテーションするタスク）で検証しました。その結果、従来手法（より大規模なデータセットで学習したモデルを含む）を大幅に上回る性能を示しました。これは、提案アーキテクチャがグルーピング層のおかげでデータ効率が良いことを示唆しています。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">
+<h4><i class="fas fa-tasks" style="color: var(--color-accent1);"></i> 教師ありセグメンテーションでの優位性</h4>
+<p>ADE20k [20] や COCO-panoptic [21] といったデータセットで、<span class="keyword">セマンティックセグメンテーション (semantic segmentation)</span>（各ピクセルをクラスに分類）や<span class="keyword">パノプティックセグメンテーション (panoptic segmentation)</span>（セマンティックとインスタンスセグメンテーションを統合）のために明示的なマスク教師あり学習を行った場合でも、SeNaTraは専用のセグメンテーションヘッド（例：<span class="keyword">RoIヘッド (RoI heads)</span> [5] や<span class="keyword">Transformerデコーダ (Transformer decoders)</span> [6]）なしで、多くの強力なベースラインを上回りました。しかも、パラメータ数や<span class="keyword">FLOP数 (FLOP count)</span>（計算量）は大幅に削減されています。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">5</div>
+<div class="step-content">
+<h4><i class="fas fa-plus-circle" style="color: var(--color-accent1);"></i> 既存手法との相乗効果</h4>
+<p>さらに、これらの専用ヘッドと組み合わせて使用した場合でも、SeNaTraはトップレベルのバックボーンの性能を一貫して向上させました。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-list-ol"></i> 本研究の貢献まとめ</h3>
+<div class="bubble-box">
+<p>本研究の主な貢献は以下の3点です。</p>
+<ol>
+<li><i class="fas fa-network-wired" style="color:var(--color-primary);"></i> <span class="keyword">Native Segmentation Vision Transformer (SeNaTra) の提案:</span> ピクセル/マスク教師なしで、視覚入力の階層的セグメンテーションを学習する新しいVision Transformerです。</li>
+<li><i class="fas fa-puzzle-piece" style="color:var(--color-secondary);"></i> <span class="keyword">空間グルーピング層:</span> ネットワークの主要な構成要素であり、画像内容に適応した特徴ダウンサンプリングを実行します。これにより、従来のセグメンテーションネットワークで採用されていた均一なグリッドベースの特徴ダウン/アップサンプリング層を効果的に置き換えます。</li>
+<li><i class="fas fa-stream" style="color:var(--color-accent1);"></i> <span class="keyword">合理化されたネイティブセグメンテーションネットワーク:</span> 専用ヘッドなしでマスクを取得し、ピクセル/マスク教師なしで学習した場合のゼロショットセグメンテーション、および標準的なセマンティック/パノプティックセグメンテーションベンチマークで優れた性能を発揮します。</li>
+</ol>
+</div>
+</div>
+<div class="section-card" id="2_Related_Work">
+<h2 class="section-title"><i class="fas fa-book-open"></i> 2 Related Work</h2>
+<p class="section-overview">このセクションでは、本研究「Native Segmentation Vision Transformers (SeNaTra)」がどのような背景のもとで提案され、既存の研究と比較してどのような新規性や貢献があるのかを明らかにするために、関連する研究分野を幅広くレビューします。具体的には、Vision TransformerやCNNといった<span class="keyword">基本的な画像認識のバックボーン構造</span>、セグメンテーションなどの<span class="keyword">密な予測タスク</span>の手法、画像の領域をまとめる<span class="keyword">知覚的グルーピング</span>の考え方、そして近年注目されている<span class="keyword">バックボーン内部でのグルーピング処理</span>という4つの主要なトピックについて、過去の研究動向と本研究との関連性を詳述します。これにより、SeNaTraが既存技術のどこに位置し、どのような課題を解決しようとしているのかが明確になります。</p>
+<div class="subsection-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> Vision backbones (ビジョンバックボーン)</h3>
+<p>コンピュータビジョンの分野は、データ駆動型の手法によって大きく進歩してきました。その中核を担うのが「ビジョンバックボーン」と呼ばれる、画像から特徴を抽出するための基本となるネットワーク構造です。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-landmark"></i> CNNの登場と発展</p>
+<p><span class="keyword">Neocognitron [22]</span> (1980年) や <span class="keyword">LeNet [23]</span> (1998年) といった先駆的な研究以来、<span class="keyword">畳み込みニューラルネットワーク (CNNs: Convolutional Neural Networks)</span> がこの分野の発展を牽引してきました。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-reader"></i> 用語解説: CNN</p>
+<p><span class="keyword">CNN</span> は、主に画像認識に使われるニューラルネットワークの一種です。人間の視覚野の仕組みにヒントを得ており、以下の要素から構成されます：</p>
+<ul>
+<li><i class="fas fa-filter"></i> <span class="highlight">畳み込み層 (Convolutional Layers)</span>: <span class="keyword">学習可能なフィルタ (learnable filters)</span> を入力特徴マップに適用し、エッジやテクスチャなどの局所的な特徴を抽出します。</li>
+<li><i class="fas fa-compress-alt"></i> <span class="highlight">プーリング層 (Pooling Layers)</span>: 特徴マップの空間的な次元を削減（ダウンサンプリング）し、計算量を減らすとともにある程度の位置ずれに対して頑健にします。</li>
+</ul>
+<p>これらの層を複数積み重ねることで、<span class="keyword">階層的 (hierarchy)</span> な特徴表現を獲得します。浅い層では単純な特徴を、深い層ではより複雑で抽象的な特徴を捉えることができます。</p>
+</div>
+</div>
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-sitemap"></i> 階層構造とダウンサンプリング</p>
+<p>CNNは通常、畳み込み層の階層を用い、入力特徴マップに学習可能なフィルタを適用します。これらの処理は、特徴の<span class="keyword">ダウンサンプリング操作 (feature downsampling operations)</span> と交互に行われ、<span class="keyword">マルチスケール特徴マップ (hierarchy of multi-scale feature maps)</span> の階層を生成します。</p>
+<div style="text-align: center; margin: 15px 0;">
+<p style="font-family: 'Yomogi', cursive;">CNNの階層構造イメージ</p>
+<p style="font-size: 12px;">入力画像 → [畳み込み層 + プーリング層] → [畳み込み層 + プーリング層] → ... → 高次特徴</p>
+<div style="display: flex; align-items: center; justify-content: center; font-family: 'Zen Kurenaido', sans-serif;">
+                        🖼️ <span style="font-size:20px; color: var(--color-primary);">➡️</span>
+<span style="border: 1px dashed var(--color-gray); padding: 5px; margin: 0 5px; border-radius: 4px;">Conv1</span> <span style="font-size:20px; color: var(--color-primary);">➡️</span>
+<span style="border: 1px dashed var(--color-gray); padding: 5px; margin: 0 5px; border-radius: 4px;">Pool1</span> <span style="font-size:20px; color: var(--color-primary);">➡️</span>
+<span style="border: 1px dashed var(--color-gray); padding: 5px; margin: 0 5px; border-radius: 4px;">Conv2</span> <span style="font-size:20px; color: var(--color-primary);">➡️</span>
+<span style="border: 1px dashed var(--color-gray); padding: 5px; margin: 0 5px; border-radius: 4px;">Pool2</span> <span style="font-size:20px; color: var(--color-primary);">➡️</span> ...
+                    </div>
+</div>
+</div>
+</div>
+<div class="bubble-box">
+<p><span class="keyword">Transformerベースのアーキテクチャ [24]</span> (例: Vision Transformer) が登場したにも関わらず、<span class="keyword">現代的な階層型バックボーン [1, 3, 25]</span> (例: Swin Transformer, NAT) は依然として<span class="keyword">密な予測 (dense prediction) [26]</span> (例: セグメンテーション、深度推定) において主流であり、同じ基本設計原則に従っています。</p>
+<p>その原則とは、複数の<span class="keyword">特徴抽出ステージ (feature extraction stages)</span> で構成され、それらの間には<span class="keyword">均一なダウンサンプリング操作 (uniform downsampling operations)</span> が行われるというものです。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 本研究の焦点</p>
+<p>本研究では、これまであまり注目されてこなかった<span class="keyword">ダウンサンプリング操作</span>に焦点を当てています。この操作を、提案する<span class="keyword">空間的グルーピングモジュール (spatial grouping module)</span> に置き換えることで、<span class="keyword">ネイティブなセグメンテーション能力 (native segmentation capabilities)</span> を持つバックボーンを実現できることを示します。</p>
+</div>
+</div>
+</div>
+<div class="subsection-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-th-large"></i> Dense prediction (密な予測)</h3>
+<p>「密な予測」とは、画像中の全てのピクセルに対して予測を行うタスクの総称です。セマンティックセグメンテーション（各ピクセルをクラスに分類）、インスタンスセグメンテーション（各オブジェクトを個別に識別・分割）、深度推定などが含まれます。</p>
+<div class="content-box">
+<p>過去10年間で、密な予測のためのネットワーク設計は「カンブリア爆発」とも言えるほどの多様な発展を遂げました。注目すべき例としては以下のようなものがあります。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-network-wired"></i></div>
+<p class="keyword">Fully Convolutional Networks (FCN) [27]</p>
+<p class="reference">全結合層を畳み込み層に置き換えることで、任意のサイズの入力画像に対してピクセル単位の予測を可能にしました。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-exchange-alt"></i></div>
+<p class="keyword">Encoder-Decoder Architectures [28]</p>
+<p class="reference">U-Netなどが代表的。エンコーダで特徴を抽出し、デコーダでそれをアップサンプリングして高解像度の予測マップを生成します。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-puzzle-piece"></i></div>
+<p class="keyword">Pioneering work of [29, 30]</p>
+<p class="reference">R-CNNシリーズなど、物体検出とセグメンテーションを組み合わせた初期の研究です。</p>
+</div>
+</div>
+</div>
+<div class="bubble-box">
+<p>より最近では、<span class="keyword">DETR (DEtection TRansformer) [31]</span> が登場しました。これは、Transformerを用いて、<span class="keyword">集合予測 (set prediction)</span> としてエンドツーエンドの物体検出に取り組みました。オブジェクトの提案領域やセグメントを<span class="keyword">学習可能なクエリ (learnable queries)</span> として扱います。</p>
+<div class="pipeline">
+<div class="pipeline-step">画像入力 <i class="fas fa-arrow-right" style="margin-left: 5px; margin-right: 5px;"></i> CNNバックボーン <i class="fas fa-arrow-right" style="margin-left: 5px; margin-right: 5px;"></i> Transformerエンコーダ・デコーダ <i class="fas fa-arrow-right" style="margin-left: 5px; margin-right: 5px;"></i> オブジェクトクエリ <i class="fas fa-arrow-right" style="margin-left: 5px; margin-right: 5px;"></i> 予測 (クラス + BBox)</div>
+</div>
+</div>
+<div class="bubble-box">
+<p><span class="keyword">MaskFormer [13, 6]</span> はこのDETRの設計を活用し、さらに<span class="keyword">ピクセルデコーダ (pixel decoder)</span> を追加して特徴マップをアップサンプリングし、バックボーンとTransformerデコーダと共同で学習してクエリを処理します。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-link"></i> SeNaTraとの連携</p>
+<p>本研究の<span class="keyword">SeNaTra</span>は、MaskFormerのような<span class="keyword">セグメンテーションヘッド (segmentation heads)</span> と組み合わせて使用することで、セグメンテーション精度を向上させることができます。また、そのような専用ヘッドがない場合でも、SeNaTra自体が高品質な<span class="keyword">ネイティブマスク (native masks)</span> を生成できます。</p>
+</div>
+</div>
+</div>
+<div class="subsection-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-object-group"></i> Perceptual grouping (知覚的グルーピング)</h3>
+<p>「知覚的グルーピング」とは、人間が視覚情報を認識する際に、似たような要素や近接した要素をひとつのまとまりとして捉える心理学的な現象です。コンピュータビジョンでは、この概念を画像セグメンテーションに応用しようとする試みが古くから行われてきました。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-history"></i> 古典的な手法</p>
+<p>エンドツーエンドのセグメンテーション手法が登場する以前は、<span class="keyword">組み合わせ最適化 (combinatorial optimization)</span> がこのタスクの主要なアルゴリズムツールでした。</p>
+<ul>
+<li>📝 <span class="keyword">Graph-based segmentation [17]</span>: グラフベースの効率的なセグメンテーション手法で、領域の内部的なばらつきに基づいて領域を適応的に統合します。</li>
+<li>📊 <span class="keyword">Normalized cuts [32]</span>: グラフカットを正規化することで、よりバランスの取れた領域分割を目指す手法です。</li>
+</ul>
+</div>
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-palette"></i> スーパーピクセル</p>
+<p><span class="keyword">スーパーピクセルアルゴリズム (superpixel algorithms)</span> (例: <span class="keyword">SLIC [14]</span>) は、色の類似性と近接性に基づいてセグメント（スーパーピクセル）を効率的に得るためのツールとして登場しました。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-reader"></i> 用語解説: スーパーピクセル</p>
+<p><span class="keyword">スーパーピクセル</span>とは、画像を構成するピクセルを、色やテクスチャなどの特徴が似ている近隣ピクセル同士でグループ化したものです。個々のピクセルよりも意味的にまとまりのある単位として扱え、後の処理の計算量を削減する効果があります。</p>
+<div style="text-align: center; margin: 10px 0;">
+<img alt="スーパーピクセルの例" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/SpDemo.png/300px-SpDemo.png" style="width:80%; max-width:300px; border: 1px solid #ccc; border-radius: 4px;"/>
+<p style="font-size: 12px; color: var(--color-gray);">（参考画像：スーパーピクセルの一例）</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bubble-box">
+<p>セグメンテーション固有の曖昧さ（どこまでを一つの領域とみなすか）を認識し、いくつかの手法では、領域を段階的に統合して複数のスケールにわたる<span class="keyword">セグメントの階層 (hierarchies of segments) [18, 33]</span> を探索しました。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas-lightbulb"></i> 本研究への影響</p>
+<p>私たちの<span class="keyword">SeNaTra</span>のアプローチは、これらの古典的な知覚的グルーピングの考え方に触発されていますが、それを現代の<span class="keyword">エンドツーエンドで学習可能なビジョンバックボーン (end-to-end trainable vision backbones)</span> の文脈で再定式化しています。</p>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-brain"></i> 学習ベースのピクセルグルーピング手法</p>
+<p>いくつかの研究では、ピクセルグルーピングのための学習ベースのメカニズムが提案されています。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">研究 [34]</span>: <span class="keyword">SLICアルゴリズムの微分可能な変種 (differentiable variant of the SLIC algorithm)</span> を導入し、タスク特化型のスーパーピクセルを実現しました。</li>
+<li><span class="badge orange">研究 [15]</span>: <span class="keyword">K-Meansの微分可能な変種 (differentiable variant of K-Means)</span> を提案し、教師なしでの物体発見に利用しました。これは画像ピクセルを反復的に一連の「スロット」に割り当てます。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-drafting-compass"></i> 本研究の設計思想</p>
+<p>これらのアプローチは私たちの<span class="keyword">空間的グルーピング層 (spatial grouping layer)</span> に影響を与えましたが、私たちは代わりに<span class="keyword">スパースで効率的な設計 (sparse and efficient design)</span> を提案し、それを現代のバックボーンの基本的な構成要素として統合します。</p>
+</div>
+</div>
+</div>
+<div class="subsection-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-layer-group"></i> Grouping in vision backbones (ビジョンバックボーンにおけるグルーピング)</h3>
+<p>近年、ビジョンバックボーンの内部で、データ駆動的に入力要素（ピクセルやトークン）をグループ化する学習可能なダウンサンプリング操作を設計する研究が登場しています。これは、従来の固定的なダウンサンプリング（プーリングなど）とは異なるアプローチです。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-users-cog"></i> 先行研究：学習可能なダウンサンプリング</p>
+<ul>
+<li><span class="keyword">GroupViT [9]</span></li>
+<li><span class="keyword">ClusterFormer [10]</span></li>
+</ul>
+<p>これらの研究は、<span class="keyword">学習可能なダウンサンプリング操作 (learnable downsampling operations)</span> を備えたデータ駆動型バックボーンの設計を開拓しました。これらは、<span class="keyword">(密な) クロスアテンション層 ((dense) cross-attention layers)</span> を使用して画像構成要素をより少数のトークンセットにグループ化します。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 課題：計算量</p>
+<p>アテンション操作は入力サイズに対して<span class="keyword">二乗の計算複雑性 (quadratic complexity)</span> を持つため、これらの手法のスケーラビリティが妨げられていました。</p>
+</div>
+</div>
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-arrows-alt-h"></i> 本研究 (SeNaTra) のアプローチ</p>
+<p>対照的に、私たちの<span class="keyword">SeNaTra</span>のアプローチは汎用的で、大きな入力解像度にもスケーラブルです。これは、初期の<span class="keyword">局所的なレイヤー (early local layers)</span> が、密なレイヤーが操作する入力トークンセットの濃度（カーディナリティ）を削減するためです。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-check-circle"></i> SeNaTraの利点</p>
+<ul>
+<li><i class="fas fa-expand-arrows-alt"></i> 様々なセグメンテーションタスクで使用可能。</li>
+<li><i class="fas fa-chart-line"></i> テキスト教師ありセマンティックセグメンテーションにおいて、クロスアテンションベースのグルーピング [10] を大幅に上回る性能。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="info-grid">
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-puzzle-piece"></i> 代替的なアプローチと課題</p>
+<p>他の研究 [11, 12] は、計算量の問題を軽減するために、<span class="keyword">微分不可能なスーパーピクセル手法 [19] (non-differentiable super-pixel method)</span> を用いて初期の画像セグメンテーションを得てから、データ駆動型のグルーピングを行う手法を提案しています。</p>
+<ul>
+<li><span class="keyword">TCFormer [12]</span> は、複数のネットワーク層にわたって画像構成要素をグループ化するために、<span class="keyword">外部のクラスタリング手法 (external clustering method)</span> に依存しています。</li>
+</ul>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> これらの手法の課題</p>
+<p>微分不可能なクラスタリング手法への依存は、エンドツーエンドの学習を困難にし、モデルの適用範囲を制限する可能性があります。</p>
+</div>
+</div>
+<div class="info-card">
+<p class="definition-title"><i class="fas fa-magic"></i> SeNaTraの優位性</p>
+<p>私たちの<span class="keyword">SeNaTra</span>のアプローチは、そのような微分不可能なクラスタリング手法を必要とせず、<span class="keyword">完全に微分可能なグルーピング層 (differentiable grouping layers)</span> のみで構成されています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas-medal"></i> SeNaTraの成果</p>
+<ul>
+<li><i class="fas fa-seedling"></i> <span class="highlight">合理化された設計 (streamlined design)</span> は、ゼロショットセグメンテーションにおいて先行研究と比較して良好な性能を示します。</li>
+<li><i class="fas fa-star"></i> さらに、上記の研究とは異なり、下流のセグメンテーションタスクにおいて、<span class="highlight">専用のセグメンテーションヘッドの有無にかかわらず良好な性能</span>を示すことを明らかにします。</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="note-box glass-card">
+<p class="note-title"><i class="fas fa-bullseye"></i> セクション全体のまとめ</p>
+<p>この「関連研究」セクションでは、SeNaTraが立脚する既存技術の概観と、それらに対するSeNaTraの貢献を明確にしました。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-microchip" style="color: var(--color-primary);"></i> <strong>Vision Backbones:</strong> CNNの階層構造と均一なダウンサンプリングという伝統的な設計に対し、SeNaTraは内容適応型の<span class="keyword">空間的グルーピング</span>によるダウンサンプリングを提案します。</li>
+<li><i class="fas fa-border-all" style="color: var(--color-secondary);"></i> <strong>Dense Prediction:</strong> FCNやEncoder-Decoder、DETR、MaskFormerといった密予測手法の発展を踏まえ、SeNaTraはこれらのヘッドと連携可能でありつつ、ヘッドなしでも高品質な<span class="keyword">ネイティブマスク</span>を生成できることを示します。</li>
+<li><i class="fas fa-users" style="color: var(--color-accent1);"></i> <strong>Perceptual Grouping:</strong> 古典的なグラフベースの手法やスーパーピクセルの考え方に着想を得つつ、SeNaTraはこれらを現代的な<span class="keyword">微分可能なエンドツーエンド学習</span>の枠組みで再構築します。</li>
+<li><i class="fas fa-project-diagram" style="color: var(--color-accent2);"></i> <strong>Grouping in Vision Backbones:</strong> GroupViTやClusterFormerなどの先行研究がクロスアテンションの計算コストや微分不可能な処理に課題を抱えていたのに対し、SeNaTraは<span class="keyword">効率的でスケーラブルな微分可能グルーピング層</span>を提案し、ゼロショット性能やヘッドの有無によらない汎用性で優位性を示します。</li>
+</ul>
+<p>これらの比較を通じて、SeNaTraが画像セグメンテーションタスクにおいて、より効率的で、本質的なセグメンテーション能力を持つ新しいバックボーンアーキテクチャの方向性を示すことが期待されます。</p>
+</div>
+</div>
+<div class="section-card" id="3_Native_Segmentation_Vision_Transformers">
+<h2 class="section-title"><i class="fas fa-microchip"></i> 3 Native Segmentation Vision Transformers</h2>
+<div class="content-box">
+<p>このセクションでは、論文の核心的な提案である <span class="keyword">Native Segmentation Vision Transformer (SeNaTra)</span> について詳しく解説します。SeNaTraは、従来のVision Transformerとは異なり、画像の特徴を抽出する過程そのものにセグメンテーションの能力を組み込んだ新しいアーキテクチャです。</p>
+<p>主な目的は、画像の内容（コンテンツ）を理解し、それに基づいてピクセルを意味のあるグループにまとめる<span class="highlight">「空間グルーピング層」</span>を導入することで、セグメンテーションタスクに特化した追加のヘッド部分（デコーダなど）がなくても、バックボーンネットワーク自体が階層的なセグメンテーションマスクを生成できるようにすることです。これにより、より効率的で、かつセマンティックな情報を保持した特徴抽出が期待できます。</p>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <b>ポイント：</b> SeNaTraのキーワードは「ネイティブ」。つまり、セグメンテーションがネットワークの基本的な機能として「生まれつき」備わっている、というイメージです。</p>
+</div>
+<p>SeNaTraの構造は、近年の階層型Vision Transformer [1, 2, 3] の標準的な設計を踏襲しており、主に4つのステージで構成されています。入力画像は \(H \times W\) のサイズだとすると、各ステージを経るごとに特徴マップの空間解像度は段階的に小さくなり、逆にチャネル次元（特徴の種類の数）は2倍になっていきます。これは、情報を集約しつつ、より複雑な特徴を捉えようとする一般的な深層学習モデルの戦略です。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-camera-retro"></i> <strong>初期ステージ：</strong> 入力画像を \(4 \times 4\) のパッチに分割し、これらを初期のトークン埋め込み（Transformerが処理できるベクトル表現）に変換します。</li>
+<li><i class="fas fa-sitemap"></i> <strong>後続ステージ（\(S_i, i=2, \dots, 4\)）：</strong> 各ステージ \(i\) で生成されるトークンの解像度は \((H/2^{i+1}) \times (W/2^{i+1})\) となります。例えば、ステージ2では解像度が \(H/8 \times W/8\)、ステージ3では \(H/16 \times W/16\)、ステージ4では \(H/32 \times W/32\) となります。</li>
+</ul>
+<p>このセクションの構成は以下の通りです：</p>
+<ol>
+<li><strong>セクション3.1：</strong> ネットワークのステージ間で、従来の均一なダウンサンプリング層（例：プーリングやストライド畳み込み）を置き換える<span class="keyword">「コンテンツ認識型空間グルーピング層」</span>について詳述します。このグルーピング層を積み重ねることで、ピクセルを徐々に大きく、意味のある領域へとまとめ上げる階層的な画像表現を構築します（図2(a)参照）。</li>
+<li><strong>セクション3.2：</strong> このグルーピング層による学習されたダウンサンプリング操作が、特にセグメンテーションのような密な予測タスクにおいて重要となる、<span class="highlight">境界を保持した特徴アップサンプリング</span>をどのように実現するかを説明します。</li>
+</ol>
+<p>このアプローチは汎用的で特定のタスクに依存しませんが、特にセグメンテーションタスクにおいてその真価を発揮することが期待されます。</p>
+</div>
+<img alt="Figure 2: Overall model design" src="senatra_model_design.jpg" style="width: 80%; margin-bottom: 20px;"/>
+<div class="note-box" style="margin-bottom: 20px;">
+<p class="note-title"><i class="fas fa-image"></i> 図2：SeNaTraモデル全体の設計図</p>
+<p>この図はSeNaTraの主要な構成要素を視覚的に示しています。</p>
+<ul>
+<li><strong>(a) アーキテクチャ概要：</strong> 画像が入力されると、まずパッチ埋め込みが行われ、ステージ1に入ります。その後、ステージ2, 3, 4と処理が進みます。各ステージ間には<span class="keyword">「コンテンツ認識グルーピング層」</span>が配置され、ダウンサンプリングを行います。ステージが進むにつれて、特徴マップはより粗く（低解像度に）なりますが、より大域的で意味的な情報を捉えるようになります。最終ステージ（Stage 4）では<span class="highlight">密なグルーピング (Dense Grouping)</span> が行われ、画像全体の情報を統合します。</li>
+<li><strong>(b) 空間グルーピング層：</strong> この層の核心的な処理を示しています。入力トークン群（下側のグリッド）と、それらを代表するグループ（上側のグリッド、出力トークンに対応）間で、ソフトな割り当て（Softmax Assignment）が行われます。この割り当て情報と入力トークンの特徴を使って、グループの特徴が更新（Weighted Average &amp; Group Features Update）されます。この処理が反復的に行われます。</li>
+<li><strong>(c) 学習されたアップサンプリング：</strong> 複数のグルーピング層で学習された割り当て行列（\(A^{\mathrm{ups}}\)）を組み合わせることで、低解像度の特徴マップを高解像度にアップサンプリングする際の対応関係を定義できます。これにより、単なる拡大ではなく、意味的な関連性を考慮したアップサンプリングが可能になります。例えば、\(A_l^{\mathrm{ups}}\)はステージ\(l\)から\(l-1\)へのアップサンプリングを、\(A_{l-1}^{\mathrm{ups}}\)はステージ\(l-1\)から\(l-2\)へのアップサンプリングを表し、これらを乗算することで\(A_{l \to l-2}^{\mathrm{ups}}\)が得られます。</li>
+</ul>
+</div>
+<h3 class="subsection-title"><i class="fas fa-layer-group"></i> 3.1 コンテンツ認識型空間グルーピング層 (Content-aware Spatial Grouping Layer)</h3>
+<div class="content-box">
+<p>この層は、SeNaTraの中核をなす革新的なコンポーネントです。従来のダウンサンプリング手法の限界を克服し、より賢い方法で空間情報を集約することを目指します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-lightbulb"></i> 学習目標：意味的にまとまりのあるピクセルグループの学習</p>
+<p>従来のアーキテクチャで標準的に使われているプーリングやストライド畳み込みといった<span class="keyword">均一ダウンサンプリング操作</span>は、画像内のすべての特徴位置を、その特徴内容に関わらず平等に扱い、すべての入力トークンに対して固定の操作を適用します。このアプローチは、周波数の高い領域（詳細部）と低い領域（平坦部）を区別したり、関連する詳細を捉えたりする能力に本質的な限界があります。</p>
+<p>この限界に対処するため、本論文では、グリッド上の特徴位置だけに依存するのではなく、<span class="highlight">入力特徴に動的に適応する</span>入力トークンとダウンサンプリングされたトークン間のマッピングを学習することを提案します。具体的には、類似した特徴埋め込みを持つトークン（つまり、同じオブジェクトや意味的にまとまりのある領域に属するトークン）を、ダウンサンプリングされた表現において同じ出力トークンにマッピングします。このようなマッピングを学習することで、モデルは連続するネットワークステージを通じて画像内の<span class="keyword">意味的に重要な境界を保持</span>することができます。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-users-cog"></i> グルーピングアルゴリズム</p>
+<p>この直感に基づいて、このタスクを<span class="keyword">微分可能なクラスタリング処理</span>として捉えます。これは、古典的な <span class="keyword">K-means法</span> [35, 36] や、その現代的な微分可能版 [15] に着想を得ています。ここでの出力ダウンサンプルトークンはクラスタの<span class="keyword">セントロイド（中心点）</span>として機能し、入力トークンは反復的にこれらのセントロイドに割り当てられます。</p>
+<p>正式には、\(X^{\mathrm{in}} \in \mathbb{R}^{N^{\mathrm{in}} \times d}\) を \(N^{\mathrm{in}}\) 個の \(d\) 次元入力トークンの集合とします。これらはピクセル埋め込みか、前のステージからのトークンに対応します。目標は、空間次元が削減された \(N^{\mathrm{out}}\) 個の \(2d\) 次元トークンの集合 \(X^{\mathrm{out}}\) を生成することです。標準的なアーキテクチャ設計に従い、すべてのレイヤーで \(N^{\mathrm{out}} = N^{\mathrm{in}} / 4\) と設定します（つまり、トークン数を1/4に減らします）。</p>
+<div class="bubble-box">
+<p><i class="fas fa-calculator"></i> <b>具体例：</b> もし入力トークンが \(64 \times 64 = 4096\) 個あった場合、出力トークンは \(4096 / 4 = 1024\) 個になります。これは空間解像度で言うと \(32 \times 32\) に相当します（元のトークンが正方格子状に配置されていた場合）。チャネル次元は \(d\) から \(2d\) に倍増します。</p>
+</div>
+<p>完全なアプローチの概要はAlgorithm 1に示されています。まず、一般的な手法 [25, 3] にならい、<span class="keyword">ストライド畳み込み (Strided Convolution)</span> を用いて \(X^{\mathrm{out}}\) を初期化します。その後、実験では \(L=3\) と設定された \(L\) 回の反復処理を行います。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<strong>反復ステップ 1 (i):</strong> クロスアテンションに似た操作を用いて、入力トークンから<span class="keyword">ソフト割り当て行列 (soft assignment matrix)</span> \(A^{\mathrm{ups}}\) を計算します（Algorithm 1, L3-5）。
+                </div>
+<div class="pipeline-step">
+<strong>反復ステップ 2 (ii):</strong> この行列を列方向で再正規化し（\(A^{\mathrm{down}}\) を得る）、入力トークンの加重平均を用いて \(X^{\mathrm{out}}\) を更新します（Algorithm 1, L6-9）。
+                </div>
+</div>
+<p>直感的には、\(A^{\mathrm{ups}} \in [0, 1]^{N^{\mathrm{in}} \times N^{\mathrm{out}}}\) は行方向に正規化されているため（つまり、各行の要素の合計が1）、各要素 \(A_{ij}^{\mathrm{ups}}\) は、各入力トークン \(X_i^{\mathrm{in}}\) が出力ダウンサンプルトークン \(X_j^{\mathrm{out}}\) にマッピングされる<span class="highlight">確率</span>として解釈できます。これらの割り当て確率は、セントロイドとして機能する \(X^{\mathrm{out}}\) の対応する特徴を更新するために使用されます（Algorithm 1, L9）。このプロセスを \(L\) ステップ繰り返すことで、割り当て確率と結果として得られる特徴 \(X^{\mathrm{out}}\) の両方を反復的に洗練させます。</p>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> ローカルグルーピングと密なグルーピング</p>
+<p>Algorithm 1の主要な制限は、\(A^{\mathrm{ups}}\) の計算コスト（L3）にあります。これは入力トークンセットの数 \(N^{\mathrm{in}}\) に対して<span class="keyword">二乗の計算量</span>（\(O(L (N^{\mathrm{in}})^2 d)\)）を持つため、高解像度の特徴マップでは実用的ではありません。</p>
+<p>この問題に対処するため、スーパーピクセル生成のための <span class="keyword">SLICアルゴリズム</span> [14, 34] に着想を得て、高解像度の特徴マップに対しては、クロスアテンション係数の計算を \(X^{\mathrm{out}}\) の各出力トークンを中心とする小さな \(3 \times 3\) の<span class="keyword">ローカルウィンドウ</span>に制限します（図2(b)参照）。</p>
+<div class="bubble-box">
+<p><i class="fas fa-search-location"></i> <b>ローカルウィンドウのイメージ：</b> 出力トークン（グループの中心）は、入力トークン空間において一定の領域を担当します。その担当領域の近傍の入力トークンだけを見て、割り当てを計算する、というイメージです。これにより、遠く離れたトークン同士の関連性を計算する必要がなくなり、計算量が大幅に削減されます。</p>
+</div>
+<p>直感的には、このメカニズムは学習されたダウンサンプリング演算子の柔軟性を保持しつつ（入力トークンは動的にダウンサンプリングされた対応物にマッピング可能）、<span class="highlight">局所性の事前知識 (locality prior)</span> を注入します。つまり、入力トークンは、結果として得られる出力空間で近くになるトークンにマッピングされるようになります。これにより、出力トークンにおける局所性の概念が可能になり、一般的に使用される<span class="keyword">ローカルアテンションメカニズム</span> [1, 3] を活用できます。</p>
+<p>計算上、この事前知識は非常に<span class="keyword">疎な (sparse)</span> \(A^{\mathrm{ups}}\) および \(A^{\mathrm{down}}\) 行列をもたらし、これらはCUDAカーネルで効率的に計算できます（付録E.1参照）。全体として、グルーピング層の計算量を \(\mathcal{O}(L (N^{\mathrm{in}})^2 d)\) から \(\mathcal{O}(L N^{\mathrm{in}} d)\) に削減し、高解像度マップでの実用性を確保します。
+            私たちのアーキテクチャでは、より高解像度の特徴マップが処理される第2および第3ステージで<span class="highlight">ローカルグルーピング</span>を使用します。最終ステージでは、<span class="highlight">密な（つまり、非スパースな）グルーピング</span>を有効にし、モデルの出力トークンが画像全体の領域やオブジェクトを統合できるようにします。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-link"></i> Slot Attentionとの関連</p>
+<p>グルーピング層における中心的な演算は、<span class="keyword">Slot Attention</span> [15] で導入されたものと類似しています。私たちのダウンサンプルトークンはスロットとして解釈できますが、ランダムな分布からサンプリングされるのではなく、入力トークン \(X\) に対するストライド畳み込み層によって初期化されます。</p>
+<p>その他の技術的な違いとしては、以下のような点があります：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-exchange-alt"></i> 元々スロット（ピクセルグループ）の更新に使用されていたGRU（Gated Recurrent Unit）を、より単純な<span class="keyword">スキップ接続</span>（Algorithm 1, L9）に置き換え。</li>
+<li><i class="fas fa-map-marker-alt"></i> 入力トークンと出力トークン間の空間的関係をエンコードするために<span class="keyword">相対位置エンコーディング</span>を使用（Algorithm 1, L3）。</li>
+</ul>
+<p>さらに重要なのは、前述のクロスアテンション演算における<span class="highlight">スパース性の制約</span>が高解像度入力の効率的な処理を可能にし、この微分可能なグルーピングメカニズムを階層的なVision Transformerバックボーンで実用的なものにしている点です。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> Algorithm 1: スパース性を考慮した、\(L\) 回の反復による入力特徴マップ \(X\) に対するグルーピング層</h3>
+<div class="content-box">
+<p>このアルゴリズムは、Content-aware Spatial Grouping Layerの中核となる処理フローを詳細に記述したものです。入力された特徴マップを、より少ない数のトークン（グループ）に集約し、同時にそれらのグループの特徴を更新していきます。</p>
+<div class="glass-card">
+<p style="font-weight: bold; margin-bottom: 10px;">📝 アルゴリズムの構成要素：</p>
+<ul class="unstyled-list" style="margin-bottom: 15px;">
+<li><strong>入力 (Input):</strong>
+<ul class="unstyled-list" style="margin-left:20px;">
+<li><i class="fas fa-grip-horizontal"></i> \(X^{\mathrm{in}} \in \mathbb{R}^{N^{\mathrm{in}} \times d}\): \(N^{\mathrm{in}}\)個の\(d\)次元入力特徴マップ（トークン群）</li>
+<li><i class="fas fa-vector-square"></i> \(M_{\mathrm{loc}} \in \{0, 1\}^{N^{\mathrm{in}} \times N^{\mathrm{out}}}\): ローカルグルーピングのためのマスク行列。値が1の位置の接続のみが考慮されます（実際には \(\{0, -\infty\}\) で実装され、ソフトマックス前に加算されます）。</li>
+</ul>
+</li>
+<li><strong>学習可能なモジュール (Learnable Modules):</strong>
+<ul class="unstyled-list" style="margin-left:20px;">
+<li><i class="fas fa-filter"></i> \(\mathsf{Conv}\): ストライド畳み込み層（出力トークンの初期化用）</li>
+<li><i class="fas fa-project-diagram"></i> \(Q, K, V\): 線形射影層（クエリ、キー、バリューの生成用）</li>
+<li><i class="fas fa-brain"></i> \(\mathrm{MLP}\): 多層パーセプトロン</li>
+<li><i class="fas fa-sliders-h"></i> \(\mathrm{LN}\): レイヤー正規化 (Layer Normalization)</li>
+<li><i class="fas fa-th"></i> \(B\): 相対位置バイアス</li>
+<li><i class="fas fa-temperature-high"></i> \(\tau\): 温度パラメータ（ソフトマックスのスケーリング用）</li>
+</ul>
+</li>
+</ul>
+<p style="font-weight: bold; margin-bottom: 10px;">🔄 処理ステップ：</p>
+<ol class="process-step-list unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<strong>初期化：</strong>出力トークン \(X^{\mathrm{out}}\) を、入力 \(X\) にストライド畳み込み (\(\mathsf{Conv}\)) を適用し、レイヤー正規化 (\(\mathrm{LN}\)) を行うことで初期化します。
+                        <p class="formula">\( X^{\mathrm{out}} \gets \mathrm{LN}(\mathsf{Conv}(X^{\mathrm{in}})) \)</p>
+<span class="badge blue">初期セントロイド設定</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<strong>反復処理ループ：</strong> \(l = 1, \ldots, L\) の \(L\) 回、以下のステップ3から9を実行します。論文では \(L=3\) です。
+                        <span class="badge purple">反復的洗練</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<strong>ソフト割り当て行列 \(A\) の計算：</strong>
+<p>入力トークン \(X^{\mathrm{in}}\) からキー \(k(X^{\mathrm{in}})\) を、出力トークン \(X^{\mathrm{out}}\) からクエリ \(q(X^{\mathrm{out}})\) を生成し、それらの積（アテンションスコア）を計算します。相対位置バイアス \(B\) を加算します。温度パラメータ \(\tau\) でスケーリングします（論文では \(\tau\) は乗算ではなく、アテンションスコアを \(\tau\) で割る形で使われることが多いですが、ここでは \(A\) の計算式内に \(\tau\) が含まれています。図では、\(A\) は \(\tau \cdot k(X^{in}) \times q(X^{out})^T + B\) となっています）。</p>
+<p class="formula">\( A \gets \tau \cdot k(X^{\mathrm{in}}) \cdot q(X^{\mathrm{out}})^T + B \)</p>
+<span class="badge orange">アテンションスコア</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">
+<strong>ローカルマスクの適用：</strong>計算されたアテンションスコア \(A\) にローカルマスク \(M_{\mathrm{loc}}\) を加算します。 \(M_{\mathrm{loc}}\) は、考慮しない接続に対応する要素を \(-\infty\) (非常に小さい値) にすることで、それらの接続がソフトマックス後にゼロになるようにします。
+                        <p class="formula">\( A \gets A + M_{\mathrm{loc}} \)</p>
+<span class="badge yellow">スパース化</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">5</div>
+<div class="step-content">
+<strong>アップサンプリング用割り当て行列 \(A^{\mathrm{ups}}\) の計算：</strong> マスク適用後の \(A\) に行方向のソフトマックス関数を適用し、\(A^{\mathrm{ups}}\) を得ます。これにより、各入力トークンが各出力トークンに割り当てられる確率が得られます（各行の和が1）。
+                        <p class="formula">\( A^{\mathrm{ups}} \gets \mathrm{softmax}_{\mathrm{rows}}(A) \)</p>
+<span class="badge green">行正規化 (確率化)</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">6</div>
+<div class="step-content">
+<strong>ダウンサンプリング用割り当て行列 \(A^{\mathrm{down}}\) の計算：</strong> \(A^{\mathrm{ups}}\) を列方向に正規化し、\(A^{\mathrm{down}}\) を得ます。具体的には、\(A^{\mathrm{ups}}\) の各要素 \(A_{ij}^{\mathrm{ups}}\) を、その列の要素の合計で割ります。これにより、各出力トークンがどの入力トークンから情報を得るかの重みが得られます（各列の和が1）。
+                        <p class="formula">\( A_{ij}^{\mathrm{down}} \gets \frac{A_{ij}^{\mathrm{ups}}}{\sum_{k=1}^{N^{\mathrm{in}}} A_{kj}^{\mathrm{ups}}} \)</p>
+<span class="badge blue">列正規化 (重み付け)</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">7</div>
+<div class="step-content">
+<strong>(ステップ 8はアルゴリズム図に明示されていませんが、ループの終了を示唆)</strong>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">9</div>
+<div class="step-content">
+<strong>出力トークン \(X^{\mathrm{out}}\) の更新：</strong>
+<p>まず、入力トークン \(X^{\mathrm{in}}\) からバリュー \(v(X^{\mathrm{in}})\) を生成し、\(A^{\mathrm{down}}\) の転置 \((A^{\mathrm{down}})^T\) を使って加重平均を計算し、レイヤー正規化を適用したものを \(X^{\mathrm{out}}\) に加算します（スキップ接続）。これは、各出力トークンが、割り当てられた入力トークンの特徴を重み付きで集約する操作です。</p>
+<p class="formula">\( X^{\mathrm{out}} \gets X^{\mathrm{out}} + \mathrm{LN}((A^{\mathrm{down}})^T \cdot v(X^{\mathrm{in}})) \)</p>
+<p>次に、更新された \(X^{\mathrm{out}}\) にMLPを適用し、さらにレイヤー正規化を行ったものを \(X^{\mathrm{out}}\) に加算します（スキップ接続）。これは、集約された特徴をさらに変換・洗練する操作です。</p>
+<p class="formula">\( X^{\mathrm{out}} \gets X^{\mathrm{out}} + \mathrm{LN}(\mathrm{MLP}(X^{\mathrm{out}})) \)</p>
+<span class="badge purple">セントロイド更新</span>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">10</div>
+<div class="step-content">
+<strong>(ステップ 11はアルゴリズム図に明示されていませんが、ループの終了を示唆)</strong>
+</div>
+</li>
+<li class="process-step">
+<div class="step-number">12</div>
+<div class="step-content">
+<strong>出力 (Return):</strong> 最終的に更新された出力トークン \(X^{\mathrm{out}}\)、ダウンサンプリング用割り当て行列 \(A^{\mathrm{down}}\)、アップサンプリング用割り当て行列 \(A^{\mathrm{ups}}\) を返します。
+                        <span class="badge orange">最終結果</span>
+</div>
+</li>
+</ol>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-comment-dots"></i> アルゴリズムの直感的解釈</p>
+<p>このアルゴリズムは、K-meansクラスタリングの考え方に似ています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-bullseye"></i> \(X^{\mathrm{out}}\) はクラスタの<span class="keyword">セントロイド</span>（中心点）の役割を果たします。</li>
+<li><i class="fas fa-project-diagram"></i> ステップ3-5では、各入力トークン \(X_i^{\mathrm{in}}\) がどのセントロイド \(X_j^{\mathrm{out}}\) に属するかという<span class="keyword">ソフトな割り当て</span>（確率 \(A_{ij}^{\mathrm{ups}}\)）を計算します。これはK-meansのEステップ（期待値ステップ）に相当します。</li>
+<li><i class="fas fa-sync-alt"></i> ステップ9では、その割り当て確率に基づいてセントロイド \(X^{\mathrm{out}}\) の特徴を<span class="keyword">更新</span>します。これはK-meansのMステップ（最大化ステップ）に相当します。</li>
+</ul>
+<p>このEステップとMステップを \(L\) 回繰り返すことで、トークンのグループ分けとグループの特徴表現が徐々に洗練されていきます。スパース性（\(M_{\mathrm{loc}}\)）の導入は、特に初期のステージで計算量を抑えつつ、局所的なグルーピングを促進するための工夫です。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-object-group"></i> 3.2 ネイティブセグメンテーション (Native Segmentation)</h3>
+<div class="content-box">
+<p>このセクションでは、3.1で説明した空間グルーピング層を複数積み重ねることで、どのようにして「ネイティブ」なセグメンテーション能力がバックボーンネットワーク自体に備わるのかを解説します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-link"></i> マルコフ連鎖による割り当ての合成</p>
+<p>画像をモデルに入力すると、すべての \(n\) 個のグルーピング層の複合的な出力として、2つの行列セットが得られます：\(\{A_i^{\mathrm{ups}}\}_{i=1}^n\) と \(\{A_i^{\mathrm{down}}\}_{i=1}^n\) です。ここで、各行列 \(A_i^{\mathrm{ups}}\)（または \(A_i^{\mathrm{down}}\)）は、ステージ \(i+1\) のグルーピング層の出力に対応し、次元は \(N_i^{\mathrm{in}} \times N_i^{\mathrm{out}}\) です。グルーピング層は連続するステージで適用されるため、各 \(i = 1, \ldots, n-1\) に対して \(N_i^{\mathrm{out}} = N_{i+1}^{\mathrm{in}}\) となります（つまり、ある層の出力トークン数が次の層の入力トークン数になります）。</p>
+<p>思い出してほしいのは、構成上、\(A_i^{\mathrm{ups}}\) は<span class="keyword">行確率行列</span>（各行の要素の和が1）であり、各エントリは各入力トークンが後続のダウンサンプルトークンにマッピングされる確率として解釈できるということです。したがって、各行列 \(A_i^{\mathrm{ups}}\) は<span class="keyword">状態遷移行列</span>として解釈でき、ステージ \(l\) のトークンからより初期のステージ \(l-k \in \{1, \ldots, n-1\}\) のトークンへの全体的なマッピングは、以下の状態遷移確率を持つ<span class="keyword">マルコフ連鎖</span>として解釈できます：</p>
+<p class="formula">
+                \( A_{l \to l-k}^{\mathrm{ups}} := A_{l-k+1}^{\mathrm{ups}} \times \cdots \times A_{l}^{\mathrm{ups}} \)
+            </p>
+<div class="bubble-box">
+<p><i class="fas fa-route"></i> <b>マルコフ連鎖のイメージ：</b> ステージが進むごとに行われるトークンのグループ化を、状態の遷移と見なします。例えば、ステージ3のトークンがどのステージ2のトークンに由来し、そのステージ2のトークンがどのステージ1のトークンに由来するのか、という遷移確率を次々に掛け合わせることで、ステージ3のトークンとステージ1のトークン（元のピクセルに近いレベル）の対応関係（確率）を計算できます。</p>
+</div>
+<p>同様に、\(A^{\mathrm{down}}\) は<span class="keyword">列確率行列</span>（各列の要素の和が1）なので、\(A_{l \to l+k}^{\mathrm{down}}\) はステージ \(l\) からステージ \(l+k\) へのトークンのマッピングを定義します：</p>
+<p class="formula">
+                \( A_{l \to l+k}^{\mathrm{down}} := (A_{l+k-1}^{\mathrm{down}})^T \times \cdots \times (A_{l}^{\mathrm{down}})^T \)
+            </p>
+<p>（注：ダウンサンプリングの際は転置行列 \((A^{\mathrm{down}})^T\) を使用します。これにより、行確率行列となり、アップサンプリングと同様の形式で解釈できます。）</p>
+<p>したがって、ステージ \(l\) における任意の \(N_l^{\mathrm{out}}\) 個の \(d\) 次元トークン埋め込み \(X\) は、内積 \(A_{l \to l-k}^{\mathrm{ups}} X\) を介してステージ \(l-k\) の解像度に<span class="highlight">アップサンプリング</span>されたり、同様に \(A_{l \to l+k}^{\mathrm{down}} X\) を介してステージ \(l+k\) の解像度に<span class="highlight">ダウンサンプリング</span>されたりすることができます。</p>
+<p>最後のグルーピング層を除くすべての層はローカルグルーピングを利用するため、割り当て行列の積の中で非スパース（密）な行列は最大でも1つだけです。関連するすべてのスパース行列の積もまたブロック疎であり、効率的に計算できます（付録E.1参照）。</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<p class="subsection-title" style="font-size: 16px; margin-top:0; border-left: 3px solid var(--color-accent1); color: var(--color-accent1);"><i class="fas fa-binoculars" style="color: var(--color-accent1);"></i> バックボーンレベルでの階層的セグメンテーションの解釈</p>
+<p>前の段落での観察は、画像をセグメントに階層的に分解することを可能にします。各ステージ \(i\) において、 \(A_{1 \to i}^{\mathrm{ups}}\) は、入力ピクセル（ステージ1のトークン）をステージ \(i\) のトークン（グループ）にマッピングする<span class="keyword">ソフトなセグメンテーションマスク</span>を提供します。これらのマスクは、ステージ \(i\) が進むにつれて、より粗く（低解像度に）、しかしより大域的な意味を持つようになります。最終ステージ4では密なグルーピングが有効になるため、トークンは画像全体にまたがるセグメンテーションマスクをエンコードできます。</p>
+<p>特筆すべきは、これらが中間的な遷移行列やその合成に対する<span class="highlight">明示的な教師なし</span>で達成できるという点です。グルーピング層は微分可能であるため、アーキテクチャ全体は、最終ステージトークンのグローバルプーリングを介して、標準的な画像レベルの目的関数（例：画像分類）でエンドツーエンドで訓練可能です。</p>
+<p>推論時には、学習された分類ヘッドやテキスト埋め込みを最終トークンに適用し、その後 \(A_{1 \to n}^{\mathrm{ups}}\) （ここで \(n\) は最終ステージ）を介してアップサンプリングすることで、セマンティックセグメンテーションに適した<span class="keyword">ゼロショット入力レベル予測</span>が可能になります。マスク教師なしにもかかわらず、グルーピング層の強力な帰納的バイアスにより、この設定で高品質なマスクが得られます（セクション4.1で示されます）。</p>
+</div>
+<div class="info-card">
+<p class="subsection-title" style="font-size: 16px; margin-top:0; border-left: 3px solid var(--color-accent2); color: var(--color-accent2);"><i class="fas fa-puzzle-piece" style="color: var(--color-accent2);"></i> マスク教師あり学習の活用</p>
+<p>画像セグメンテーションタスクは、画像を \(S\) 個の互いに素なセグメントに分割し、セグメントごとに分類を行うこと、と大別できます。現代の手法はインスタンスレベルの高解像度予測を可能にするために専用のヘッド [6, 37] に依存していますが、私たちのモデルは入力-出力トークンマッピング \(A_{1 \to n}^{\mathrm{ups}}\) を通じて<span class="keyword">バックボーンレベルで直接画像分割をエンコード</span>します。</p>
+<p>これにより、以下のような<span class="highlight">ミニマリスティックで純粋にネイティブなアプローチ</span>が可能になります：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-microscope"></i> 単純なMLPのみを訓練して、最終トークンを二部マッチング損失 [31]（DETRなどで使われる損失関数）で分類する。</li>
+</ul>
+<p>さらに、私たちのモデルは標準的なセグメンテーションフレームワークに統合することも可能で、そこでは重要な改善点があります：ピクセルデコーダで一般的に使用される<span class="keyword">特徴マップのアップサンプリングおよびダウンサンプリング操作</span>を、私たちのグルーピングベースの操作に置き換えることができます。これにより、最先端手法のセグメンテーション精度を上回る改善が見られます（セクション4.2）。</p>
+<div class="bubble-box">
+<p><i class="fas fa-cogs"></i> <b>ポイント：</b> SeNaTraは、(1) 単独でセグメンテーションを行う（ネイティブアプローチ）、(2) 既存のセグメンテーションモデルのバックボーンやアップ/ダウンサンプリング部品として機能する（統合アプローチ）、という2つの使い方ができます。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="4_Experiments">
+<h2 class="section-title"><i class="fas fa-flask"></i>4 Experiments</h2>
+<div class="content-box">
+<p>このセクションでは、提案手法である<span class="keyword">SeNaTra (Native Segmentation Vision Transformer)</span> の性能を、様々な条件下で徹底的に評価します。具体的には、マスクを使わない教師あり学習（画像分類ラベルや画像キャプションのみを使用）と、マスク情報も使った教師あり学習の両方で、どれだけ効果的にセグメンテーション（領域分割）ができるかを検証します。さらに、SeNaTraの設計上の工夫が実際に性能向上にどれだけ貢献しているのかも分析します。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>主な評価ポイント</p>
+<ul class="unstyled-list">
+<li>✏️ <span class="highlight">マスクなし教師あり学習 (セクション4.1)</span>:
+                    <ul>
+<li>画像分類タスク (ImageNet) でのセグメンテーション能力の出現 (4.1.1)</li>
+<li>画像とキャプションを用いたゼロショットセグメンテーション (4.1.2)</li>
+</ul>
+</li>
+<li>✏️ <span class="highlight">マスクあり教師あり学習 (セクション4.2)</span>:
+                    <ul>
+<li>セマンティックセグメンテーション (4.2.1)</li>
+<li>パノプティックセグメンテーション (4.2.2)</li>
+</ul>
+</li>
+<li>✏️ <span class="highlight">設計要素の分析 (アブレーションスタディ) (セクション4.3)</span></li>
+</ul>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i>評価モデル</p>
+<p>SeNaTraの3つのバリエーションで評価を行います。これらのモデルは、出力される特徴量（埋め込み）の次元数が異なります。これは先行研究[3]に倣った設定です。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-microchip fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>SeNaTra-T (Tiny)</strong></p>
+<p>出力埋め込み次元: <span class="badge yellow">512</span></p>
+</div>
+<div class="feature-item">
+<i class="fas fa-microchip fa-2x" style="color: var(--color-accent2);"></i>
+<p><strong>SeNaTra-B (Base)</strong></p>
+<p>出力埋め込み次元: <span class="badge yellow">1024</span></p>
+</div>
+<div class="feature-item">
+<i class="fas fa-microchip fa-2x" style="color: var(--color-secondary);"></i>
+<p><strong>SeNaTra-L (Large)</strong></p>
+<p>出力埋め込み次元: <span class="badge yellow">1536</span></p>
+</div>
+</div>
+<p class="reference">詳細な設定は論文のAppendix Dに記載されています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-eye-slash"></i>4.1 Learning Without Mask Supervision (マスク教師なし学習)</h3>
+<div class="content-box">
+<p>このサブセクションでは、ピクセル単位のマスク情報を一切使わずにSeNaTraを学習させた場合の性能を評価します。画像全体のラベル（例：この画像は「猫」）や、画像に対応する説明文（例：「公園で遊ぶ犬」）だけを教師データとして用います。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-images"></i>4.1.1 ImageNet Classification (ImageNet画像分類)</h4>
+<div class="content-box">
+<p>SeNaTraを大規模画像データセットである<span class="keyword">ImageNet-1k</span>および<span class="keyword">ImageNet-22k</span> [38] を用いて画像分類タスクで学習させます。学習方法はSwin Transformer [1]の設定を踏襲しています。</p>
+<p>下の図3は、学習されたグループ表現がバックボーンの各ステージでどのように変化するかを示しています。また、5列目には予測されたクラスに対する各グループの最終的な活性化（どのグループが予測クラスに強く反応したか）を可視化しています。</p>
+</div>
+<img alt="Figure 3: Segmentation emerges from ImageNet pre-training" class="figure-image" src="senatra_segmentation_emergence.jpg"/>
+<div class="glass-card">
+<p class="definition-title"><i class="fas fa-search-plus"></i>Figure 3: ImageNet事前学習から出現するセグメンテーション</p>
+<p>この図は、SeNaTraがImageNetでの画像分類タスクの学習を通じて、どのようにセグメンテーション能力を獲得するかを示しています。</p>
+<div class="info-grid">
+<div class="info-card">
+<p><strong>1列目 (Input Image):</strong> 元の入力画像です。</p>
+</div>
+<div class="info-card">
+<p><strong>2列目 (Stage 2 Groups):</strong> バックボーンのステージ2出力。初期のグルーピング結果で、<span class="highlight">スーパーピクセル</span>（似た色の隣接ピクセルを集めた小さな領域）のような構造が見られます。</p>
+</div>
+<div class="info-card">
+<p><strong>3列目 (Stage 3 Groups):</strong> ステージ3出力。より大きなまとまりにグループ化されています。</p>
+</div>
+<div class="info-card">
+<p><strong>4列目 (Final Stage 4 Groups):</strong> 最終ステージ4出力（密なグルーピング層）。<span class="highlight">意味的にまとまりのある領域</span>（例：鳥の体、背景の枝）へと統合されています。</p>
+</div>
+<div class="info-card">
+<p><strong>5列目 (Class Activations):</strong> 予測されたクラスに対する各グループの活性化マップ。どの領域がモデルの予測（例：「ハクトウワシ」）に貢献したかを示します。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-magic"></i>驚くべきことに、SeNaTraは画像全体のクラスラベル（例: 「この画像は犬」）のみで学習しているにも関わらず、<span class="keyword">ネットワーク設計の副産物</span>として、物体の境界を保持する階層的なスーパーピクセル様のグループを生成し、最終的には意味のある領域へとまとめ上げます。これは、<span class="highlight">マスク情報を一切使わずにピクセルレベルで物体を特定する能力</span>を学習していることを示しています。</p>
+<p>分類性能自体は既存のSOTA（最先端）手法と同等レベルを維持しつつ、このようなセグメンテーション能力が「おまけ」でついてくる点がSeNaTraの大きな特徴です。</p>
+</div>
+<p class="reference">定量的な分析や標準的なバックボーン[3]との比較については、Appendix D.1を参照してください。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-comments"></i>4.1.2 Zero-shot Segmentation from Vision-Language Supervision (視覚-言語教師からのゼロショットセグメンテーション)</h4>
+<div class="content-box">
+<p>ここでは、画像とその説明文（キャプション）のペアを使ってSeNaTraを事前学習し、<span class="keyword">ゼロショットセマンティックセグメンテーション</span>の性能を評価します。「ゼロショット」とは、特定のセグメンテーションタスクのためのピクセル単位のマスク情報を学習時に一切見ずに、未知のクラスやデータセットに対してセグメンテーションを行うことを意味します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i>学習と評価のセットアップ</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content"><strong>事前学習:</strong> 画像-テキストペアを用いて、<span class="highlight">softmax contrastive objective</span> [39, 40] (画像と対応するテキストの特徴量が近くなるように、対応しないペアの特徴量が遠くなるように学習する手法) でSeNaTraを事前学習します。ハイパーパラメータは[41]から借用。</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content"><strong>グループ埋め込みの取得:</strong>
+<ul class="unstyled-list">
+<li><i class="fas fa-long-arrow-alt-right"></i> 最終的な画像（またはテキスト）出力トークンに線形射影層を適用。</li>
+<li><i class="fas fa-long-arrow-alt-right"></i> グローバルプーリングを適用。</li>
+<li><i class="fas fa-long-arrow-alt-right"></i> L2正規化を適用。</li>
+</ul>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content"><strong>分類:</strong>
+<ul class="unstyled-list">
+<li><i class="fas fa-long-arrow-alt-right"></i> 各データセットのクラス名を標準的なテンプレートプロンプト（例：「a photo of a {クラス名}」）と共にテキストエンコーダに入力。</li>
+<li><i class="fas fa-long-arrow-alt-right"></i> 各グループ埋め込みに対して、コサイン類似度が最大のクラスを選択。</li>
+<li><i class="fas fa-long-arrow-alt-right"></i> 提案手法のアップサンプリング操作（セクション3.2）でピクセルレベルのマスクを生成。</li>
+</ul>
+</div>
+</div>
+<p class="reference">詳細はAppendix D.2を参照してください。</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-database"></i>データセット</p>
+<p>[41]に従い、以下のデータセットで学習・評価を行います。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">学習用</span>
+<ul>
+<li>CC3M [42] と CC12M [43] の和集合 (約2000万枚の半キュレーション画像-テキストペア)</li>
+<li>上記にRedCaps12M [44] を加えたもの (さらに1200万ペア追加)</li>
+</ul>
+</li>
+<li><span class="badge orange">評価用</span> ([45]に従う)
+                    <ul>
+<li>Pascal VOC [46]</li>
+<li>Pascal Context [47]</li>
+<li>COCO [48]</li>
+<li>COCO-Stuff [49]</li>
+<li>ADE20k [20]</li>
+<li>Cityscapes [50]</li>
+</ul>
+</li>
+</ul>
+<p>これらのデータセットは、都市景観(Cityscapes)、一般的な物体カテゴリ(COCO, Pascal VOC)、密にアノテーションされた詳細なシーン(ADE20k, Pascal Context)など、多様なシナリオをカバーしています。評価指標は標準的な<span class="keyword">mIoU (mean Intersection-over-Union)</span> を用います。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-calculator"></i>mIoU (mean Intersection-over-Union) とは？</p>
+<p>セグメンテーションの評価によく用いられる指標です。各クラスに対して、予測された領域と正解領域の<span class="highlight">IoU (Intersection over Union)</span>を計算し、それらを平均したものです。</p>
+<p>IoUは、予測領域と正解領域の重なり部分（Intersection）の面積を、両者の合計領域（Union）の面積で割った値です。</p>
+<div class="formula">
+                    $$ \text{IoU} = \frac{\text{Area of Overlap}}{\text{Area of Union}} $$
+                </div>
+<p>IoUは0から1の値をとり、1に近いほど良い性能を示します。mIoUが高いほど、全体としてセグメンテーションの精度が高いと言えます。</p>
+</div>
+</div>
+<img alt="Table 1: Zero-shot, text-supervised semantic segmentation" class="figure-image" src="table1.png"/>
+<div class="glass-card">
+<p class="definition-title"><i class="fas fa-table"></i>Table 1: ゼロショット、テキスト教師ありセマンティックセグメンテーション</p>
+<p>この表は、6つのデータセットにおけるSeNaTraと他のSOTA手法のゼロショットセマンティックセグメンテーション性能 (mIoU) を比較したものです。太字は最高性能、下線は2番目の性能を示します。CRF[57]やPAMR[58]といった後処理手法の利用も示されています。</p>
+<p><strong><i class="fas fa-chart-line"></i>結果のポイント:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge green">SeNaTraの優位性:</span> SeNaTraは、<span class="highlight">ほとんどのベンチマークで専門的なSOTA手法を上回っています。</span>これには、我々の学習データセットの20倍もの4億枚の画像-テキストペアで事前学習されたCLIPを利用したモデルも含まれます。</li>
+<li><span class="badge green">CLIP未使用手法との比較:</span> CLIPを利用していない手法と比較すると、<span class="highlight">全てのデータセットで4 mIoU以上の大幅な改善</span>が見られます。</li>
+<li><span class="badge green">後処理なしでの高性能:</span> TCL [45], CoDe [53], SimSeg [41] といったトップ性能の手法は、PAMR [58] や dense CRF [57] などの後処理技術に依存しており、これにより3-4 mIoU性能が向上しています。対照的に、SeNaTraは<span class="highlight">後処理なしで強力な結果</span>を達成しており、これはネットワーク設計自体の優秀さを示しています。</li>
+<li><span class="badge green">CLIP利用手法との比較:</span> ADE20k (150クラス) と COCO-stuff (133クラス) を除くほとんどのデータセットで、CLIPを利用した手法をも上回っています。これらのクラス数が多いデータセットではCoDeに次ぐ2位ですが、これはCLIPの大規模事前学習が詳細な意味理解に有利に働くためと考えられます。</li>
+<li><span class="badge green">スケーラビリティ:</span> RedCaps12Mからわずか1200万の画像-テキストペアを追加学習するだけで、この差は大幅に縮まり、さらなるスケーリングの可能性を示しています。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-paint-brush"></i>4.2 Training with Mask Supervision (マスク教師あり学習)</h3>
+<div class="content-box">
+<p>このサブセクションでは、ピクセル単位のマスク情報を教師データとして用いてSeNaTraを学習させ、標準的なセマンティックセグメンテーション[46]およびパノプティックセグメンテーション[21]のデータセットで評価します。一般的な慣習に従い、モデルの重みはImageNetで事前学習したもの (セクション4.1.1) で初期化します。</p>
+<p class="reference">拡張された結果や実装の詳細はAppendix D.3に記載されています。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-tasks"></i>セグメンテーションのパラダイム</p>
+<p>各タスクにおいて、以下の2つのアプローチで評価します（Table 2[c]参照）：</p>
+<div class="info-grid">
+<div class="info-card">
+<p><strong>(i) <span class="keyword">ネイティブマスクモデル (Minimal Native Masks Model)</span></strong></p>
+<p>バックボーンレベルのピクセル割り当てを通じてマスクを生成する、SeNaTra独自の最小限の構成。</p>
+<img alt="Table 2(c) Native Masks" src="table2_c.png" style="width:50%; margin: 10px auto;"/>
+</div>
+<div class="info-card">
+<p><strong>(ii) <span class="keyword">ドロップインバックボーン (Drop-in Backbone Replacement)</span></strong></p>
+<p>SeNaTraを既存のセグメンテーションヘッド（例: Mask2Former (M2F) [6]）のバックボーンとして組み込む構成。</p>
+<img alt="Table 2(c) Ours + M2F" src="table2_c_m2f.png" style="width:50%; margin: 10px auto;"/>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-feather-alt"></i>ネイティブセグメンテーション</p>
+<p>ピクセルごとのクラス予測は、バックボーンの最終グループトークン埋め込みを2層のMLP（512次元）に入力することで行います。これらの予測（ストライド32）は、学習されたピクセル割り当て（セクション3.2）を用いて入力解像度にアップサンプリングされ、クラス予測はクロスエントロピー損失で学習されます。</p>
+<p>パノプティックモデルでは、物体を対象とする追加の2層MLPを使用します。これは、割り当て値が最大のトップ100の最終グループトークン（物体候補を表す）に適用されます。インスタンスマスクとクラス予測は、[6]に従い、<span class="highlight">二部マッチング損失</span>[31]で教師付けされます。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-puzzle-piece"></i>Ours+Mask2Former</p>
+<p>SeNaTraは汎用性が高く、広く使われているM2Fのようなネットワークにドロップインで置き換えることも可能です。M2Fは、マルチスケール変形可能アテンションを用いたピクセルデコーダと、セグメンテーションTransformerデコーダを組み合わせたものです。我々のバージョンでは、標準的なアップサンプリング操作を、学習された割り当て（セクション3.2）を通じて得られた割り当て行列に置き換えます。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-balance-scale"></i>ベースライン</p>
+<p>バックボーンのベースラインとして、均一なダウンサンプリングを行う確立された設計（SwinTransformer [1]やNAT [3]など）や、最近のボトムアップグルーピングアプローチ[11, 12, 10]を報告します。これらは、以下の専用セグメンテーションネットワークと組み合わせて報告されます。</p>
+<ul class="unstyled-list">
+<li><span class="badge purple">UperNet [37]:</span> Visionアーキテクチャのベンチマークで一般的に使用される。</li>
+<li><span class="badge purple">MaskFormer (MF) [13] / Mask2Former (M2F) [6]:</span> 広く使用されるセグメンテーションモデル。</li>
+</ul>
+<p>SeNaTraは、バックボーンとして、また専用のセグメンテーションヘッドなしでネイティブマスクを生成するモデルとして評価されます。</p>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-palette"></i>4.2.1 Semantic Segmentation (セマンティックセグメンテーション)</h4>
+<div class="content-box">
+<p><strong><i class="fas fa-cogs"></i>設定:</strong> ADE20kデータセット[20]を用いて、ピクセルを150のセマンティッククラスに分類するようにモデルを学習させます。一般的な慣習に従い、検証セットで結果を報告します。ハイパーパラメータ設定はベースラインとほぼ同様ですが（詳細はAppendix D.3）、我々のモデルは収束が速いため、イテレーション数を160kから80kに削減しています。</p>
+</div>
+<div class="glass-card">
+<p class="definition-title"><i class="fas fa-comments-dollar"></i>議論 (Table 2a)</p>
+<img alt="Table 2(a) Semantic segmentation on ADE20k-val" class="figure-image" src="table2_a.png"/>
+<p>Table 2aから以下の点が観察されます。</p>
+<div class="info-grid">
+<div class="info-card">
+<p><strong><i class="fas fa-star"></i>(i) ネイティブマスクの優位性:</strong></p>
+<p>SeNaTraのネイティブマスクは、UperNet [37]、Semantic FPN [61]、Segmenter [62]といった確立されたセグメンテーションヘッドを使用する標準的およびグルーピングベースのバックボーンの両方に対して、<span class="highlight">大幅な改善</span>を示します。特に小型のバリアントでは、計算効率とパラメータ効率が顕著です。</p>
+<p><span class="badge yellow">SeNaTra-T</span> は <span class="keyword">49.7 mIoU</span> を達成し、NAT-T w/ UperNet (47.1 mIoU) に対して <span class="highlight">+2.6 mIoU</span> 向上しています。しかも、FLOPs（計算量）はわずか<span class="highlight">12%</span>、パラメータ数は<span class="highlight">50%</span>です。</p>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-link"></i>(ii) M2Fヘッド使用時:</strong></p>
+<p>M2Fヘッドを使用する場合、SeNaTraのグルーピングベースの表現は、<span class="highlight">全てのバリアントで一貫して性能を向上</span>させます。</p>
+<ul>
+<li>M2F + Swin に対して <span class="highlight">+1 mIoU</span></li>
+<li>M2F + NAT に対して <span class="highlight">+2.7 mIoU</span></li>
+</ul>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-cubes"></i>(iii) バックボーンのコスト:</strong></p>
+<p>SeNaTraのバックボーンは、標準的なバックボーンと比較して、パラメータ数とFLOPsの増加は<span class="highlight">わずか5%程度</span>です。M2Fと組み合わせるとNATよりも計算コストが若干増加しますが、このコストはセグメンテーションヘッドが不要になるネイティブ設定では効果的に償却され、全体として<span class="highlight">よりパラメータ効率・FLOPs効率の高いアプローチ</span>となります。</p>
+</div>
+</div>
+</div>
+<h5 class="subsection-title"><i class="fas fa-table"></i>(a) Semantic segmentation on ADE20k-val.</h5>
+<div class="content-box">
+<p>このセクションは、Table 2の(a)部分とTable 3を指していると考えられます。Table 2(a)は既に上で議論されており、Table 3はセクション4.3のアブレーションスタディで詳細に解説されます。</p>
+<p>ここでは、ADE20k-valデータセットにおけるセマンティックセグメンテーションの結果が示されており、SeNaTraのネイティブマスクや、M2Fと組み合わせた場合の性能が既存手法と比較されています。</p>
+<img alt="Table 3: Architecture-level ablations" class="figure-image" src="table3.png" style="margin-bottom:10px;"/>
+<p class="reference">これはTable 3の画像です。詳細な説明はセクション4.3で行います。</p>
+</div>
+<h5 class="subsection-title"><i class="fas fa-drafting-compass"></i>(b) Low-level design choices in our grouping layer.</h5>
+<div class="content-box">
+<p>このセクションは、Table 3(b) の内容を指しており、グルーピング層内部の低レベルな設計選択の影響を分析しています。これもセクション4.3のアブレーションスタディで詳細に解説されます。</p>
+<p>具体的には、GRUの置き換え、初期埋め込みのサンプリング方法、相対位置エンコーディングの使用などが、ADE20kでのmIoUとPascal VOCでのZero-Shot mIoUにどのような影響を与えるかを調べています。</p>
+<img alt="Table 3(b) Low-level design choices in our grouping layer" class="figure-image" src="table3_b.png" style="margin-bottom:10px;"/>
+<p class="reference">これはTable 3の(b)部分の画像です。詳細な説明はセクション4.3で行います。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-object-group"></i>4.2.2 Panoptic Segmentation (パノプティックセグメンテーション)</h4>
+<div class="content-box">
+<p><strong><i class="fas fa-cogs"></i>設定:</strong> COCO-panopticデータセット[21]でモデルを学習・評価します。このデータセットは80の物体（things）クラスと53の背景（stuff）クラスから成り、モデルは物体のセマンティッククラスとインスタンスIDの両方を予測する必要があります。</p>
+<p>モデルは50エポック学習させ、統合モデル（SeNaTra+M2Fなど）にはM2Fの元のハイパーパラメータを使用します。ネイティブな結果（SeNaTra単体）については、セマンティックセグメンテーションと同じハイパーパラメータを使用します。</p>
+</div>
+<div class="glass-card">
+<p class="definition-title"><i class="fas fa-comments-dollar"></i>議論 (Table 2b)</p>
+<img alt="Table 2(b) PQ on COCO val2017" class="figure-image" src="table2_b.png"/>
+<p>Table 2bから以下の点が観察されます。（PQはPanoptic Qualityの略で、パノプティックセグメンテーションの主要な評価指標です）</p>
+<div class="info-grid">
+<div class="info-card">
+<p><strong><i class="fas fa-star"></i>(i) ネイティブマスクの性能:</strong></p>
+<p>SeNaTra-Tのネイティブな結果 (<span class="keyword">49.2 PQ</span>) は、MaskFormer w/ Swin-T (47.7 PQ) を<span class="highlight">かなりの差で上回っています。</span>パラメータ数が少ない (32M vs 42M) にも関わらずです。この傾向は、Table 2aと同様に、異なるモデルサイズでも一貫しています。</p>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-level-up-alt"></i>(ii) M2Fとの組み合わせ:</strong></p>
+<p>M2F + NAT-T バックボーン (54.3 PQ) は、我々の素のネイティブマスクを上回ります。しかし、<span class="keyword">SeNaTra-T + M2F</span> は <span class="highlight">(55 PQ) で最高の性能</span>を達成し、より大きなバックボーン (SeNaTra-L, 58.1 PQ) でさらに向上します。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-trophy"></i>全体として、SeNaTraの<span class="highlight">ネイティブな結果は確立されたベースラインを凌駕</span>し、専用のセグメンテーションヘッドと組み合わせることで<span class="highlight">SOTA性能をさらに強化</span>します。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-vial"></i>4.3 Ablation Studies (アブレーションスタディ)</h3>
+<div class="content-box">
+<p>このサブセクションでは、SeNaTraの設計要素や貢献が性能にどの程度影響を与えるかを分析します。「アブレーションスタディ」とは、モデルや手法の構成要素を一つずつ取り除いたり変更したりして、その影響を調べる実験のことです。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-puzzle-piece"></i>異なるバックボーンステージでのグルーピング (Table 3a)</p>
+<img alt="Table 3(a) Impact of grouping at each backbone stage" class="figure-image" src="table3_a.png" style="margin-bottom:10px;"/>
+<p>Table 3aでは、我々の<span class="keyword">空間グルーピング層</span>を、各バックボーンステージ (S1, S2, S3) で均一なダウンサンプリング（NAT [3]のようなストライド畳み込み、グルーピングなし）に置き換えた場合と比較します。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-arrow-down" style="color: red;"></i><strong>ベースラインの性能低下:</strong> グルーピングなしのベースラインは、教師あり設定 (41.3 mIoU, <span class="highlight">-8.4</span>) とゼロショット設定 (40.1 mIoU, <span class="highlight">-17.2</span>) の両方で、我々の手法より劣っています。このベースラインは、学習されたピクセル割り当ての代わりに、粗いストライド32の特徴マップから高解像度マスクを予測するためにバイリニア補間を利用しています。</li>
+<li><i class="fas fa-arrow-up" style="color: green;"></i><strong>グルーピング層の段階的導入効果:</strong> 各ステージにグルーピング層を導入すると、<span class="highlight">性能が単調に向上する</span>ことが観察されます。</li>
+<li><i class="fas fa-exclamation-triangle" style="color: orange;"></i><strong>最終ステージのみのローカルグルーピング:</strong> 最終ステージでローカルグルーピングを使用すると、両方の指標で性能が大幅に低下します。我々の設計は、初期ステージで効率的なローカルグルーピングを活用することで、画像全体のマスクを可能にします。</li>
+</ul>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-cogs"></i>グルーピング層の設計 (Table 3b)</p>
+<img alt="Table 3(b) Low-level design choices in our grouping layer - detail" class="figure-image" src="table3_b_detail.png" style="margin-bottom:10px;"/>
+<p>Table 3bでは、我々のグルーピング層の設計 (セクション3.1) をSlot Attention [15] と比較します。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: green;"></i><strong>GRUの置き換え:</strong> GRUをスキップ接続に置き換えると、<span class="highlight">+4.8 mIoU の改善</span>が得られます。実際には、これによりImageNet事前学習中の数値的不安定性が解消され、メモリ要件も削減されました。</li>
+<li><i class="fas fa-times-circle" style="color: red;"></i><strong>初期埋め込みのサンプリング:</strong> [15]のように学習されたガウス分布から初期埋め込みをサンプリングすると、安定性が損なわれます。</li>
+<li><i class="fas fa-angle-double-down" style="color: orange;"></i><strong>学習可能な埋め込みの初期化:</strong> [63]のように学習可能な埋め込みを初期化に使用しても、性能は <span class="highlight">2.5 / 3.2 mIoU 低下</span>します。</li>
+<li><i class="fas fa-plus-circle" style="color: green;"></i><strong>相対位置エンコーディング:</strong> さらに相対位置エンコーディングを使用すると、<span class="highlight">追加で1 mIoU 向上</span>します。</li>
+</ul>
+<p><i class="fas fa-thumbs-up"></i>これらの変更をすべて合わせると、ADE20kとZS-VOCでそれぞれ <span class="highlight">6.1 / 5.0 mIoU の大幅な改善</span>が得られ、同時に学習の安定性とメモリフットプリントも向上します。</p>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-microscope"></i>セグメンテーションパラダイム (Table 4)</p>
+<img alt="Table 4: Segmentation paradigms" class="figure-image" src="table4.png"/>
+<p>Table 4では、以下をアブレーション（要素除去実験）します。</p>
+<ol class="unstyled-list">
+<li><span class="badge yellow">(i) バックボーンの選択:</span> 我々のネイティブセグメンテーション能力を持つバックボーン vs. ベースライン[3]</li>
+<li><span class="badge yellow">(ii) Mask2Formerの2つの主要コンポーネント:</span>
+<ul>
+<li>マルチスケール特徴融合のためのピクセルデコーダ</li>
+<li>マスク埋め込みを生成するためのTransformerデコーダ</li>
+</ul>
+</li>
+</ol>
+<div class="info-grid">
+<div class="info-card">
+<p><strong><i class="fas fa-ruler-combined"></i>行1 &amp; 2 (ベースライン比較):</strong></p>
+<p>NAT (グルーピングなし) と我々の手法を、追加コンポーネントなしで比較します。</p>
+<p>我々のベースライン (NAT) はこのタスクで失敗し (PQ 15.9, 行2)、セマンティックセグメンテーションでも性能が劣ります (<span class="highlight">-8.4 mIoU</span>)。</p>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-layer-group"></i>行3 &amp; 4 (ピクセルデコーダ追加):</strong></p>
+<p>ピクセルデコーダ (Mask2FormerのMSDeformAttn) を追加すると、我々の手法には最小限の影響しかありませんが、NATベースラインは大幅に改善します (<span class="highlight">+6.4 mIoU</span>)。</p>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-robot"></i>行5 &amp; 6 (セグメンテーションデコーダ追加):</strong></p>
+<p>セグメンテーションデコーダは、NATがインスタンスをセグメント化するために不可欠であり (54.3 PQ)、セマンティックセグメンテーションにも利益をもたらします (<span class="highlight">+1.7 mIoU</span>)。専用デコーダは、我々の手法のパノプティックセグメンテーションにも利益をもたらし (55.0 PQ, <span class="highlight">+5.8 PQ</span>)、改善の可能性を示しています。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="5_Conclusions">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i>5 Conclusions</h2>
+<div class="glass-card" style="margin-bottom: 30px; padding: 25px; border: 1px solid rgba(74, 111, 165, 0.3);">
+<p style="text-align: center; font-size: 17px; font-family: 'Yomogi', cursive; line-height: 1.6;">
+<i class="fas fa-scroll" style="color: var(--color-primary); font-size: 1.5em; margin-bottom: 10px;"></i><br/>
+            この「結論」セクションへようこそ！<br/>
+            ここでは、本論文で提案した新しい画像セグメンテーションアーキテクチャの<span class="highlight">核心的な成果</span>と、それが今後の研究にどのような<span class="highlight">新しい扉を開くのか</span>をまとめています。私たちの主要な貢献である「<span class="keyword">空間グルーピング層</span>」が、いかにして賢い「<span class="keyword">ネイティブセグメンテーション</span>」を実現するのか、そのエッセンスを掴んでいきましょう！ 📝🔍
+        </p>
+</div>
+<div class="content-box">
+<div class="pipeline-step" style="background-color: rgba(230, 240, 255, 0.7); border-left: 5px solid var(--color-primary);">
+<div style="display: flex; align-items: center; margin-bottom: 10px;">
+<span style="font-size: 2.5em; color: var(--color-primary); margin-right: 15px;">💡</span>
+<div>
+<h3 class="subsection-title" style="margin-top:0; margin-bottom: 5px; padding-left:0; border-left:0; color: var(--color-primary); font-size: 1.2em;"><i class="fas fa-brain"></i> 新アーキテクチャと空間グルーピング層</h3>
+</div>
+</div>
+<p style="font-size: 15px; line-height: 1.5;">
+                本研究は、特にセグメンテーションタスクに焦点を当てた、<span class="highlight">全く新しいアーキテクチャ</span>を提案するものです。このアーキテクチャの心臓部となるのが、私たちが開発した「<span class="keyword">空間グルーピング層 (spatial grouping layer)</span>」です。
+            </p>
+<div class="definition-box" style="margin: 15px 0; background-color: rgba(74,111,165,0.05);">
+<p class="definition-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-puzzle-piece"></i> 空間グルーピング層とは？</p>
+<p>この層は、画像内のピクセルや特徴を、その<span class="highlight">内容に基づいて動的にグループ化</span>する役割を果たします。まるで、賢い仕分け人が関連性の高い情報を集めて「意味のあるまとまり（セグメント）」を作り出すようなイメージです。従来の画一的なダウンサンプリングとは一線を画す、<span class="keyword">コンテンツ適応型</span>の処理が特徴です。</p>
+<div style="text-align: center; margin-top:10px;">
+<img alt="空間グルーピング層の概念図" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 100'%3E%3Cstyle%3E.txt{font-family:Yomogi,cursive;font-size:12px;fill:%232c3e50;}.st0{fill:%234a6fa5;}.st1{fill:%23ff7e5f;}.st2{fill:%235cb85c;}.st3{fill:%239575cd;}.arr{fill:none;stroke:%232c3e50;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;marker-end:url(%23arrowhead);}%3Cdefs%3E%3Cmarker id='arrowhead' markerWidth='10' markerHeight='7' refX='0' refY='3.5' orient='auto'%3E%3Cpolygon points='0 0, 10 3.5, 0 7' fill='%232c3e50'/%3E%3C/marker%3E%3C/defs%3E%3Crect x='20' y='30' width='30' height='30' rx='5' class='st0'/%3E%3Crect x='60' y='30' width='30' height='30' rx='5' class='st1'/%3E%3Crect x='20' y='70' width='30' height='30' rx='5' class='st2' opacity='0.7'/%3E%3Crect x='60' y='70' width='30' height='30' rx='5' class='st3' opacity='0.7'/%3E%3Ctext x='40' y='15' class='txt'%3E入力トークン群%3C/text%3E%3Cline x1='100' y1='50' x2='140' y2='50' class='arr'/%3E%3Ctext x='100' y='25' class='txt'%3Eグルーピング層%3C/text%3E%3Ccircle cx='180' cy='35' r='18' class='st0'/%3E%3Ccircle cx='230' cy='65' r='18' class='st1'/%3E%3Ctext x='190' y='15' class='txt'%3Eグループ化されたトークン%3C/text%3E%3C/svg%3E" style="width: 300px; height: auto; margin: 10px auto; display:block;"/>
+</div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"><i class="fas fa-chevron-down" style="font-size: 1.5em; color: var(--color-primary);"></i></div>
+<div class="content-box">
+<div class="pipeline-step" style="background-color: rgba(255, 240, 230, 0.7); border-left: 5px solid var(--color-secondary);">
+<div style="display: flex; align-items: center; margin-bottom: 10px;">
+<span style="font-size: 2.5em; color: var(--color-secondary); margin-right: 15px;">🌟</span>
+<div>
+<h3 class="subsection-title" style="margin-top:0; margin-bottom: 5px; padding-left:0; border-left:0; color: var(--color-secondary); font-size: 1.2em;"><i class="fas fa-thumbs-up"></i> 設計の輝かしい利点</h3>
+</div>
+</div>
+<p style="font-size: 15px; line-height: 1.5;">
+                私たちの提案する設計は、既存の技術と比較して、方法論的に<span class="highlight">大きな進歩</span>をもたらします。主な利点は以下の通りです。
+            </p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="feature-item" style="border: 2px dashed var(--color-accent1); padding: 15px; background-color: #f0fff0;">
+<span style="font-size: 2.5em; color: var(--color-accent1); margin-bottom: 8px;">🔗</span>
+<h4 style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: var(--color-accent1); margin-bottom: 5px;">完全微分可能</h4>
+<p style="font-size: 13px;">モデル全体がスムーズに学習可能（エンドツーエンドで学習可能）です。これにより、複雑な調整なしに最適化が進みます。</p>
+</div>
+<div class="feature-item" style="border: 2px dashed var(--color-accent2); padding: 15px; background-color: #f5f0ff;">
+<span style="font-size: 2.5em; color: var(--color-accent2); margin-bottom: 8px;">🧠✨</span>
+<h4 style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: var(--color-accent2); margin-bottom: 5px;">強力な帰納的バイアス</h4>
+<p style="font-size: 13px;">モデルが「セグメントとは何か」を自然に理解しやすい構造になっています。これにより、明示的なピクセル単位の正解がなくても、意味のある領域分割を学習する傾向があります。</p>
+</div>
+<div class="feature-item" style="border: 2px dashed var(--color-accent3); padding: 15px; background-color: #fff8e1;">
+<span style="font-size: 2.5em; color: var(--color-accent3); margin-bottom: 8px;">📏↔️</span>
+<h4 style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: var(--color-accent3); margin-bottom: 5px;">高解像度への対応力</h4>
+<p style="font-size: 13px;">大きな入力画像に対しても効率的に処理できるよう設計されており、実世界の高解像度データにも対応可能です。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"><i class="fas fa-chevron-down" style="font-size: 1.5em; color: var(--color-primary);"></i></div>
+<div class="content-box">
+<div class="pipeline-step" style="background-color: rgba(230, 255, 230, 0.7); border-left: 5px solid var(--color-accent1);">
+<div style="display: flex; align-items: center; margin-bottom: 10px;">
+<span style="font-size: 2.5em; color: var(--color-accent1); margin-right: 15px;">📊</span>
+<div>
+<h3 class="subsection-title" style="margin-top:0; margin-bottom: 5px; padding-left:0; border-left:0; color: var(--color-accent1); font-size: 1.2em;"><i class="fas Vials"></i> 実験が語る成果</h3>
+</div>
+</div>
+<p style="font-size: 15px; line-height: 1.5;">
+                数々の実験を通じて、私たちのモデルの有効性を具体的に示しました。
+            </p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+<div class="info-card" style="background-color: #fdfefe; border-top: 3px solid var(--color-primary);">
+<div style="text-align:center; margin-bottom:10px;">
+<span style="font-size: 2.5em;">🌱 <i class="fas fa-magic" style="color: var(--color-primary); margin: 0 5px;"></i> 🖼️</span>
+</div>
+<h4 style="font-family: 'Yomogi', cursive; text-align: center; color: var(--color-primary); margin-bottom:10px;">マスク教師なしでのセグメント出現</h4>
+<p style="font-size: 14px;">最も注目すべきは、ピクセル単位での<span class="highlight">詳細な正解マスクデータ (explicit mask supervision) を与えなくても</span>、モデルが自律的に画像内から意味のあるセグメント（物体や領域のまとまり）を発見し、形成することを示した点です。これは、モデルが画像の構造をより深く理解している証拠です。</p>
+</div>
+<div class="info-card" style="background-color: #fefdfd; border-top: 3px solid var(--color-secondary);">
+<div style="text-align:center; margin-bottom:10px;">
+<span style="font-size: 2.5em;">⚙️ <i class="fas fa-cogs" style="color: var(--color-secondary); margin: 0 5px;"></i> ⚡</span>
+</div>
+<h4 style="font-family: 'Yomogi', cursive; text-align: center; color: var(--color-secondary); margin-bottom:10px;">効率的な下流タスクへの応用</h4>
+<p style="font-size: 14px;">この「ネイティブ」なセグメンテーション能力は、その後のセグメンテーションタスク（例えば、物体の種類を識別するセマンティックセグメンテーションなど）を<span class="highlight">非常にシンプルかつ効率的</span>に行うための新しい道筋（パラダイム）を提示します。複雑なデコーダーが不要になるケースも出てきます。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"><i class="fas fa-chevron-down" style="font-size: 1.5em; color: var(--color-primary);"></i></div>
+<div class="bubble-box" style="border-color: var(--color-accent2); margin-top: 30px;">
+<div style="display: flex; align-items: center; margin-bottom: 15px;">
+<span style="font-size: 2.5em; color: var(--color-accent2); margin-right: 15px;">🚀</span>
+<div>
+<h3 class="subsection-title" style="font-size: 1.3em; margin-top:0; margin-bottom:0; padding-left:0; border-left:0; color: var(--color-accent2);"><i class="fas fa-lightbulb"></i> 新たな視点：セグメンテーション中心のバックボーン</h3>
+</div>
+</div>
+<p style="font-size: 16px; line-height: 1.6;">
+            本研究は、セグメンテーションというコンピュータビジョンにおける<span class="keyword">基本的な認識タスク</span>が、もはや特別なデコーダーモジュール（出力層に近い部分）に委ねられるべきものではなく、モデルの<span class="highlight">内部表現 (internal representations) に本質的に組み込むことができる</span>ことを示しています。
+        </p>
+<div class="framework-box" style="background-color: rgba(149, 117, 205, 0.08); border-color: var(--color-accent2);">
+<p class="framework-title" style="color: var(--color-accent2); font-family: 'Yomogi', cursive;"><i class="fas fa-road"></i> 将来への展望</p>
+<p style="font-size: 14px;">これは、セグメンテーションタスクそのものを中心に据えた新しいバックボーンアーキテクチャ（特徴抽出部）の開発という、<span class="highlight">新たな研究方向性</span>を切り拓くものです。モデルが「見ること」と「分けること」を同時に、より自然な形で学習する未来を示唆しています。</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-map-signs" style="font-size: 2.5em; color: var(--color-accent2); opacity: 0.7;"></i>
+<i class="fas fa-arrow-right" style="font-size: 1.5em; color: var(--color-accent2); margin: 0 15px; opacity: 0.7;"></i>
+<i class="fas fa-drafting-compass" style="font-size: 2.5em; color: var(--color-accent2); opacity: 0.7;"></i>
+</div>
+</div>
+<p style="text-align: center; font-family: 'Kaisei Decol', serif; font-size: 16px; margin-top: 20px; color: var(--color-dark);">
+<span class="highlight" style="background-color: rgba(149, 117, 205, 0.2); padding: 5px 8px; border-radius: 5px;">「セグメンテーションを、モデルのDNAへ。」</span> これが私たちのメッセージです。
+        </p>
+</div>
+<div style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed var(--color-gray);">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 16px; color: var(--color-gray);">
+<i class="fas fa-book-reader" style="margin-right: 5px;"></i> この論文の結論をまとめると、コンテンツに基づいた賢いグループ分けで、セグメンテーションをモデルの得意技にする新しいアーキテクチャを提案し、その可能性を示した、ということですね！
+        </p>
+</div>
+</div>
+<div class="section-card" id="Appendix">
+<h2 class="section-title"><i class="fas fa-book-open"></i>Appendix</h2>
+<div class="content-box">
+<p>この補遺（Appendix）では、論文の主要な部分では十分に触れることができなかった追加情報を提供し、提案手法である<span class="keyword">SeNaTra</span> (Native Segmentation Vision Transformer) の理解を深めることを目的としています。具体的には、以下の内容について詳細に解説します。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-comments"></i> A. 一般的な議論</p>
+<p>SeNaTraの強み、限界、そして今後の研究の方向性について議論します。</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-globe"></i> B. 広範な影響に関する声明</p>
+<p>SeNaTraが社会に与える可能性のある影響（機会と課題）を考察します。</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-palette"></i> C. ゼロショット質的結果</p>
+<p>画像-テキストペアによる教師あり学習を用いた場合の、SeNaTraによるゼロショットセグメンテーションの視覚的な結果を示します。</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-cogs"></i> D. 追加結果と実装詳細</p>
+<p>さまざまな実験設定における追加の実験結果と、モデルの実装に関する詳細情報を提供します。</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-microchip"></i> E. 効率とパフォーマンスの考慮事項</p>
+<p>SeNaTraの主要コンポーネントである空間グルーピング層の実装における低レベルな詳細、実行時間、計算コストについて議論します。</p>
+</div>
+</div>
+<p>これらの補足情報を通じて、SeNaTraのアーキテクチャ、性能、そして応用の可能性について、より包括的な理解を得ていただければ幸いです。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-comments"></i>A Discussion</h3>
+<div class="content-box">
+<p><span class="keyword">SeNaTra</span>は、<span class="highlight">空間グルーピング層 (spatial grouping layers)</span> を通じてネイティブセグメンテーション（画像の特徴抽出プロセス自体でセグメンテーションを行うこと）を可能にする新しいバックボーンアーキテクチャのファミリーを提案するものです。</p>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-lightbulb"></i> SeNaTraの主な成果</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 実験で示されているように、<span class="keyword">SeNaTra</span>は、純粋なネイティブ設定（ゼロショットを含む）においても、追加のセグメンテーションヘッドを用いた場合においても、強力なベースラインや従来のグルーピングベースの研究を上回る性能を示しました。</li>
+</ul>
+</div>
+<p>しかし、有望な結果にもかかわらず、<span class="keyword">SeNaTra</span>にはいくつかの限界点があります。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 計算オーバーヘッド</p>
+<p>入力解像度に対してモデルの計算量がおおよそ線形にスケールする（詳細はAppendix E.2参照）一方で、グルーピング層は、その軽量さからデファクトスタンダードとなっている<span class="highlight">ストライド畳み込み (strided convolutions)</span>と比較して計算オーバーヘッドを伴います。</p>
+<p>この追加の複雑さは、<span class="keyword">ネイティブセグメンテーション</span>機能を利用する際には大部分が償却されますが、モデルを外部のヘッドと統合する際には依然として限界となります。Appendix E.1で説明されているように、効率的なCUDAベースの実装が提供されていますが、低レベルのCUDA最適化と一般的なモジュール設計の両面で改善の余地があります。</p>
+</div>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-balance-scale"></i> セマンティックセグメンテーションとパノプティックセグメンテーションの性能差</p>
+<p>もう一つの考慮事項は、ネイティブな結果がセマンティックセグメンテーションとパノプティックセグメンテーションの両方で良好な性能を示す一方で、モデルが<span class="highlight">セマンティックセグメンテーション</span>においてより大きなゲインをもたらすという点です。</p>
+<div class="bubble-box">
+<p><span class="keyword">セマンティックセグメンテーション (Semantic Segmentation)</span>: 画像内の各ピクセルがどの物体クラスに属するかを識別するタスク。（例：このピクセルは「犬」、あのピクセルは「車」）</p>
+<p><span class="keyword">パノプティックセグメンテーション (Panoptic Segmentation)</span>: セマンティックセグメンテーションに加えて、同じクラスの異なるインスタンス（個体）も区別するタスク。（例：このピクセルは「犬1」、あのピクセルは「犬2」）</p>
+</div>
+<p>考えられる説明としては、<span class="highlight">ImageNet事前学習</span>中に獲得されたバイアスが影響している可能性があります。この段階では、モデルはグルーピング層で同じクラスの異なるインスタンスを分離するように促されるのではなく、むしろ全体的なセマンティクス（意味）に焦点を合わせるように学習します。したがって、事前学習済みモデルがグルーピング層を通じて知識を転移し、セマンティックセグメンテーションに適応するために必要な変化は、インスタンスの分離が必要となるパノプティックセグメンテーションに必要な変化よりも小さいと考えられます。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tools"></i> 今後の展望</p>
+<p>実験全体を通して、アーキテクチャ設計のみによってもたらされる利点を強調するために、既成の事前学習レシピを使用することに焦点を当てました。しかし、この観察に対処し、<span class="highlight">視覚的グラウンディング (visual grounding)</span> [64] に焦点を当てた研究など、オブジェクト指向の事前学習スキームを設計するための複数の刺激的な将来の研究機会があると考えられます。</p>
+<div class="bubble-box">
+<p><span class="keyword">視覚的グラウンディング (Visual Grounding)</span>: テキスト記述（例：「赤いリンゴ」）を画像内の対応する視覚的領域に関連付けるタスク。</p>
+</div>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-globe"></i>B Broader Impact Statement</h3>
+<div class="content-box">
+<p>私たちの研究は、主に<span class="keyword">セグメンテーション</span>の分野に応用可能な新しい<span class="highlight">ビジョンバックボーンアーキテクチャ</span>を提案するものです。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-cogs"></i> 広範な応用可能性</p>
+<p>このタスク、そしてコンピュータビジョンシステム全体の広範な範囲と潜在的な応用を考えると、私たちのモデルはこの分野に共通する機会と課題の両方を継承しています。</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-exclamation-triangle"></i> 潜在的な課題：バイアスと悪用</p>
+<p>他の一般的なデータ駆動型モデルと同様に、訓練データに存在する<span class="highlight">バイアス</span>を示す可能性があり、懸念される用途に悪用される可能性もあります。</p>
+<div class="bubble-box">
+<p><span class="keyword">データ駆動型モデル (Data-driven model)</span>: 大量のデータからパターンを学習することで性能を発揮するモデル。訓練データに含まれる偏りがモデルの予測に影響を与えることがある。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-seedling"></i> ポジティブな影響の可能性</p>
+<p>しかし、私たちの経験的な結果のいくつかは、既存のソリューションと比較して<span class="highlight">パラメータ効率</span>と<span class="highlight">計算効率</span>の向上、そして<span class="highlight">データ効率</span>の向上を示しています。</p>
+<p>これらの特性は、生命科学における応用など、大規模なデータセットや計算リソースへのアクセスが限られている<span class="keyword">リソース制約のある環境</span>において、ポジティブな影響をもたらす可能性があります。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-cogs"></i></div>
+<p>パラメータ効率の向上</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-tachometer-alt"></i></div>
+<p>計算効率の向上</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-database"></i></div>
+<p>データ効率の向上</p>
+</div>
+</div>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-palette"></i>C Zero-Shot Qualitative Results</h3>
+<div class="content-box">
+<p>図4では、<span class="keyword">SeNaTra-B</span>（SeNaTraのBaseモデルバリアント）を<span class="highlight">画像-テキストペア</span>（具体的にはCC3MおよびCC12Mデータセット）で事前学習した場合の、各ステージごとのグループと最終的に予測されたセマンティックマスクの両方を示しています。これらの結果は、PASCAL VOCデータセット[46]の検証画像で得られたものです。</p>
+<img alt="Figure 4: Qualitative zero-shot segmentation" src="zeroshot_segmentation_qualitative_results.jpg"/>
+<p class="caption" style="text-align: center; font-style: italic; color: var(--color-gray); margin-top: 5px;">図4: 画像-テキスト対照学習から学習されたゼロショットセグメンテーションの質的結果。PASCAL VOC検証画像[46]上でゼロショット設定で得られた階層的な最終分解と、それに対応する予測セマンティックマスク、および正解マスクを可視化しています。これらのモデルは訓練中にいかなる形式のマスク教師も受けておらず、画像-テキストペアに対する標準的な対照学習目的で訓練されたことに注意してください。最終マスクは、いかなるヒューリスティックな後処理もなしに得られています。</p>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-search-plus"></i> 図4の解説</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-image" style="color: var(--color-primary);"></i> <strong>Input Image (入力画像):</strong> 元となる画像です。</li>
+<li><i class="fas fa-layer-group" style="color: var(--color-accent2);"></i> <strong>Stage 2 Groups:</strong> SeNaTraの2番目のステージで形成されたグループを示します。初期の細かい領域分割が見られます。</li>
+<li><i class="fas fa-object-group" style="color: var(--color-accent2);"></i> <strong>Stage 3 Groups:</strong> 3番目のステージで形成されたグループ。Stage 2よりも粗い、より意味のあるまとまりが見られます。</li>
+<li><i class="fas fa-shapes" style="color: var(--color-accent2);"></i> <strong>Final Stage 4 Groups:</strong> 最終ステージ（4番目）で形成されたグループ。オブジェクトや領域がより明確に区画されています。</li>
+<li><i class="fas fa-paint-brush" style="color: var(--color-accent1);"></i> <strong>Predicted Masks (予測マスク):</strong> SeNaTraがテキスト埋め込みを用いて最終トークンを照会することで生成したセマンティックセグメンテーションマスクです。</li>
+<li><i class="fas fa-check-square" style="color: var(--color-secondary);"></i> <strong>Ground Truth Masks (正解マスク):</strong> 人手でアノテーションされた正しいセグメンテーションマスクです。</li>
+</ul>
+</div>
+<div class="arrow-connector"></div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 観察結果</p>
+<ul>
+<li>クラスラベルのみで教師あり学習されたモデルと同様に、ステージ間で<span class="highlight">境界を保持するグループの階層</span>が観察されます。これは、SeNaTraが画像の構造を段階的に捉えていることを示唆します。</li>
+<li>モデルの最終グループは、オブジェクトや領域を<span class="highlight">過剰にセグメンテーション（細かく分割しすぎる）する傾向</span>が強いことに気づきます。これは、テキスト埋め込みに存在するより豊富で密な意味内容に起因する可能性があり、よりきめ細かい視覚表現から恩恵を受ける可能性があります。つまり、テキストが詳細な情報を持っているため、画像も細かく分割しようとする、ということです。</li>
+<li>注目すべきことに、最終トークンをテキスト埋め込みで照会することにより、<span class="highlight">高品質なセマンティックマスク</span>（5列目）が得られます。これは、モデルのピクセル分割が<span class="keyword">意味的認識 (semantic awareness)</span> を持っていることを示唆しています。つまり、SeNaTraは単にピクセルをグループ化するだけでなく、それらのグループが何であるかを理解しているということです。</li>
+</ul>
+</div>
+<p><span class="badge yellow">重要ポイント</span> これらの結果は、訓練中に<span class="highlight">一切のマスク教師（ピクセルレベルの正解ラベル）を受けずに</span>達成されており、画像とテキストのペアに対する標準的な対照学習目的のみで訓練されています。最終マスクは、ヒューリスティックな後処理（例えば、CRFなど）を一切行わずに得られています。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-cogs"></i>D Additional Results and Implementation Details</h3>
+<div class="content-box">
+<p>このセクションでは、論文の主要部分で説明された各実験設定に関する<span class="keyword">追加の結果</span>と<span class="keyword">実装の詳細</span>を提供します。私たちのコードと事前学習済みモデルは公開される予定です。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cubes"></i> モデルバリアント (Model variants)</p>
+<p>セクション4.1で説明したように、それぞれパラメータ数が増加する3つの異なるモデルバリアント（Tiny, Base, Large）の結果を示します。表5では、各バリアントの構成を示します。具体的には以下の通りです。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-layer-group" style="color: var(--color-accent2);"></i> (i) <span class="highlight">トランスフォーマーエンコーダ層の数 (# layers)</span>: 自己注意機構とそれに続く残差接続付きMLPからなるブロックの数。</li>
+<li><i class="fas fa-ruler-combined" style="color: var(--color-accent2);"></i> (ii) <span class="highlight">最終埋め込み次元 (dim)</span>: 出力トークンの次元数。</li>
+<li><i class="fas fa-percentage" style="color: var(--color-accent2);"></i> (iii) <span class="highlight">MLP比率 (MLP ratio)</span>: トランスフォーマーエンコーダ層における前述のMLPの隠れ層の次元の比率。</li>
+</ul>
+<p>各モデルバリアントに使用される全体的な構成は[3]から借用していますが、largeバリアントは元の研究では提示されていませんでした。[3]の設計を選択したのは、分類と密な予測の両方において、既存のネットワークの中で強力なベースライン性能を示しているためです。</p>
+</div>
+<div class="table-wrapper">
+<p style="text-align: center; font-weight: bold; margin-bottom: 5px;">表5: モデルバリアント</p>
+<p style="text-align: center; font-style: italic; color: var(--color-gray); margin-bottom: 10px;">各バックボーンバリアントのモデル構成をまとめたもの：各ステージで使用されるトランスフォーマーエンコーダ層の数（# layers）、出力トークン次元（dim）、およびトランスフォーマーエンコーダ層のMLP隠れ次元比率（MLP ratio）。</p>
+<img alt="Table 5: Model variants" src="table6.png" style="width: 80%; margin-bottom: 20px;"/>
+</div>
+<div class="glass-card">
+<p class="note-title"><i class="fas fa-compass"></i> ロータリー位置エンコーディング (Rotary Positional Encodings, RoPe)</p>
+<p>[3]の元の研究では、各バックボーンステージで使用される自己注意層は<span class="highlight">相対位置エンコーディング (relative positional encodings)</span> [65]で実装されていました。最近、<span class="keyword">RoPe (Rotary Positional encodings)</span> [66, 67]は、ペアごとの位置情報を原理的な方法でエンコードし、自己注意行列への明示的なアクセスを必要としない能力のために人気を集めています。</p>
+<p>これは、自己注意の<span class="highlight">融合実装 (fused implementations)</span> [68, 69]の使用を可能にし、大幅な実行時改善をもたらすため、実行時間とメモリ消費の観点から非常に有益です。</p>
+<p>効率のために、[3]で元々使用されていた自己注意層の相対位置バイアスを<span class="keyword">RoPe</span>に置き換え、[69]から最近提案された融合カーネルを活用しました。経験的に、下流の分類およびセグメンテーション性能の無視できる程度の低下と、速度の大幅な向上が観察されました。特に新しいハードウェア（例：A100）では、この変更により実行時間が約<span class="highlight">30%削減</span>され、私たちの空間グルーピング層によって導入されるオーバーヘッドを相殺するのに役立ちます。</p>
+<div class="bubble-box">
+<p><span class="keyword">相対位置エンコーディング</span>: トークン間の相対的な位置関係をエンコードする方法。各トークンペアに対して位置情報を計算する。</p>
+<p><span class="keyword">ロータリー位置エンコーディング (RoPe)</span>: トークン埋め込みを回転させることで位置情報をエンコードする比較的新しい手法。絶対位置と相対位置の両方の性質を捉えることができ、効率的。</p>
+<p><span class="keyword">融合実装 (Fused Implementation)</span>: 複数の計算ステップ（カーネル）を一つにまとめることで、メモリアクセスを減らし、計算を高速化する技術。</p>
+</div>
+</div>
+</div>
+<h4 class="section-title"><i class="fas fa-images"></i>D.1 ImageNet Classification</h4>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-wrench"></i> ImageNet-1k 事前学習：実装詳細</p>
+<div class="framework-box">
+<p>モデルを解像度 \(224 \times 224\) で300エポック、ゼロから学習させました。学習ハイパーパラメータ（オプティマイザ、学習率スケジューラ、オーグメンテーション設定など）は全て[1]に従っています。しかし、<span class="keyword">MixUpオーグメンテーション</span>は結果を悪化させるため無効にしました。この性能低下は、アルファ合成画像がグルーピング層に導入する曖昧さが原因である可能性が高いです。[3]とは異なり、追加のクールダウンエポックは行いませんでした。[1, 3]に従い、正則化のために<span class="highlight">stochastic depth</span> [71]を使用し、tinyバリアントとbaseバリアントのデフォルトの生存確率はそれぞれ0.3と0.5としました。学習には8台のA100 GPUで約36時間かかりました。</p>
+<div class="bubble-box">
+<p><span class="keyword">MixUpオーグメンテーション</span>: 2つの画像をランダムな比率で混合し、それらのラベルも同じ比率で混合するデータ拡張手法。過学習を防ぐ効果があるが、本研究ではグルーピング層との相性が悪かった。</p>
+<p><span class="keyword">Stochastic Depth</span>: 学習中にネットワークの一部の層をランダムにドロップアウト（無効化）する正則化手法。深いネットワークの学習を助ける。</p>
+</div>
+</div>
+<div class="table-wrapper">
+<p style="text-align: center; font-weight: bold; margin-bottom: 5px;">表6: ImageNet-1k および -22k での画像分類</p>
+<p style="text-align: center; font-style: italic; color: var(--color-gray); margin-bottom: 10px;">様々な標準的およびグルーピングベースのバックボーンを、1kでゼロから学習した場合と22kで事前学習した場合の両方で比較しています。</p>
+<img alt="Table 6: Image classification on ImageNet-1k and -22k" src="table7.png" style="width: 100%; margin-bottom: 20px;"/>
+</div>
+<p class="note-title"><i class="fas fa-wrench"></i> ImageNet-22k 事前学習：実装詳細</p>
+<div class="framework-box">
+<p>[1, 25]に従い、より大規模なImageNet-22kデータセット（約22kクラスにラベル付けされた約1600万枚の画像から構成）で、より大きなモデルバリアントを90エポック事前学習しました。この設定では、[1]に従い、stochastic depthの生存確率を0.2に減らしました。先行研究[1, 25]に従い、これらのモデルをImageNet-1kデータセットで解像度 \(384 \times 384\) でさらに30エポックファインチューニングし、ImageNet-1k-valでのtop-1精度を報告します。前の設定と同様に、事前学習とファインチューニングの両方で[1]の学習レシピとパラメータに従いましたが、MixUpオーグメンテーションは除外しました。事前学習は16台のA100 GPUで約1週間行われ、ImageNet-1kでのファインチューニングは8台のA100で約6時間かかりました。</p>
+</div>
+<p class="note-title"><i class="fas fa-comments"></i> 議論</p>
+<div class="glass-card">
+<p>表6では、同等の教師あり設定に従った最先端の手法に対する私たちのモデルの定量的結果を示しています。本文で述べたように、私たちの手法は最先端の性能と同等でありながら、図??で質的に観察できるように、強力なピクセルレベルの局所化特性の出現を可能にします。</p>
+<div class="bubble-box">
+<p><span class="keyword">Top-1 Accuracy (Top-1精度)</span>: モデルが予測したクラスの中で最も確率の高いものが、正解クラスと一致する割合。</p>
+<p><span class="keyword">ピクセルレベルの局所化特性</span>: 画像内のオブジェクトや領域をピクセル単位で正確に特定する能力。</p>
+</div>
+</div>
+</div>
+<h4 class="section-title"><i class="fas fa-file-alt"></i>D.2 Image-Text Pretraining</h4>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-wrench"></i> 事前学習：実装詳細</p>
+<div class="framework-box">
+<p>本文で説明したように、[41]の学習設定に従います。ただし、[41]は評価コードを公開しましたが、モデルを学習するためのスクリプトや指示は提供していなかったことに注意してください。報告された結果を再現しようとしましたが、報告された数値よりも1〜3 mIoU低い結果となりました。</p>
+<p>彼らの元の論文で指定されたハイパーパラメータに従い、初期学習率 \(3 \times 10^{-4}\) で20エポック学習し、最小学習率 \(3 \times 10^{-5}\) に至るコサイン減衰スケジューラを使用しました。最初の3kイテレーション中に線形学習率ウォームアップを適用し、バッチサイズ4096で合計20エポック（約68kイテレーション）学習しました。ImageNetモデルと同様に、正則化のためにstochastic depth [71]を使用し、tinyモデルとbaseモデルの生存確率はそれぞれ0.2と0.3に設定しました。RedCaps12Mからの追加データを使用した構成では、すべてのハイパーパラメータを同一に保ち、すべてのデータセット（CC3M、CC12M、RedCaps12M）の和集合で20エポック学習し、合計126kイテレーションとなりました。学習は16台のA100 GPUで実施され、デフォルト構成では約2日間、RedCaps12Mデータセットを使用した場合は約4日間かかりました。</p>
+<div class="bubble-box">
+<p><span class="keyword">mIoU (mean Intersection over Union)</span>: セグメンテーションの評価指標。予測領域と正解領域の共通部分を和集合で割った値（IoU）をクラスごとに計算し、その平均を取る。</p>
+<p><span class="keyword">コサイン減衰スケジューラ (Cosine Decay Scheduler)</span>: 学習率をエポックの進行とともにコサインカーブに従って徐々に減少させるスケジューリング手法。</p>
+<p><span class="keyword">線形学習率ウォームアップ (Linear Learning Rate Warmup)</span>: 学習の初期段階で学習率を徐々に増加させる手法。学習の安定化に寄与する。</p>
+<p><span class="keyword">CC3M, CC12M, RedCaps12M</span>: 大規模な画像-テキストペアのデータセット。</p>
+</div>
+</div>
+<p class="note-title"><i class="fas fa-balance-scale-right"></i> バックボーンレベルの比較</p>
+<div class="glass-card">
+<p>説明したように、[41]で説明されている実験設定に従い、そのバックボーン（ViT, [24]）を提案するSeNaTraバックボーンに置き換えました。この変更の影響を表7に示します。<span class="keyword">SimSeg [41]</span>は粗いパッチクラス活性を生成し、ピクセル精度マスクを得るために<span class="highlight">Conditional Random Fields (CRF) [57]</span>による後処理に依存していることに注意してください。私たちの手法はそのようなヒューリスティックな後処理を必要とせず、代わりにアップサンプリング操作（セクション3.2）を利用してピクセルレベルの出力を生成します。</p>
+</div>
+<div class="table-wrapper">
+<p style="text-align: center; font-weight: bold; margin-bottom: 5px;">表7: テキスト教師ありゼロショットセグメンテーションのためのバックボーン比較</p>
+<p style="text-align: center; font-style: italic; color: var(--color-gray); margin-bottom: 10px;">私たちの手法は、CRF後処理に依存せずに、ViTバックボーンで学習されたSimSeg [41]を大幅に上回ります。</p>
+<img alt="Table 7: Backbone comparison for text-supervised zero-shot segmentation" src="table8.png" style="width: 100%; margin-bottom: 20px;"/>
+</div>
+<p>Baseモデルの場合、私たちの手法は平均mIoUで<span class="highlight">3.5ポイントの向上</span>をもたらし、後処理なしの出力を比較するとさらに<span class="highlight">6.7 mIoU向上</span>します。</p>
+<p class="note-title"><i class="fas fa-search"></i> ゼロショットセグメンテーション推論 (Zero-shot Segmentation Inference)</p>
+<div class="framework-box">
+<p>本文で説明したように、画像-テキスト事前学習済みモデルの性能をゼロショットセマンティックセグメンテーションで定量的に評価します。推論の詳細は次のとおりです。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge blue">1</span> <span class="keyword">テキスト埋め込みの取得:</span> \(C\)個のターゲットクラスを持つデータセットが与えられた場合、テンプレートプロンプト（例： <code style="font-family: 'Courier New', Courier, monospace; background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px;">"An image of {CLASS}"</code>）をテキストエンコーダ（[41]の元のテンプレートを使用）に通すことで、対応する\(C\)個のテキスト埋め込みを取得します。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge blue">2</span> <span class="keyword">類似度計算:</span> 次に、\(N^{\text{out}}\)個の最終射影画像トークンとターゲットクラス埋め込みの間の<span class="highlight">ドット積類似度</span>を計算します。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge blue">3</span> <span class="keyword">類似度マップの生成:</span> このプロセスをすべての\(C\)個のテキスト埋め込みに対して繰り返すことにより、\(N^{\text{out}} \times C\)の非正規化類似度マップを取得し、これをセクション3.2で説明した遷移行列を用いて入力解像度（つまりパッチレベル）にアップサンプリングします。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge blue">4</span> <span class="keyword">クラス予測:</span> クラスに対してargmaxを適用することにより、各入力パッチの最終クラス予測を取得します。</p>
+</div>
+</div>
+<p>追加の背景クラスを持つデータセット（Pascal VOC [46]、Pascal Context [47]、COCO-obj [48]）の場合、マスク値の<span class="highlight">閾値</span>を設定する必要があります。そのため、[41]の元の方法を使用します。これは、データセット内の上位kクラスの画像レベル-テキスト埋め込み類似度を計算し、追加の標準偏差で平均値を計算することから構成されます。残りのデータセットについては、すべてのクラスに対してピクセルごとのargmaxを適用するだけです。</p>
+<p>最後に、クラス全体の類似度を、画像レベルの類似度（プーリング後）の平均と、最終トークン全体の最大空間類似度（つまり、最終グループ全体の最大類似度）として計算することにより、わずかな性能向上が得られます。</p>
+<div class="bubble-box">
+<p><span class="keyword">ゼロショットセマンティックセグメンテーション</span>: 学習時に見たことのないクラスに対してもセグメンテーションを行うタスク。通常、クラス名などのテキスト情報と画像特徴を関連付けることで実現する。</p>
+<p><span class="keyword">ドット積類似度</span>: 2つのベクトル間の類似度を測る指標の一つ。ベクトルが同じ方向を向いているほど大きな値を取る。</p>
+<p><span class="keyword">Argmax</span>: 最も大きな値を持つ要素のインデックス（この場合はクラスラベル）を返す操作。</p>
+</div>
+</div>
+</div>
+<h4 class="section-title"><i class="fas fa-mask"></i>D.3 Native Segmentation Models with Mask Supervision</h4>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-paint-roller"></i> セマンティックセグメンテーション：実装詳細</p>
+<div class="framework-box">
+<p>本文で説明したように、セマンティックセグメンテーションのための私たちの<span class="keyword">ネイティブセグメンテーション</span>は、最終トークン埋め込みを2層MLPに通し、その結果を学習済みアップサンプラーで入力解像度にアップサンプリングすることによってマスクを取得します。私たちのモデルは<span class="highlight">mmsegmentation</span>で実装されています。簡単のため、元のFCN [27]のデフォルト構成に従います。これは、MLPに通した後に最終トークン埋め込みをさらに連結するもので、スキップ接続に似ています。この設計を徹底的に調査したわけではなく、より良い代替案が存在する可能性があります。</p>
+<p>さらに[27]の元の構成に従い、学習中に最終層の一つ手前のステージに<span class="highlight">補助損失 (auxiliary loss)</span> を追加します。これは、最終層のMLPと同様に使用される追加のMLPから構成されます。この補助MLPはテスト時には無視されます。モデルは、Swin TransformerとUperNetを組み合わせて使用する場合と同じ学習ハイパーパラメータで学習されますが、唯一の違いは、重み減衰を0.05に増加させ、元の160kイテレーションではなく80kイテレーションという短いスケジュールである点です。学習は8台のA100 GPUで約6時間行われます。</p>
+<div class="bubble-box">
+<p><span class="keyword">ネイティブセグメンテーション (Native Segmentation)</span>: バックボーンネットワーク自体がセグメンテーションマスクを生成する能力を持つこと。専用のデコーダヘッドを必要としないか、簡素化できる。</p>
+<p><span class="keyword">mmsegmentation</span>: オープンソースのセマンティックセグメンテーションツールボックス。</p>
+<p><span class="keyword">FCN (Fully Convolutional Network)</span>: 全結合層を畳み込み層に置き換えることで、任意のサイズの入力画像に対してピクセル単位の予測を可能にしたネットワーク。</p>
+<p><span class="keyword">スキップ接続 (Skip Connection)</span>: ネットワークの浅い層からの特徴を深い層に直接伝える接続。勾配消失問題の緩和や、詳細情報の保持に役立つ。</p>
+<p><span class="keyword">補助損失 (Auxiliary Loss)</span>: ネットワークの中間層にも損失関数を設けて学習を促す手法。深いネットワークの学習を助ける。</p>
+<p><span class="keyword">重み減衰 (Weight Decay)</span>: 過学習を防ぐための正則化手法の一つ。損失関数に重みのL2ノルムを加えることで、重みが大きくなりすぎるのを防ぐ。</p>
+</div>
+</div>
+<p class="note-title"><i class="fas fa-object-ungroup"></i> パノプティックセグメンテーション：実装詳細</p>
+<div class="framework-box">
+<p>本文で説明したように、パノプティックセグメンテーションでは、<span class="highlight">「モノ（things）」</span>と<span class="highlight">「背景（stuff）」</span>を別々にターゲットとする2つの主要なMLPを使用します。この分割の背後にあるロジックは、背景領域の過剰セグメンテーションエラーを罰しないようにするためです。したがって、セマンティックセグメンテーションモデルと同様に、背景領域をターゲットとするMLPを使用し、各入力トークンに対して個別にクラス予測を生成します。</p>
+<p>「モノ」をターゲットとするMLPは、最終ステージで割り当て値が最も大きい上位100個の最終トークン（潜在的なオブジェクト候補を表す）にのみ適用されます。このMLPは、トークンを「モノ」のクラスラベルまたは「オブジェクトなし」のいずれかに分類します。</p>
+<p>各オブジェクト候補のマスクを対応する入力レベルの割り当てを直接使用して取得することは可能ですが、オブジェクト候補の最終埋め込みと最終ステージの一つ手前のステージの出力埋め込みの間の<span class="highlight">ドット積</span>を計算することにより、インスタンスマスク予測を<span class="keyword">リファイン（改善）</span>することが有益であることを見出しました。これにより、最後のグルーピング層の割り当て行列が効果的に再計算されます。さらに、ドット積を計算する前に、最終トークン埋め込みを線形射影し、前のステージの解像度にアップサンプリングして、割り当てを再計算する前にステージ3の特徴にグローバルコンテキストを提供することを目指します。この手順により、一般的な過剰セグメンテーションエラーを修正でき、大きなオーバーヘッドは発生しません。</p>
+<p>結果として得られるマスクとクラス予測は、[6]と同じ<span class="highlight">二部マッチング損失 (bipartite matching loss)</span> で教師あり学習されます。最後に、学習中には、[31, 13, 6]で使用される中間損失と同様に、両方のMLPとそれに対応する損失を最終ステージの中間出力（合計5つ）に適用することが有益であることを見出しました。テスト時には、中間予測は使用されません。最後に、モデルはセマンティックモデルと同じ構成に従って8台のA100で学習されますが、Mask2Former [6]と同様に50エポックという長いスケジュールであり、約2.5日かかります。</p>
+<div class="bubble-box">
+<p><span class="keyword">モノ (Things)</span>: 個別に数えられるオブジェクト（例：車、人、動物）。パノプティックセグメンテーションではインスタンスIDも識別する。</p>
+<p><span class="keyword">背景 (Stuff)</span>: 個別に数えられない領域（例：空、道路、草）。パノプティックセグメンテーションではセマンティックラベルのみを識別する。</p>
+<p><span class="keyword">リファイン (Refine)</span>: 初期予測をより正確なものに改善する処理。</p>
+<p><span class="keyword">二部マッチング損失 (Bipartite Matching Loss)</span>: 予測されたオブジェクトと正解オブジェクトの最適なペアを見つけ、そのペアに対して損失を計算する手法。DETRなどで用いられる。</p>
+</div>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-tachometer-alt"></i>E Efficiency and Performance Considerations</h3>
+<h4 class="section-title"><i class="fas fa-bolt"></i>E.1 Efficient Sparse Implementation</h4>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-code"></i> ナイーブな実装 (Naive implementation)</p>
+<div class="framework-box">
+<p>アルゴリズム1では、グルーピング層を説明する際の明確さのために、スパース性制約を伴うナイーブな実装を示しています。形式的には、\(M_{\text{loc}} \in \{0, -\infty\}^{N \times N^{\text{down}}}\) は、有効な入力-出力エッジ（図2参照）に対しては0と定義され、それ以外に対しては \(-\infty\)（つまり、大きな負の定数）と定義されます。L4で \(A\) に加算され、L5でソフトマックスを適用する直前に、\(-\infty\) に設定されたエントリは実質的に0になります。この設定では、密なグルーピングは自然に、すべてのエントリに0を含む \(M_{\text{loc}}\) に対応します。この定式化はローカルグルーピングと密なグルーピングの両方に対応しますが、実際に私たちが利用するものではありません。</p>
+<div class="bubble-box">
+<p><span class="keyword">スパース性制約 (Sparsity constraints)</span>: 計算対象を限定することで、計算量やメモリ使用量を削減する制約。ここでは、ローカルな領域のみに注目することでスパース性を導入している。</p>
+<p><span class="keyword">ソフトマックス関数 (Softmax function)</span>: 入力ベクトルを確率分布に変換する関数。ここでは、各入力トークンがどの出力トークンに割り当てられるかの確率を計算するのに使われる。</p>
+<p>\(M_{\text{loc}}\) はマスク行列であり、ローカルグルーピングを実現するために、遠くのトークン間の関連性を \(-\infty\) にすることで、ソフトマックス関数を通した後にそれらの関連性が0になるようにしています。</p>
+</div>
+</div>
+<p class="note-title"><i class="fas fa-rocket"></i> 最適化された実装 (Optimized implementation)</p>
+<div class="framework-box">
+<p>アルゴリズム1で説明したナイーブな実装の問題点は、\(N^{\text{in}}\) 個の入力トークンと \(N^{\text{out}}\) 個の出力トークンが与えられた場合、密な \(N^{\text{in}} \times N^{\text{out}}\) の出力行列を保存する必要があり、バックボーンの初期レイヤーで処理するようなカーディナリティの大きな入力セットに対しては実用的でなくなることです。</p>
+<p>スパース性を活用し、クロスアテンション行列の非ゼロエントリの計算を避けるために、<span class="highlight">natten [3]ライブラリ</span>で導入された<span class="keyword">スライディングウィンドウアテンションCUDAカーネル</span>を利用します。アルゴリズム2では、PyTorchを使用してアルゴリズム1（L3-8、LNの使用を除く）で説明されているクロスアテンションおよび再正規化操作のスパースバリアントの高レベルな実装の概要を示します。表記を乱用し、\(q = q(X^{\text{out}}), \bar{k} = k(X^{\text{in}}), v = v(X^{\text{in}})\) とし、これらは線形射影された出力および入力トークン埋め込みに対応します。実装の主なアイデアは、クエリ-キーのクロスアテンション乗算に対応するnattenプリミティブ \(\mathtt{na2d\_qk}\) と、クエリ-キー行列からの値の加重和の計算に対応する \(\mathtt{na2d\_av}\) を再利用することです。</p>
+<div class="glass-card" style="margin-top: 15px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; color: var(--color-primary);"><i class="fas fa-stream"></i> 実装のステップ</p>
+<ol class="unstyled-list" style="padding-left: 20px;">
+<li><span class="badge blue">1.</span> 空間次元 \(H \times W\) の入力特徴テンソル \(X^{\text{in}}\) と、空間次元 \( (H/2) \times (W/2) \) の初期出力ダウンサンプルドトークン \(X^{\text{out}}\) が与えられた場合、まず \(X^{\text{in}}\) を \(2 \times 2\) パッチに<span class="highlight">Unfold</span>し、\(4 \times (H/2) \times (W/2)\) テンソルを生成します。</li>
+<li><span class="badge blue">2.</span> 次に、ターゲットのダウンサンプルドトークン \(X^{\text{out}}\) を \(4 \times (H/2) \times (W/2)\) に<span class="highlight">拡張</span>（つまり、「複数のコピー」を持つビューを作成）し、説明したように線形射影することで、スライディングウィンドウクロスアテンションを適用するとローカルウィンドウ上の期待されるグルーピング操作が得られるテンソル表現を取得します。</li>
+<li><span class="badge blue">3.</span> アルゴリズム2では、さらにq_idx（L6）に基づく<span class="highlight">gather操作</span>を参照します。高レベルでは、q_idxは、L2で生成されたクロスアテンション行列を再インデックス化し、入力に対するグループからの加重平均を効率的に計算できるようにするインデックステンソルです（アルゴリズム1のL6-8に対応）。</li>
+<li><span class="badge blue">4.</span> 結果として得られるスパース行列attn_qは、\(\mathtt{na2d\_av}\) で必要に応じて使用できます。</li>
+</ol>
+<p>これらの同じアイデアにより、前述のプリミティブを活用することで、結果として得られる割り当て行列を使用して特徴マップを効率的にアップサンプリングおよびダウンサンプリングできます。</p>
+<div class="bubble-box" style="margin-top: 10px;">
+<p><span class="keyword">nattenライブラリ</span>: ネイバーフッドアテンション（Neighborhood Attention）を効率的に計算するためのライブラリ。CUDAカーネルを利用して高速化されている。</p>
+<p><span class="keyword">スライディングウィンドウアテンション</span>: アテンション計算の範囲を局所的なウィンドウに限定する手法。計算量を削減できる。</p>
+<p><span class="keyword">Unfold操作</span>: 画像パッチを抽出する操作。ここでは、\(2 \times 2\) のパッチを隣接しないように抽出している。</p>
+<p><span class="keyword">Gather操作</span>: インデックスに基づいてテンソルから要素を収集する操作。</p>
+</div>
+</div>
+<p style="margin-top: 15px;">中間テンソルを保存せずにクロスアテンション、再正規化、再インデックス化の計算をマージする融合カーネルを定義することでこれらの操作をさらに最適化することは可能ですが、提案する実装は、表9に示すように、ナイーブな実装やUnfoldに基づく純粋なPyTorchベースの操作と比較してすでに大幅な改善を提供します。全体として、現在の実装は完全に最適ではありませんが、メモリ要件を爆発させることなく、大規模な解像度の特徴マップ上で最新のバックボーン内でグルーピング層を実用的に使用することを可能にします。すでに述べたように、コードとモデルをリリースする予定です。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-calculator"></i>Algorithm 2 Efficient implementation of sparse Spatial Grouping Layer cross-attention operation</h3>
+<div class="content-box">
+<p>このアルゴリズムは、空間グルーピング層におけるクロスアテンション操作を、スパース性を活用して効率的に行うためのものです。特に入力トークン数が非常に多い場合に、計算量とメモリ使用量を抑えることを目的としています。</p>
+<div class="definition-box">
+<p class="definition-title">入力 (Input)</p>
+<ul class="unstyled-list">
+<li>\(k, q, v\): それぞれ入力トークン \(X^{\text{in}}\) から線形射影されたキー (key)、出力トークン \(X^{\text{out}}\) から線形射影されたクエリ (query)、入力トークン \(X^{\text{in}}\) から線形射影されたバリュー (value)。</li>
+<li>\(\text{q_idx}\): アテンション行列を再インデックスするためのテンソル。</li>
+<li>\(B\): 相対位置バイアス (relative positional bias)。</li>
+<li>\(\tau\): 温度パラメータ (temperature parameter)。ソフトマックス関数の鋭さを調整します。</li>
+<li>\(\epsilon\): 数値安定性のための小さな定数。</li>
+</ul>
+</div>
+<div class="framework-box">
+<p class="framework-title">処理ステップ</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">コメント: スパースなクロスアテンションを計算します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<p><span class="keyword">attn</span> \(\gets \mathtt{na2d\_qk}(k, q, B, 3)\)</p>
+<p>nattenライブラリの \(\mathtt{na2d\_qk}\) 関数を使用して、キー \(k\) とクエリ \(q\) からアテンションスコアを計算します。\(B\) は相対位置バイアス、3はカーネルサイズ（ここでは \(3 \times 3\) のローカルウィンドウ）を示します。この操作はスパースなアテンション、つまり限られた範囲のトークン間でのみアテンションを計算します。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">コメント: "グループ"上でソフトマックスを適用します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">4</div>
+<div class="step-content">
+<p>\(\mathsf{attn} \gets \mathsf{softmax}(\mathsf{attn} \times \tau, \mathsf{dim}=-1) + \epsilon\)</p>
+<p>計算されたアテンションスコアに温度パラメータ \(\tau\) を乗じ、最後の次元（通常はキーの次元）に対してソフトマックス関数を適用して、アテンションウェイト（確率分布）に変換します。\(\epsilon\) はゼロ除算を防ぐための小さな値です。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">5</div>
+<div class="step-content">コメント: 入力に対して再インデックス、再形成、再正規化を行います。</div>
+</div>
+<div class="process-step">
+<div class="step-number">6</div>
+<div class="step-content">
+<p><span class="keyword">attn_q</span> \(\gets \text{gather}(\text{attn.flatten}(2, 3), \text{q_idx})\)</p>
+<p>アテンション行列 \(\mathsf{attn}\) を2次元目と3次元目でフラット化し、\(\text{q_idx}\) を使って要素を収集（gather）します。これにより、次のステップでの入力ごとの正規化のためにアテンションウェイトを再配置します。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">7</div>
+<div class="step-content">
+<p><span class="keyword">denom</span> \(\gets \text{sum}(\text{attn_q, dims}=(1, 3))\)</p>
+<p>再配置されたアテンションウェイト \(\text{attn_q}\) を、指定された次元（ここでは1次元目と3次元目）に沿って合計し、正規化のための分母 \(\text{denom}\) を計算します。これは、アルゴリズム1のL6-8に相当する入力ごとの正規化の準備です。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">8</div>
+<div class="step-content">
+<p><span class="keyword">attn_q</span> \(\gets \text{attn_q} / \text{denom}\)</p>
+<p>\(\text{attn_q}\) を計算された分母 \(\text{denom}\) で割り、入力トークンごとにアテンションウェイトを正規化します。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">9</div>
+<div class="step-content">
+<p><span class="keyword">attn_q</span> \(\gets \text{reshape}(\text{attn_q, attn.shape})\)</p>
+<p>正規化された \(\text{attn_q}\) を元のアテンション行列の形状に戻します。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">10</div>
+<div class="step-content">コメント: 更新を集約します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">11</div>
+<div class="step-content">
+<p><span class="keyword">updates</span> \(\gets \text{na2d_av}(\text{attn_q, v, 3})\)</p>
+<p>nattenライブラリの \(\text{na2d_av}\) 関数を使用して、正規化されたアテンションウェイト \(\text{attn_q}\) とバリュー \(v\) から、加重和を計算します。これにより、各出力トークンの更新値が得られます。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">12</div>
+<div class="step-content">
+<p><span class="keyword">updates</span> \(\gets \text{sum}(\text{updates, dim}=1)\)</p>
+<p>計算された更新値を1次元目（通常はローカルウィンドウ内の異なる位置に対応）に沿って合計し、最終的な出力トークンの更新値を得ます。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">13</div>
+<div class="step-content">
+<p>return <span class="keyword">updates</span>, <span class="keyword">attn</span>, <span class="keyword">attn_q</span></p>
+<p>最終的な出力トークンの更新値、ソフトマックス適用後の（再正規化前の）アテンションウェイト、そして入力ごとに再正規化されたアテンションウェイトを返します。</p>
+</div>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> アルゴリズムのポイント</p>
+<ul>
+<li><span class="highlight">スパースな計算:</span> \(\mathtt{na2d\_qk}\) や \(\mathtt{na2d\_av}\) といったnattenのプリミティブ関数を利用することで、ローカルウィンドウ内でのみアテンションを計算し、全体としてはスパースな処理を実現しています。</li>
+<li><span class="highlight">入力ごとの再正規化:</span> L6-L9のステップで、アテンションウェイトを入力トークン側で正規化し直しています。これはアルゴリズム1のL6-L8に相当し、各入力トークンが複数の出力グループに寄与する場合の重みを適切に分配するためです。</li>
+<li><span class="highlight">効率性:</span> この実装により、特に高解像度の特徴マップを扱う際に、ナイーブな密なアテンション計算と比較して大幅な計算効率の向上が期待できます。</li>
+</ul>
+</div>
+</div>
+<h4 class="section-title"><i class="fas fa-chart-line"></i>E.2 Runtime and Memory Analysis</h4>
+<div class="content-box">
+<p class="note-title"><i class="fas fa-cog"></i> 設定 (Setup)</p>
+<div class="framework-box">
+<p>私たちの手法の計算効率を、NVIDIA A100 GPU（40GB VRAM）上で、バッチサイズ1、完全なFP32精度で、ベースモデルバリアントについて複数の入力解像度（表8）および標準的な \(512 \times 512\) （表9）で評価します。</p>
+<div class="bubble-box">
+<p><span class="keyword">FP32精度 (Full FP32 precision)</span>: 32ビット浮動小数点数を用いた計算。高い精度を保つが、計算量やメモリ使用量は多くなる傾向がある。</p>
+</div>
+</div>
+<div class="table-wrapper">
+<p style="text-align: center; font-weight: bold; margin-bottom: 5px;">表8: エンドツーエンドのモデル性能とリソース使用量</p>
+<p style="text-align: center; font-style: italic; color: var(--color-gray); margin-bottom: 10px;">ネイティブマスクとNATベースライン（UPerNet [37]デコーダ付き）を、スループット、レイテンシ、GPUメモリ、およびADE20kでの最終的な下流mIoUの観点から比較しています。</p>
+<img alt="Table 8: End-to-end model performance and resource usage" src="table9.png" style="width: 100%; margin-bottom: 20px;"/>
+</div>
+<div class="table-wrapper">
+<p style="text-align: center; font-weight: bold; margin-bottom: 5px;">表9: バックボーンレベルのスループットとリソース使用量</p>
+<p style="text-align: center; font-style: italic; color: var(--color-gray); margin-bottom: 10px;">異なる入力解像度とグルーピング実装について、FPS、画像あたりのレイテンシ、およびピークGPUメモリを報告しています。「OOM」はメモリ不足を示します。</p>
+<img alt="Table 9: Backbone-level throughput and resource usage" src="table10.png" style="width: 100%; margin-bottom: 20px;"/>
+</div>
+<p class="note-title"><i class="fas fa-comments"></i> 議論 (Discussion)</p>
+<div class="glass-card">
+<p>表8では、3つの実装アプローチを比較しています。</p>
+<ol class="unstyled-list" style="padding-left: 20px;">
+<li><span class="badge blue">1.</span> <span class="keyword">従来の均一ダウンサンプリング (None)</span>: NAT [3] ベースラインと同等。</li>
+<li><span class="badge orange">2.</span> <span class="keyword">グルーピング層のナイーブな純粋PyTorch実装 (Naive)</span></li>
+<li><span class="badge green">3.</span> <span class="keyword">nattenを活用したCUDA最適化実装 (CUDA)</span></li>
+</ol>
+<p>私たちのCUDA最適化された空間グルーピングは、高解像度での実用的な展開を可能にします。ナイーブな実装は \(512 \times 512\) を超えると法外に遅くなり、\(1024 \times 1024\) の解像度では40GBのGPUでメモリ不足（OOM）になります。</p>
+<p>重要なことに、私たちの<span class="highlight">ローカルグルーピング設計</span>は、メモリ消費と実行時間の両方が入力解像度に対してほぼ<span class="keyword">線形にスケール</span>することを保証し、私たちのアプローチを実際のアプリケーションで実用的なものにします。</p>
+<p>私たちの手法は、特徴抽出器としてのみ使用する場合、均一ダウンサンプリングベースラインと比較して約<span class="highlight">20〜40%のレイテンシオーバーヘッド</span>を導入します（表9）。しかし、エンドツーエンドのセグメンテーション性能を考慮すると、グルーピング層の全体的なコストは償却されます（表8参照）。私たちの<span class="keyword">ネイティブセグメンテーション能力</span>は、重いデコーダヘッドの必要性を排除し、最終的に全体的なレイテンシを削減すると同時にセグメンテーション品質（mIoU）を向上させます。</p>
+<p>さらに、グルーピング層の相対的なオーバーヘッドは、私たちのアプローチのスケーラビリティと、ダウンサンプリングに割り当てられる計算量がバックボーンの残りの部分と比較して相対的に小さいため、高解像度で減少します。将来の研究では、私たちの実装と設計に対する追加の最適化により、このギャップをさらに埋めることができるでしょう。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-compress-arrows-alt"></i></div>
+<p><strong>ローカルグルーピング:</strong> 高解像度での計算効率と線形スケーラビリティを実現</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-tachometer-alt"></i></div>
+<p><strong>ネイティブセグメンテーション:</strong> デコーダヘッド不要でレイテンシ削減とmIoU向上</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-layer-group"></i></div>
+<p><strong>スケーラビリティ:</strong> 高解像度ほどグルーピング層の相対的オーバーヘッドが減少</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

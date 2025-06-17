@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TURNABOUTLLM: A Deductive Reasoning Benchmark from Detective Games解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">TURNABOUTLLM: A Deductive Reasoning Benchmark from Detective Games</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-scroll" style="margin-right: 10px; color: var(--color-primary);"></i>Abstract</h2>
+<div class="note-box" style="border-left: 3px solid var(--color-primary);">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-bullseye" style="margin-right: 5px;"></i>このセクションの目的と論旨</p>
+<p>この論文のAbstract（要旨）セクションでは、大規模言語モデル（LLM）の<span class="keyword">演繹的推論能力</span>を評価するための新しいフレームワークとデータセット「<span class="keyword">TURNABOUTLLM</span>」が紹介されています。このフレームワークは、人気のある探偵ゲーム「逆転裁判」と「ダンガンロンパ」のインタラクティブなゲームプレイを活用している点が特徴です。</p>
+<p>主な論旨は以下の通りです：</p>
+<ul>
+<li>✏️ TURNABOUTLLMは、長い物語の文脈の中で、証言と証拠の間の<span class="highlight">矛盾</span>を特定するタスクをLLMに課します。</li>
+<li><span class="badge blue">課題</span> これは、答えの候補空間が広く、多様な種類の推論が求められるため、非常に難しいタスクです。</li>
+<li>📊 12種類の最先端LLMをこのデータセットで評価した結果、既存の演繹的推論強化戦略（例：<span class="keyword">広範な思考</span>や<span class="keyword">Chain-of-Thoughtプロンプティング</span>）の限界が示唆されました。</li>
+<li>🔍 また、文脈の長さ、推論ステップの数、答えの候補空間の大きさがモデルのパフォーマンスに様々な影響を与えることも示唆されています。</li>
+<li>📌 総じて、TURNABOUTLLMは、複雑で物語性の高い環境におけるLLMの演繹的推論能力にとって、<span class="highlight">重大な課題</span>を提示するものです。</li>
+</ul>
+</div>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card glass-card">
+<h3 class="subsection-title" style="color: var(--color-secondary);"><i class="fas fa-brain" style="margin-right: 8px;"></i>大規模言語モデル（LLM）とは？</h3>
+<p>大規模言語モデル（Large Language Models, LLMs）とは、大量のテキストデータで訓練された人工知能モデルのことです。人間のように自然な文章を生成したり、質問に答えたり、文章を要約したりする能力を持っています。</p>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1); padding: 10px; border-radius: 8px;">
+<i class="fas fa-robot fa-2x" style="color: var(--color-secondary);"></i>
+<p>例：GPT-3, BERT, LaMDAなど</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h3 class="subsection-title" style="color: var(--color-accent1);"><i class="fas fa-lightbulb" style="margin-right: 8px;"></i>演繹的推論とは？</h3>
+<p>演繹的推論（Deductive Reasoning）とは、一般的な法則や前提から、論理的なルールに従って特定の結論を導き出す思考プロセスです。</p>
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.1); padding: 10px; border-radius: 8px;">
+<i class="fas fa-project-diagram fa-2x" style="color: var(--color-accent1);"></i>
+<p>例：「全ての人間は死ぬ。ソクラテスは人間である。故に、ソクラテスは死ぬ。」</p>
+</div>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 20px;">
+<p class="framework-title"><i class="fas fa-puzzle-piece" style="margin-right: 5px;"></i>TURNABOUTLLM フレームワークの紹介</p>
+<p>この論文が提案する<span class="keyword">TURNABOUTLLM</span>は、LLMの演繹的推論能力を評価するための新しい<span class="badge orange">フレームワーク</span>であり、同時に<span class="badge orange">データセット</span>でもあります。</p>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top:15px; margin-bottom:15px;">
+<p><strong><i class="fas fa-gamepad" style="color:var(--color-primary); margin-right:5px;"></i>着想元：探偵ゲーム</strong></p>
+<p>人気探偵ゲームである「<span class="highlight">逆転裁判 (Ace Attorney)</span>」と「<span class="highlight">ダンガンロンパ (Danganronpa)</span>」のゲームプレイが基になっています。これらのゲームでは、プレイヤーは証言や証拠を集め、それらの間の矛盾を見つけ出して事件を解決します。</p>
+</div>
+<div class="two-column" style="margin-top: 20px;">
+<div class="column">
+<div class="content-box">
+<p><strong><i class="fas fa-tasks" style="color:var(--color-primary); margin-right:5px;"></i>LLMへのタスク</strong></p>
+<p>LLMには、ゲーム内のキャラクターの<span class="keyword">証言 (Testimonies)</span>と集められた<span class="keyword">証拠 (Evidences)</span>を提示し、それらの間に存在する<span class="highlight">矛盾点</span>を特定させます。これは、長い物語文脈の中で行われます。</p>
+</div>
+</div>
+<div class="column">
+<div class="content-box">
+<p><strong><i class="fas fa-exclamation-triangle" style="color:var(--color-secondary); margin-right:5px;"></i>タスクの難しさ</strong></p>
+<ul>
+<li><span class="keyword">広大な回答空間 (Large Answer Space)</span>: 多数の証言と証拠の組み合わせから矛盾点を選ぶ必要があるため、正解を見つけ出すのが難しい。</li>
+<li><span class="keyword">多様な推論の種類 (Diverse Reasoning Types)</span>: 時間的、空間的、因果的など、様々な種類の論理的思考が求められる。</li>
+</ul>
+</div>
+</div>
+</div>
+<img alt="探偵ゲームのイメージ図" class="section-image" src="https://images.unsplash.com/photo-1580974913840-961f606e3db9?q=80&amp;w=600&amp;auto=format&amp;fit=crop&amp;ixlib=rb-4.0.3&amp;ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" style="width: 60%; margin: 15px auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray);">図：TURNABOUTLLMは、探偵ゲームのように証言と証拠の矛盾を見つけ出すタスクをLLMに課す。(イメージ図)</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="section-card" style="background-color: rgba(255, 248, 225, 0.5); border: 1px dashed var(--color-accent3);">
+<h3 class="subsection-title" style="color: var(--color-accent2);"><i class="fas fa-chart-line" style="margin-right: 8px;"></i>LLMの評価と結果の示唆</h3>
+<p>この研究では、<span class="badge purple">12種類</span>の最先端LLM（State-of-the-art LLMs）がTURNABOUTLLMデータセットで評価されました。</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr;">
+<div class="info-card" style="background-color: white;">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-search-minus" style="margin-right: 5px;"></i>既存戦略の限界</p>
+<p>評価結果は、LLMの演繹的推論能力を高めるために一般的に用いられる戦略の<span class="highlight">限界</span>を示唆しています。具体的には：</p>
+<ul>
+<li><span class="keyword">広範な思考 (Extensive Thinking)</span>: 長時間考えさせること。</li>
+<li><span class="keyword">Chain-of-Thought (CoT) プロンプティング</span>: 思考の連鎖を促す指示を与えること。</li>
+</ul>
+<p>これらの戦略が、TURNABOUTLLMのような複雑なタスクでは期待したほどの効果を上げない可能性が示されました。</p>
+</div>
+<div class="info-card" style="background-color: white;">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-cogs" style="margin-right: 5px;"></i>パフォーマンスへの影響要因</p>
+<p>また、以下の要因がモデルのパフォーマンスに<span class="highlight">様々な影響</span>を与えることが示唆されました。</p>
+<ul>
+<li><span class="keyword">文脈のサイズ (Context Size)</span>: LLMに与えられる情報の量。</li>
+<li><span class="keyword">推論ステップの数 (Number of Reasoning Steps)</span>: 正解にたどり着くまでに必要な論理的な段階の数。</li>
+<li><span class="keyword">回答空間のサイズ (Answer Space Size)</span>: 考慮すべき証言と証拠の組み合わせの数。</li>
+</ul>
+</div>
+</div>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-lightbulb fa-2x" style="color: var(--color-accent3); margin-right: 10px;"></i>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.1em;">これらの要因が複雑に絡み合い、LLMの推論能力に影響を与えることがわかります。</span>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="challenge-box" style="border-left: 3px solid var(--color-secondary); margin-top: 20px;">
+<p class="challenge-title"><i class="fas fa-flag-checkered" style="margin-right: 5px;"></i>結論：LLMへの大きな挑戦</p>
+<p>総合的に見て、TURNABOUTLLMは、現在のLLMにとって、<span class="highlight">複雑で物語性の高い (complex, narrative-rich)</span>環境における<span class="keyword">演繹的推論能力</span>を試す上で、非常に<span class="badge red">困難な課題</span>を提示しています。</p>
+<p>これは、LLMがまだ人間の探偵のように、入り組んだ情報の中から真実を見つけ出す能力には改善の余地があることを示唆しています。</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-user-secret fa-3x" style="color: var(--color-secondary); transform: rotate(-10deg);"></i>
+<i class="fas fa-long-arrow-alt-right fa-2x" style="color: var(--color-dark); margin: 0 10px;"></i>
+<i class="fas fa-brain fa-3x" style="color: var(--color-primary); transform: rotate(10deg);"></i>
+</div>
+<p style="text-align:center; font-style:italic; color: var(--color-gray);">人間の複雑な推論に、LLMはどこまで迫れるのか？ TURNABOUTLLMはその試金石となります。</p>
+</div>
+<hr style="border: 1px dashed var(--color-primary); margin: 30px 0;"/>
+<div class="glass-card">
+<h3 class="subsection-title" style="color: var(--color-primary);"><i class="fas fa-image" style="margin-right: 8px;"></i>Abstractに付随する図の解説</h3>
+<p>Abstractの下には、論文で使われている図の一部が掲載されています。これは、TURNABOUTLLMが扱うタスクの具体的なイメージを示すものです。</p>
+<img alt="論文中の図の例" class="section-image" src="https://images.unsplash.com/photo-1600096194534-95cf5391050d?q=80&amp;w=600&amp;auto=format&amp;fit=crop&amp;ixlib=rb-4.0.3&amp;ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" style="width: 80%; margin: 15px auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"/>
+<p style="text-align: center; font-size: 0.9em; color: var(--color-gray);">図1の例（実際の論文図とは異なります。これは概念を示すためのサンプルです。）</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-comment-dots" style="margin-right: 5px;"></i>証言 (Testimonies)</p>
+<p>図の上部には、複数の証言（T1, T2, T3, T4...）が並んでいます。これらは事件関係者の発言を表します。</p>
+<p style="font-family: 'Yomogi', cursive;">例：「サウィットは午後1時に死体を見たと言っている...」</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-file-alt" style="margin-right: 5px;"></i>証拠とプロフィール (Evidence + Profiles)</p>
+<p>図の下部には、証拠品（E1, E2, E3...）や人物情報（Profiles）が並んでいます。</p>
+<p style="font-family: 'Yomogi', cursive;">例：「検死報告書：死亡時刻は午後4時から5時の間...」</p>
+</div>
+<div class="info-card">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-exclamation-circle" style="margin-right: 5px;"></i>矛盾の発見 (Contradiction!)</p>
+<p>中央部分では、特定の証言と証拠の間に<span class="highlight">矛盾</span>が生じていることを示しています。</p>
+<p style="font-family: 'Yomogi', cursive;">例：証言「死体発見は午後1時」VS 証拠「死亡推定時刻は午後4-5時」⇒ <strong>矛盾！</strong></p>
+</div>
+</div>
+<div class="note-box" style="margin-top: 15px;">
+<p class="note-title"><i class="fas fa-search" style="margin-right: 5px;"></i>図から読み取れること</p>
+<p>この図は、TURNABOUTLLMのタスクが、複数の情報源（証言、証拠）を照らし合わせ、その間の論理的な不整合を見つけ出すという、まさに<span class="keyword">探偵が行うような推論プロセス</span>を模倣していることを視覚的に表しています。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-door-open"></i> 1 Introduction</h2>
+<div class="glass-card" style="margin-bottom: 25px;">
+<p style="text-align: center; font-size: 16px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-bullseye"></i> <strong>このセクションの目的を一言で言うと…</strong> <i class="fas fa-bullseye"></i>
+</p>
+<p style="text-align: center; font-size: 18px; font-weight: bold; color: var(--color-secondary); margin-bottom:10px;">
+            大規模言語モデル(LLM)の<span class="highlight">「真の演繹的推論力」</span>を測るため、<br/>
+<span class="keyword">探偵ゲーム</span>の良いトコどりをした新しい評価の物差し<br/>
+<span style="font-family: 'Kaisei Decol', serif; font-size: 22px; color: var(--color-primary);">TURNABOUTLLM</span>
+            を提案します！
+        </p>
+<p style="font-size: 14px; line-height: 1.6;">
+<i class="fas fa-file-alt"></i> <strong>背景と課題：</strong> LLMの賢さは日々進化していますが、人間のように複雑な状況から論理的に結論を導き出す「演繹的推論」の能力を、特に<span class="highlight">長〜い物語の中から本質を見抜く力</span>は、どうやって測ればいいのでしょう？従来の評価方法では、この点がちょっと物足りなかったんです。そこで、この論文では、プレイヤーが証拠と証言を突き合わせて謎を解く<span class="keyword">「探偵ゲーム」</span>に着目。このゲームの仕組みを応用して、LLMの推論能力をガッツリ評価できる新しいベンチマーク<span class="keyword">TURNABOUTLLM</span>を開発しました。
+        </p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-search-plus"></i> 探偵小説：超難解な推理の世界へようこそ</h3>
+<div class="content-box">
+<p>探偵小説には、読者の知的好奇心をくすぐり、最も賢い読者でさえも惑わせるように練り上げられた、<span class="highlight">極めて難解な推理問題</span>が詰まっています。これらの推理を完璧にこなすためには、様々な能力が求められます。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<p class="icon-item" style="text-align: center;"><i class="fas fa-book-reader fa-2x"></i></p>
+<h4 style="text-align:center; color: var(--color-secondary); font-family: 'Yomogi', cursive;">📝 長文読解 &amp; 詳細把握</h4>
+<p>長い物語の中から、<span class="keyword">特定の細部に注意</span>を払いながら情報を探し出す能力。</p>
+<div style="text-align: center;">
+<span class="badge blue">情報検索</span>
+</div>
+</div>
+<div class="info-card">
+<p class="icon-item" style="text-align: center;"><i class="fas fa-project-diagram fa-2x"></i></p>
+<h4 style="text-align:center; color: var(--color-secondary); font-family: 'Yomogi', cursive;">🧩 事実の統合 &amp; 知識活用</h4>
+<p><span class="keyword">物理法則</span>、<span class="keyword">社会規範</span>、<span class="keyword">出来事の時系列</span>などの知識と事実を結びつける能力。</p>
+<div style="text-align: center;">
+<span class="badge orange">知識統合</span> <span class="badge green">論理構築</span>
+</div>
+</div>
+</div>
+<p style="margin-top: 15px;">近年、<span class="keyword">大規模言語モデル (LLM)</span> の推論能力への期待が高まっていますが、これらのモデルを探偵小説で評価することは、<span class="highlight">独特の課題</span>をもたらします。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-brain"></i> 用語解説：<span class="keyword">大規模言語モデル (LLMs)</span></p>
+<p>大量のテキストデータで学習し、人間のように自然な文章を生成したり、質問に答えたり、翻訳したりできるAIプログラムのことです。例えば、GPTシリーズなどが有名ですね。これらのモデルがどれだけ賢く「考えられるか」が注目されています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-puzzle-piece"></i> LLM推論評価の壁：既存の方法じゃ、もう限界？</h3>
+<div class="content-box">
+<p>残念ながら、探偵小説を使ってLLMの<span class="keyword">演繹的推論能力</span>を評価することは、多くの場合<span class="highlight">現実的ではありません</span>。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; color: var(--color-secondary);"><i class="fas fa-user-secret"></i> シャーロック・ホームズの例</p>
+<p>例えば、有名な「シャーロック・ホームズ」シリーズ。豊かな推論が展開されますが、LLMに直接投げかけられるような<span class="highlight">明確な「質問」形式にはなっていません</span>。</p>
+<p style="text-align:center;"><i class="fas fa-search-minus fa-2x" style="color: var(--color-secondary);"></i></p>
+</div>
+<p>そのため、探偵小説を評価に活用した既存の研究では、以下のような限界がありました：</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">1</div>
+<div class="step-content">文脈が<span class="highlight">ごく一部の短い断片</span>に限られている (Del and Fishel, 2023a)。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">2</div>
+<div class="step-content">タスクが<span class="highlight">登場人物の関係予測</span>に留まっている (Zhao et al., 2024)。</div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">3</div>
+<div class="step-content"><span class="highlight">単純な推論能力</span>しか要求しないテキスト理解に焦点が当てられている (Xu et al., 2025)。</div>
+</li>
+</ul>
+<div class="note-box" style="border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-gamepad"></i> 突破口：探偵ゲームの活用！</p>
+<p>この限界を克服するために、私たちは<span class="keyword">「探偵ゲーム」</span>というユニークな資源に着目しました。探偵ゲームの<span class="highlight">インタラクティブなゲームプレイ</span>は、LLMを評価するための自然なインターフェースを提供してくれます。</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-lightbulb"></i> 用語解説：<span class="keyword">演繹的推論 (Deductive Reasoning)</span></p>
+<p>一般的な法則や前提から出発し、論理的なステップを積み重ねて、特定の結論を導き出す思考方法です。「AならばBである」「今Aである」という情報があれば、「よってBである」と結論づけるのが演繹的推論の一例です。探偵が手がかりから犯人を特定する思考プロセスも、これに当たります。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-gavel"></i> 新評価軸「TURNABOUTLLM<span style="font-size: 0.7em; vertical-align: super;">2</span>」爆誕！</h3>
+<div class="content-box">
+<p>そこで私たちは、<span class="keyword">TURNABOUTLLM</span><span style="font-size: 0.7em; vertical-align: super;">2</span> (ターンアバウトエルエルエムツー) という、長大な物語文脈におけるLLMの演繹的推論能力を評価するための<span class="highlight">フレームワークとテキストデータセット</span>を提案します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i> TURNABOUTLLM<span style="font-size: 0.7em; vertical-align: super;">2</span> の構成要素</p>
+<p><i class="fas fa-gamepad"></i> <strong>原作ゲーム:</strong> 高く評価されている2つの探偵ゲームシリーズを採用。</p>
+<div class="info-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px; margin-bottom:10px;">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.1);">
+<p class="icon-item"><i class="fas fa-balance-scale fa-2x" style="color:var(--color-primary)"></i></p>
+<p><strong>逆転裁判シリーズ</strong> (Ace Attorney)</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1);">
+<p class="icon-item"><i class="fas fa-user-friends fa-2x" style="color:var(--color-secondary)"></i></p>
+<p><strong>ダンガンロンパシリーズ</strong> (Danganronpa)</p>
+</div>
+</div>
+<p><i class="fas fa-tasks"></i> <strong>タスク形式 (ゲームのコア要素を応用):</strong></p>
+<ol class="unstyled-list" style="margin-left: 20px; line-height: 1.8;">
+<li><span class="badge yellow">1</span> 物語を読み進める。</li>
+<li><span class="badge yellow">2</span> 既存の証拠を詳細に調べる。</li>
+<li><span class="badge yellow">3</span> 証人の証言を注意深く聞く。</li>
+<li><span class="badge yellow">4</span> これらに基づき、あり得る結論を推理する。</li>
+<li><span class="badge yellow">5</span> そして、各ゲームプレイのターンで、<span class="highlight keyword">証拠と証言の間の矛盾</span>を見つけ出す。</li>
+</ol>
+<p style="margin-top: 10px;">これら全てを<span class="keyword">テキストベース</span>で行います。全306ターンあり、その一例が図1に示されています。</p>
+</div>
+<p style="margin-top:20px;">TURNABOUTLLMは、既存の推論ベンチマークと比較して、以下の点で優れています (詳細は表1参照):</p>
+<img alt="Table 1: Qualitative comparison of TURNABOUTLLM against other deductive reasoning benchmarks." class="section-image" src="table1.png" style="width: 80%; margin-bottom: 15px;"/>
+<div class="note-box" style="border-left-color: var(--color-gray);">
+<p class="note-title" style="color: var(--color-gray);"><i class="fas fa-table"></i> 図表解説：Table 1 - TURNABOUTLLMと他の演繹的推論ベンチマークの質的比較</p>
+<p>この表は、TURNABOUTLLMが既存のベンチマークと比べてどのような特徴を持っているかを示しています。表の行は様々なベンチマークを、列は評価の観点（Desiderata：望ましい特性）を表しています。</p>
+<p><strong><i class="fas fa-check-double"></i> 6つの望ましい特性 (Desiderata):</strong></p>
+<ul style="list-style-type: '👉 '; margin-left: 20px;">
+<li><span class="badge purple">Sym. (Symbolic logical annotations)</span>: 推論のための<span class="keyword">記号論理的な注釈</span>が含まれているか。これにより、推論プロセスを詳細に分析できます。</li>
+<li><span class="badge blue">Nat. (Natural scenarios)</span>: <span class="keyword">自然なシナリオ</span>（人間が書いた物語など）に基づいているか。</li>
+<li><span class="badge orange">SLC (Super-long contexts)</span>: <span class="keyword">非常に長い文脈</span>（10万語を超えるような）を扱えるか。</li>
+<li><span class="badge green">LAS (Large answer spaces)</span>: <span class="keyword">広大な解答空間</span>（候補が多数ある）を持つか。</li>
+<li><span class="badge yellow">MH (Multi-hop reasoning steps)</span>: <span class="keyword">複数のステップ</span>を要する複雑な推論（マルチホップ推論）が必要か。</li>
+<li><span class="badge red">Het. (Heterogeneous reasoning types)</span>: <span class="keyword">多様な種類の推論</span>（時間、空間、因果など）が求められるか。</li>
+</ul>
+<p><strong><i class="fas fa-star"></i> TURNABOUTLLMの強み:</strong> この表から、TURNABOUTLLMはこれら<span class="highlight">6つの望ましい特性を全て同時に満たす初めてのベンチマーク</span>であることがわかります。他のベンチマークは、これらのうち一部の特性しか満たしていません。</p>
+<p>例えば、<span class="keyword">PrOntoQA</span>や<span class="keyword">LogicBench</span>は記号論理的な注釈 (Sym.) はありますが、自然なシナリオ (Nat.) や超長文脈 (SLC) はありません。一方、<span class="keyword">DetectBench</span>や<span class="keyword">DetectiveQA</span>は自然なシナリオ (Nat.) や長文脈 (SLC) はありますが、記号論理的な注釈 (Sym.) や広大な解答空間 (LAS) は限定的です。</p>
+<p>このように、TURNABOUTLLMは、より現実に近い複雑な状況でのLLMの推論能力を、多角的に評価できる画期的なベンチマークと言えます。</p>
+</div>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-file-word fa-2x" style="color:var(--color-primary)"></i></p>
+<h4 style="color: var(--color-primary); font-family: 'Yomogi', cursive;">1. 自然で超長大な文脈</h4>
+<p>人間が書いた自然な文脈を含み、時には<span class="keyword">10万語を超える</span>こともあります。</p>
+</div>
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-th-large fa-2x" style="color:var(--color-secondary)"></i></p>
+<h4 style="color: var(--color-secondary); font-family: 'Yomogi', cursive;">2. 広大な解答空間</h4>
+<p><span class="keyword">300もの候補</span>から答えを選ぶ必要がある、広大な解答空間を提示します。</p>
+</div>
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-microscope fa-2x" style="color:var(--color-accent1)"></i></p>
+<h4 style="color: var(--color-accent1); font-family: 'Yomogi', cursive;">3. 厳密かつ多様な問い</h4>
+<p><span class="keyword">時間</span>、<span class="keyword">空間</span>、<span class="keyword">行動</span>、<span class="keyword">物の状態</span>、<span class="keyword">因果関係</span>、<span class="keyword">数値</span>の理解を要求する、厳密で多様な問いで構成されます。</p>
+</div>
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-tags fa-2x" style="color:var(--color-accent2)"></i></p>
+<h4 style="color: var(--color-accent2); font-family: 'Yomogi', cursive;">4. 詳細な専門家アノテーション</h4>
+<p>全ての例に、<span class="keyword">証拠の範囲</span>、<span class="keyword">文脈の要約</span>、<span class="keyword">推論の種類</span>、そして<span class="keyword">完全な推論ステップ</span>に関する専門家による注釈が付与されています。</p>
+</div>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-pencil-ruler"></i> 用語解説：<span class="keyword">アノテーション (Annotation)</span></p>
+<p>データに対して、人間が意味や情報を付加することです。この論文では、ゲーム内のテキストデータに対して、「この部分が重要な証拠」「この推論は時間的矛盾を突いている」といった情報を専門家が付け加えています。これにより、LLMがどのように間違えたか、どの部分の推論が苦手かなどを詳細に分析できます。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> 実験結果から見えてきたLLMの現状と課題</h3>
+<div class="content-box">
+<p>私たちは、TURNABOUTLLMを用いて、12種類の<span class="keyword">最先端LLM</span>に対して26の実験を行いました。その結果、いくつかの興味深い知見が得られました（詳細はセクション5で後述）。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> LLMにとって大きな壁！</p>
+<p>結果は、TURNABOUTLLMが現在のLLMにとって、<span class="highlight">学習コーパス外の未知の課題</span>として、非常に困難であることを示しています。最も高性能だった <span class="keyword">DeepSeek-R1</span> でさえ、正解率は <span class="highlight formula">$45.72\%$</span> に留まりました。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-brain fa-2x" style="color: var(--color-primary);"></i>
+<i class="fas fa-arrow-right fa-lg" style="color: var(--color-dark); margin: 0 10px;"></i>
+<span style="font-size: 24px; font-family: 'Kaisei Decol', serif; color: var(--color-secondary);">45.72%</span>
+<i class="far fa-sad-tear fa-2x" style="color: var(--color-secondary); margin-left:10px;"></i>
+</div>
+</div>
+<p style="margin-top: 15px;">さらに、以下の点が明らかになりました：</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="info-card">
+<h4 style="color:var(--color-primary); font-family: 'Yomogi', cursive;"><i class="fas fa-comment-slash"></i> 長考は必ずしも正解に繋がらず</h4>
+<p><span class="keyword">推論トークン</span>（モデルが答えを出すまでに生成する中間的な思考プロセスのようなテキスト）を大量に生成することは、モデルの性能向上に直接的には寄与せず、むしろ<span class="highlight">正解率と負の相関</span>があることが観察されました。</p>
+</div>
+<div class="info-card">
+<h4 style="color:var(--color-secondary); font-family: 'Yomogi', cursive;"><i class="fas fa-lightbulb-slash"></i> CoTプロンプティングの効果は限定的</h4>
+<p>従来効果的とされてきた<span class="keyword">Chain-of-Thought (CoT) プロンプティング</span>手法も、複雑な演繹的タスクにおいては<span class="highlight">効果がごく僅か</span>でした。</p>
+</div>
+<div class="info-card">
+<h4 style="color:var(--color-accent1); font-family: 'Yomogi', cursive;"><i class="fas fa-magnifying-glass-chart"></i> 「干し草の山から針を拾う」能力</h4>
+<p>過剰な文脈情報が与えられた場合、<span class="highlight">大規模なモデルのみ</span>が、いわゆる「干し草の山から針を拾う」ような情報検索能力（needle-in-a-haystack retrieval）を活用して推論結果を改善でき、中小規模のモデルはそうではありませんでした。</p>
+</div>
+<div class="info-card">
+<h4 style="color:var(--color-accent2); font-family: 'Yomogi', cursive;"><i class="fas fa-sort-amount-down"></i> 推論ステップ数とパラメータ数の影響</h4>
+<p>性能は<span class="keyword">推論ステップ数が増える</span>につれて低下するものの、<span class="keyword">解答空間のサイズ</span>には影響されませんでした。逆に、<span class="keyword">パラメータ数が多い</span>モデルほど性能が向上する傾向が見られました。</p>
+</div>
+</div>
+<div class="definition-box" style="margin-top:20px;">
+<p class="definition-title"><i class="fas fa-cogs"></i> 用語解説：<span class="keyword">Chain-of-Thought (CoT) プロンプティング</span></p>
+<p>LLMに質問をする際に、「ステップバイステップで考えて」というように、思考の過程を明示的に出力させる指示（プロンプト）を与える手法です。複雑な問題に対して、途中の思考プロセスを記述させることで、より正しい答えにたどり着きやすくなると期待されています。しかし、この研究のタスクでは、その効果は限定的だったようです。</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-database"></i> 用語解説：<span class="keyword">学習コーパス (Training Corpus)</span></p>
+<p>LLMが学習するために使用される大量のテキストデータのことです。モデルは、このコーパスに含まれる情報を元に、言語のパターンや知識を学習します。「学習コーパス外」とは、モデルが学習時に見たことのない、新しいデータや問題を指します。</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-search"></i> 用語解説：<span class="keyword">needle-in-a-haystack retrieval (干し草の山から針を拾う検索)</span></p>
+<p>大量の情報（干し草の山）の中から、ごくわずかで重要な情報（針）を見つけ出す能力のことです。LLMが長大な文脈を処理する際に、この能力が問われます。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="2_Related_Work">
+<h2 class="section-title"><i class="fas fa-book-reader"></i> 2 Related Work</h2>
+<div class="content-box">
+<p>このセクションでは、本研究（TURNABOUTLLM）がどのような背景のもとで提案されたのかを理解するために、関連する既存の研究やベンチマークについて概観します。特に、大規模言語モデル（LLM）の推論能力、とりわけ<span class="keyword">演繹的推論能力</span>を評価するための様々なアプローチとその限界について議論し、TURNABOUTLLMの独自性と必要性を明らかにしていきます。✏️</p>
+</div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-microscope"></i> 汎用的な推論ベンチマーク</h3>
+<p>まず、モデルの推論能力を幅広く評価するために、いくつかの<span class="highlight">汎用的なベンチマーク</span>が広く研究されてきました。これらは、モデルの基本的な能力を測る上で重要な役割を果たしています。</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-brain"></i></div>
+<strong>MMLU</strong> (Hendrycks et al., 2021)<br/>
+                多様な分野の知識を問うマルチタスクベンチマーク。
+            </div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-puzzle-piece"></i></div>
+<strong>SuperGLUE</strong> (Wang et al., 2020)<br/>
+                自然言語理解タスクのコレクション。より困難なタスクを含む。
+            </div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-cogs"></i></div>
+<strong>BIG-Bench</strong> (Srivastava et al., 2023)<br/>
+                非常に広範なタスクを含み、LLMの限界を探る。
+            </div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-dumbbell"></i></div>
+<strong>BIG-Bench Hard</strong> (Suzgun et al., 2022)<br/>
+                BIG-Benchの中でも特に難しいタスクを選りすぐったもの。
+            </div>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> これらのベンチマークの限界</div>
+<p>これらのベンチマークは全体的な能力評価には役立ちますが、<span class="keyword">推論タスクに特化しているわけではありません</span>。そのため、モデルが持つ<span class="highlight">実際の推論スキルを十分に反映できているとは言えない</span>という課題があります。いわば、総合的な体力測定のようなもので、特定のスポーツの技能を測るのには向いていない、といったイメージです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> 演繹的推論に特化したベンチマーク</h3>
+<p>汎用ベンチマークの限界を踏まえ、より明確に<span class="keyword">演繹的推論能力</span>をターゲットとしたベンチマークも開発されています。これらは、論理的な思考プロセスを評価することに重点を置いています。 deductive reasoning capacities</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-project-diagram"></i></div>
+<strong>LogiGLUE</strong> (Luo et al., 2024)<br/>
+                24種類の推論に焦点を当てたデータセットを統合した、包括的なベンチマークです。
+            </div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-graduation-cap"></i></div>
+<strong>LogiQA</strong> (Liu et al., 2020) &amp; <strong>ReClor</strong> (Yu et al., 2020)<br/>
+                LSAT（ロースクール入学共通試験）のような標準化された試験から、論理的な推論問題を多肢選択形式で出題します。
+            </div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-chess-knight"></i></div>
+<strong>ZebraLogic</strong> (Lin et al., 2025)<br/>
+                非常に広大な解答空間（取りうる答えの範囲が広いこと）を持つ<span class="keyword">制約充足問題</span>（与えられた条件を全て満たす解を見つける問題）を構築しています。
+            </div>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説: 記号的アノテーション (Symbolic Annotations)</div>
+<p>これは、問題文やデータに含まれる<span class="highlight">論理的な構造や推論のステップ</span>を、人間や機械が解釈しやすい形式（例えば、論理式やグラフ構造など）で明示的に付与することです。例えば、「AならばBである」「Bである」という情報から「Aである」と結論づける場合、この推論の過程を「((A → B) ∧ B) → A (これは誤り、正しくは ((A → B) ∧ A) → B)」のような形式で記述することなどが該当します。アノテーションがしっかりしていると、モデルがどのように考えて答えを出したのかを詳細に分析できます。</p>
+<div style="text-align: center; margin-top:10px;">
+<svg height="100" viewbox="0 0 200 100" width="200" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="arrowhead" markerheight="7" markerwidth="10" orient="auto" refx="0" refy="3.5">
+<polygon fill="#4a6fa5" points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+<rect fill="#e0e0e0" height="30" rx="5" ry="5" stroke="#6c757d" width="60" x="10" y="10"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="40" y="30">前提A</text>
+<rect fill="#e0e0e0" height="30" rx="5" ry="5" stroke="#6c757d" width="60" x="130" y="10"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="160" y="30">前提B</text>
+<line marker-end="url(#arrowhead)" stroke="#4a6fa5" stroke-width="2" x1="70" x2="95" y1="25" y2="55"></line>
+<line marker-end="url(#arrowhead)" stroke="#4a6fa5" stroke-width="2" x1="130" x2="105" y1="25" y2="55"></line>
+<rect fill="#c5e1a5" height="30" rx="5" ry="5" stroke="#5cb85c" width="60" x="70" y="60"></rect>
+<text font-family="Yomogi" font-size="12" text-anchor="middle" x="100" y="80">結論C</text>
+<text fill="#4a6fa5" font-family="Yomogi" font-size="10" text-anchor="middle" x="100" y="50">論理規則</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 12px; color: var(--color-gray);">記号的アノテーションのイメージ図</p>
+</div>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> これらのベンチマークの限界</div>
+<p>しかし、これらの演繹的推論に特化したベンチマークも、<span class="keyword">論理構造の記号的アノテーションが不足している</span>という問題点を抱えています。このため、モデルがどのような推論プロセスを経て結論に至ったのか、その<span class="highlight">根底にあるメカニズムを深く理解するための洞察が限定的</span>になってしまいます。まるで、答えはわかるけれど、どうしてその答えになったのか途中式がわからない、という状況に似ています。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-robot"></i> LLM推論のための合成データセット</h3>
+<p>記号的アノテーションの必要性を満たすために、<span class="keyword">合成データセット (Synthetic Datasets)</span> が登場しました。これらは、大規模言語モデル（LLM）自身を使って、特定の論理規則に基づいて推論の例を自動生成するアプローチを取ります。🤖</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-sitemap"></i></div>
+<strong>PrOntoQA</strong> (Saparov and He, 2023) &amp; <strong>LogicBench</strong> (Parmar et al., 2024)<br/>
+                オントロジー（概念間の関係を体系的に記述したもの）のエンティティ（実体）に論理規則を適用して、質問と答えを合成します。
+            </div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-random"></i></div>
+<strong>JustLogic</strong> (Chen et al., 2025)<br/>
+                ランダムにサンプリングされた現実世界の文を前提（推論の出発点となる情報）として用い、そこから推論チェーン（一連の論理的なつながり）を構築します。
+            </div>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-shoe-prints"></i> 用語解説: マルチホップ推論 (Multi-hop Reasoning)</div>
+<p><span class="highlight">マルチホップ推論</span>とは、最終的な結論にたどり着くまでに、複数の推論ステップ（ホップ）を経る必要がある推論のことです。例えば、「AならばB」「BならばC」という情報から「AならばC」と結論付けるのは、A→B（1ホップ目）、B→C（2ホップ目）という2つのステップを経ています。単純な一足飛びの推論よりも複雑な思考が求められます。</p>
+<div style="text-align: center; margin-top:10px;">
+<svg height="80" viewbox="0 0 250 80" width="250" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker fill="#ff7e5f" id="arrowhead2" markerheight="7" markerwidth="10" orient="auto" refx="8" refy="3.5">
+<polygon points="0 0, 10 3.5, 0 7"></polygon>
+</marker>
+</defs>
+<circle cx="30" cy="40" fill="#aed581" r="15" stroke="#558b2f" stroke-width="2"></circle>
+<text font-family="Yomogi" font-size="14" text-anchor="middle" x="30" y="45">A</text>
+<line marker-end="url(#arrowhead2)" stroke="#ff7e5f" stroke-dasharray="5,3" stroke-width="2.5" x1="45" x2="95" y1="40" y2="40"></line>
+<text fill="#ff7e5f" font-family="Yomogi" font-size="10" x="70" y="30">Hop 1</text>
+<circle cx="120" cy="40" fill="#fff59d" r="15" stroke="#fbc02d" stroke-width="2"></circle>
+<text font-family="Yomogi" font-size="14" text-anchor="middle" x="120" y="45">B</text>
+<line marker-end="url(#arrowhead2)" stroke="#ff7e5f" stroke-dasharray="5,3" stroke-width="2.5" x1="135" x2="185" y1="40" y2="40"></line>
+<text fill="#ff7e5f" font-family="Yomogi" font-size="10" x="160" y="30">Hop 2</text>
+<circle cx="210" cy="40" fill="#81d4fa" r="15" stroke="#0288d1" stroke-width="2"></circle>
+<text font-family="Yomogi" font-size="14" text-anchor="middle" x="210" y="45">C</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; font-size: 12px; color: var(--color-gray);">マルチホップ推論のイメージ図</p>
+</div>
+</div>
+<p>しかし、これらの合成データセットは、一般的に<span class="highlight">単一の推論規則に焦点を当てる</span>傾向があり、複数の推論ステップを必要とする<span class="keyword">マルチホップ推論</span>の評価にはあまり適していません。</p>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-level-up-alt"></i> マルチホップ推論への取り組み</div>
+<p>このギャップを埋めるために、以下の研究が登場しました。</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">Multi-LogiEval</span> (Patel et al., 2024)</li>
+<li><span class="badge blue">ProofWriter</span> (Tafjord et al., 2021) - RuleTaker (Clark et al., 2020) の改良版</li>
+</ul>
+<p>これらのデータセットは、モデルに複数の論理ステップを含む合成された結論の妥当性を検証するよう求めます。</p>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 合成データセットの新たな課題</div>
+<p>しかし、これらのマルチホップ推論に対応した合成データセットや、専門家によってキュレーションされたマルチホップデータセットである <span class="badge purple">FOLIO</span> (Han et al., 2024) でさえも、<span class="keyword">コンテキストサイズ</span>（問題文や背景情報の量）や<span class="keyword">解答空間の広さ</span>が限定的であるという課題を抱えています。つまり、現実世界の複雑な問題設定と比べると、まだ単純化されている部分があるのです。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-search"></i> 探偵小説からの推論データセット</h3>
+<p>探偵小説は、読者が自然と<span class="keyword">マルチホップの演繹的推論</span>を行うように作られているため、演繹的推論の評価に適した素材と言えます。🕵️‍♂️</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-book-dead"></i></div>
+<strong>MuSR</strong> (Sprague et al., 2024) &amp; <strong>True Detective</strong> (Del and Fishel, 2023b)<br/>
+                事前に定義された事実やオンラインの探偵ゲームから探偵小説を合成します。しかし、これらは<span class="highlight">コンテキストサイズが小さい</span>という固有の制限に直面しています。
+            </div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-scroll"></i></div>
+<strong>WhoDunIt</strong> (Gupta, 2025), <strong>DetectBench</strong> (Gu et al., 2024), <strong>DetectiveQA</strong> (Xu et al., 2025)<br/>
+                実際の小説や質の高いパズルから派生したベンチマークで、コンテキストサイズの制限に対処しています。しかし、これらのベンチマークでも<span class="highlight">解答空間は比較的制約されています</span>。
+            </div>
+</div>
+<div class="bubble-box">
+<p>📌 <span class="keyword">重要なポイント：</span></p>
+<p>本論文の著者らの知る限りでは、探偵小説の形式を活用し、<span class="highlight">記号的アノテーション</span>と、<span class="highlight">広大なコンテキスト</span>および<span class="highlight">広大な解答空間</span>を特徴とする推論タスクを組み合わせた既存のベンチマークは存在しません。</p>
+<p>つまり、これまでの研究では、以下の要素を同時に満たすものがなかったのです。</p>
+<ul class="unstyled-list">
+<li>✅ 複雑な物語形式（自然な文脈）</li>
+<li>✅ 論理構造の明確なアノテーション</li>
+<li>✅ 長大な情報量（コンテキスト）</li>
+<li>✅ 膨大な選択肢（解答空間）</li>
+</ul>
+</div>
+<p>各ベンチマークの特性の包括的な概要は、論文中の<span class="keyword">Table 1</span>に示されています。TURNABOUTLLMは、これらの既存研究のギャップを埋めるものとして位置づけられます。</p>
+<img alt="Table 1: Qualitative comparison of TURNABOUTLLM against other deductive reasoning benchmarks." class="section-image" src="table1.png"/>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-table"></i> Table 1 の見方と解説</div>
+<p>この表は、TURNABOUTLLMと他の演繹的推論ベンチマークを質的に比較したものです。表の行が各ベンチマーク、列が評価軸（特性）を示しています。✔️マークは、そのベンチマークがその特性を満たしていることを意味します。</p>
+<ul class="unstyled-list">
+<li><span class="badge yellow">Sym. (Symbolic Logical Annotations):</span> 記号的な論理アノテーションの有無。これがついていると、推論過程を細かく分析できます。</li>
+<li><span class="badge yellow">Nat. (Natural Scenarios):</span> 自然なシナリオ（人間が書いた物語など）に基づいているか。</li>
+<li><span class="badge yellow">SLC (Super-long Contexts):</span> 超長文のコンテキストを含んでいるか。現実の問題は情報量が多いことが多いです。</li>
+<li><span class="badge yellow">LAS (Large Answer Spaces):</span> 解答の選択肢が非常に多いか。これも現実の複雑さを反映します。</li>
+<li><span class="badge yellow">MH (Multi-hop Reasoning Steps):</span> 複数の推論ステップ（マルチホップ）を必要とするか。</li>
+<li><span class="badge yellow">Het. (Heterogeneous Reasoning Types):</span> 多様な種類の推論（時間、空間、因果など）を必要とするか。</li>
+</ul>
+<p>注目すべきは、TURNABOUTLLMが<span class="highlight">これら全ての特性を同時に満たす最初のベンチマークである</span>と主張している点です。これは、より現実的で複雑な状況下でのLLMの演繹的推論能力を評価するための重要な一歩と言えるでしょう。</p>
+</div>
+</div>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-star"></i> TURNABOUTLLMの位置づけ</div>
+<p>この「Related Work」セクションを通じて、既存のLLM推論ベンチマークがそれぞれ特定の側面で貢献してきた一方で、いくつかの重要な課題を残してきたことが明らかになりました。特に、</p>
+<ol>
+<li><span class="highlight">自然な文脈での複雑な推論</span></li>
+<li><span class="highlight">詳細な論理構造のアノテーション</span></li>
+<li><span class="highlight">長大なコンテキストと広大な解答空間</span></li>
+</ol>
+<p>を同時に扱えるベンチマークが不足していました。TURNABOUTLLMは、まさにこのギャップを埋めることを目的としており、探偵ゲームというユニークな題材を用いることで、これらの要素を兼ね備えた新しい評価軸を提案しています。これにより、LLMのより深い推論能力の解明が期待されます。🔍</p>
+</div>
+</div>
+<div class="section-card" id="3_Dataset_and_Task">
+<h2 class="section-title"><i class="fas fa-database"></i> 3 Dataset and Task</h2>
+<div class="content-box">
+<p>このセクションでは、論文で提案されている新しいデータセット <span class="keyword">TURNABOUTLLM</span> について詳しく解説します。このデータセットは、人気のある推理ゲームシリーズである「<span class="highlight">逆転裁判</span>」と「<span class="highlight">ダンガンロンパ</span>」の計11タイトルを基に構築されています。これらのゲームは、複雑なストーリーと巧妙なトリックが特徴で、高度な演繹的推論能力を評価するのに非常に適しています。</p>
+<p>主な目的は、大規模言語モデル（LLM）の<span class="keyword">演繹的推論能力</span>を、特に長大な物語文脈の中で評価することです。このセクションを読むことで、TURNABOUTLLMデータセットがどのように作成され（セクション3.1）、どのような追加情報（アノテーション）が付与され（セクション3.2）、そしてデータセット全体の統計的特徴（セクション3.3）がどうなっているのかを理解することができます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> このセクションのポイント</p>
+<ul>
+<li>✏️ データセットの元ネタ：逆転裁判シリーズ、ダンガンロンパシリーズ（計11タイトル）</li>
+<li>🎯 目的：LLMの長文コンテキストにおける演繹的推論能力の評価</li>
+<li>📖 内容：データ作成方法、アノテーション詳細、統計情報</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 3.1 Data Creation (データ作成)</h3>
+<div class="content-box">
+<p>ここでは、TURNABOUTLLMデータセットが具体的にどのようにして作られたのか、そのプロセスを「<span class="keyword">抽出</span>」と「<span class="keyword">修正</span>」の2つのステップに分けて見ていきましょう。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-download"></i> Extraction (抽出)</p>
+<p>まず、データセットの元となる情報を集めることから始まります。研究チームは、以下の情報源からデータを収集（クロールおよび解析）しました。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-link"></i> <span class="highlight">Ace Attorney Wiki (逆転裁判 Wiki)</span></li>
+<li><i class="fas fa-archive"></i> <span class="highlight">Danganronpa archive (ダンガンロンパ アーカイブ)</span></li>
+</ul>
+<p>これらの情報源から、主に以下の4種類のデータが抽出されました：</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-user-friends"></i> <strong>キャラクター情報</strong></p>
+<p>名前、性別、年齢、キャラクターの説明など。</p>
+</div>
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-search"></i> <strong>証拠品情報</strong></p>
+<p>証拠品名、入手元、詳細な説明など。（論文中では"evidence information"と記載されていますが、ゲームの文脈を考えると「証拠品」が適切です。）</p>
+</div>
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-comments"></i> <strong>証言</strong></p>
+<p>ゲームの主要な尋問パートでの証言。話者、証言内容、そしてその証言が矛盾している場合に提示すべき正しい証拠品の情報を含みます。</p>
+</div>
+<div class="info-card">
+<p class="icon-item"><i class="fas fa-file-alt"></i> <strong>ゲームプレイ全文トランスクリプト</strong></p>
+<p>セリフ、情報テキスト、フレーバーテキスト（物語を豊かにするための補足的なテキスト）など、ゲーム全体の文脈として使用される情報。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-eye"></i> テキスト情報への集中</p>
+<p>これらのゲームは元々<span class="keyword">ビジュアルノベル</span>（視覚的な要素とテキストで物語が進行するゲーム）ですが、このデータセットでは主に<span class="highlight">テキスト要素のみ</span>を考慮しています。多くの場合、テキスト情報だけで推論は十分可能だからです。ただし、推論に視覚的な情報が不可欠な場合は、その重要な視覚的特徴が<span class="highlight">手動でキャプション（説明文）として付与</span>されています。</p>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-edit"></i> Modification (修正)</p>
+<p>上記で抽出されたデータを用いて、個々の問題例、すなわち「<span class="keyword">ターン</span>」が構築されます。各ターンにおけるモデルへの入力と期待される出力は以下の通りです。</p>
+<div class="two-column">
+<div class="column">
+<div class="glass-card">
+<p style="text-align: center; font-weight: bold; color: var(--color-primary);"><i class="fas fa-arrow-down"></i> モデルへの入力</p>
+<ol>
+<li><span class="keyword">$C_i$</span> : 全キャラクターの情報</li>
+<li><span class="keyword">$E_i$</span> : 全証拠品の情報</li>
+<li><span class="keyword">$T_i$</span> : 証言の配列（リスト）</li>
+<li><span class="keyword">$X$</span> (オプション) : 推論に必要な追加情報を提供する可能性のある文脈</li>
+</ol>
+</div>
+</div>
+<div class="column">
+<div class="glass-card">
+<p style="text-align: center; font-weight: bold; color: var(--color-accent1);"><i class="fas fa-arrow-up"></i> モデルからの出力</p>
+<p>証言 <span class="keyword">$T_i$</span> と証拠品 <span class="keyword">$E_j$</span> のペア <span class="highlight">$(T_i, E_j)$</span>。これは、ある証言 <span class="keyword">$T_i$</span> に対して、矛盾を指摘するために証拠品 <span class="keyword">$E_j$</span> を提示する、という行動を表します。</p>
+<p>場合によっては、正解となるペアが複数存在することもあります。</p>
+</div>
+</div>
+</div>
+<p>このタスクは、本質的には<span class="keyword">多肢選択形式</span>であり、取りうる選択肢の組み合わせ（<span class="keyword">行動空間</span>）は、証言の数 <span class="highlight">$|T|$</span> と証拠品の数 <span class="highlight">$|E|$</span> の積、つまり <span class="formula">\( |T| \times |E| \)</span> となります。これは数百のオーダーになることもあります。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tools"></i> データセットの厳密性のための修正</p>
+<p>データセットは元のゲームにほぼ忠実ですが、推論の<span class="keyword">厳密性</span>を保証するために、いくつかの種類の修正が加えられています。例えば：</p>
+<ul>
+<li>言葉遣いの変更</li>
+<li>矛盾が曖昧なターンの削除</li>
+<li>論理の飛躍を補うための情報の追加</li>
+</ul>
+<p>これにより、LLMが論理的に矛盾を見つけ出す能力をより正確に評価できるようになっています。</p>
+</div>
+</div>
+<p>具体的な証拠と証言の例は、以下のTable 2で示されています（一部編集・明確化されています）。</p>
+<img alt="Table 2: Examples of evidences and testimonies of each reasoning type" class="table-image" src="table2.png"/>
+<div class="bubble-box">
+<p><i class="fas fa-search-plus"></i> <strong>Table 2 の見方</strong></p>
+<p>この表は、後述する様々な<span class="keyword">推論タイプ</span>（空間的、時間的など）ごとに、典型的な「証言 (Testimony)」と「証拠 (Evidence)」の例を示しています。そして、それらがどのように「矛盾 (Contradiction)」を引き起こすのかを簡潔に説明しています。例えば、「時間的推論」では、ある人物のアリバイ（証言）と、事件発生時刻を示す証拠との間に時間のズレがある、といった矛盾が示されます。この表を見ることで、データセットに含まれる問題がどのような性質を持っているのか、具体的なイメージを掴むことができます。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tags"></i> 3.2 Annotations (アノテーション)</h3>
+<div class="content-box">
+<p>TURNABOUTLLMデータセットの評価の<span class="keyword">厳密性</span>を高め、モデルの能力についてより<span class="keyword">詳細な洞察</span>を得るために、各ターンには以下の3つの側面に関するアノテーション（注釈情報）が付与されています。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-info-circle"></i></p>
+<p><strong>メタデータ (Metadata)</strong></p>
+</div>
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-project-diagram"></i></p>
+<p><strong>推論チェーン (Reasoning Chains)</strong></p>
+</div>
+<div class="feature-item">
+<p class="icon-item"><i class="fas fa-brain"></i></p>
+<p><strong>推論タイプ (Reasoning Types)</strong></p>
+</div>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-info-circle"></i> メタデータ (Metadata)</p>
+<p>まず、各ターンについて、矛盾を特定するために必要な情報を伝える<span class="highlight">現在のストーリーの一文要約</span>がアノテーションされています。さらに、矛盾を決定的に構成する<span class="keyword">証拠品中の記述箇所</span>と<span class="keyword">証言中の記述箇所</span>（スパン）が提供されます。</p>
+<p>次に、ターンが「<span class="keyword">自己完結型 (self-contained)</span>」かどうかがラベル付けされます。</p>
+<ul>
+<li><span class="badge green">自己完結型</span>: キャラクター情報、証拠品情報、証言のみを使用し、他の文脈（例：会話のトランスクリプト）なしで矛盾を推論できる場合。</li>
+<li><span class="badge orange">非自己完結型</span>: そうでない場合。この場合、モデルは完全な文脈（その時点までの全トランスクリプト）から必要な情報を収集するために「<span class="keyword">大海の一針 (needle-in-a-haystack)</span>」検索を実行する必要があります。このようなケースでは、<span class="highlight">期待される文脈のスパン</span>が手動でアノテーションされます。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-location-dot"></i> 用語解説：Needle-in-a-haystack Retrieval</p>
+<p>「干し草の山から針を探す」と訳され、大量の無関係な情報の中から、ごくわずかな重要な情報を見つけ出すタスクのことです。LLMにとっては非常に困難な課題の一つとされています。</p>
+</div>
+<p><em>(論文中ではFigure 8でこの「大海の一針」検索の例が示されていると言及されていますが、Figure 8はこのセクションの範囲外のため、ここでは省略します。)</em></p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-project-diagram"></i> 推論チェーン (Reasoning Chain)</p>
+<p>次に、各ターンで矛盾を導き出すために使用される<span class="keyword">推論チェーン</span>がアノテーションされます。<em>(これはFigure 2で図示されていると論文中にありますが、画像は提供されていないため、構造を説明します。)</em></p>
+<p>推論チェーンは、以下の3つのコンポーネントからなる<span class="highlight">木構造</span>をしています。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge blue">葉ノード 🍃</span> <strong>観察された事実 (Observed facts)</strong>: 証拠品、証言、または文脈から直接言い換えられた事実。
+                </div>
+<div class="pipeline-step">
+<span class="badge purple">非葉ノード 🔗</span> <strong>原子的命題 (Atomic propositions)</strong>: 事実に基づいて新しい事実を導き出す、手書きの<span class="keyword">モーダスポネンス規則</span>。<br/>
+<em>(モーダスポネンス: 「もしAならばBである」と「Aである」が真なら、「Bである」も真である、という基本的な推論形式。)</em>
+</div>
+<div class="pipeline-step">
+<span class="badge red">根ノード 🎯</span> <strong>矛盾 (Contradiction)</strong>: 明らかに矛盾する2つの事実に基づいて示唆される結論。
+                </div>
+</div>
+<p>TURNABOUTLLMにおける推論は自然な物語テキストに基づいているため、推論チェーンには<span class="highlight">主観性</span>が避けられません。そのため、命題をアノテーションする際には、以下の<span class="keyword">望ましい特性 (desiderata)</span> が守られています：</p>
+<ul>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 現実世界の一般的な規則のみを考慮する（「もしも」の話や極端なケースは無視する）。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 命題をできるだけ合理的に<span class="highlight">原子的（基本的な単位）</span>にする。</li>
+</ul>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-brain"></i> 推論タイプ (Reasoning Types)</p>
+<p>最後に、各ターンについて、詳細な<span class="keyword">演繹的推論のタイプ</span>がアノテーションされます。研究チームは以下の<span class="highlight">7つの推論タイプ</span>を定義しました。これらの例は前述のTable 2に示されています。</p>
+<div class="tag-list">
+<span class="tag">空間的 (Spatial)</span>
+<span class="tag">時間的 (Temporal)</span>
+<span class="tag">因果的 (Causal)</span>
+<span class="tag">行動的 (Behavioral)</span>
+<span class="tag">数値的 (Numerical)</span>
+<span class="tag">物理的 (Physical)</span>
+<span class="tag">スペル (Spelling)</span>
+</div>
+<p>各ターンには、アノテーションされた推論チェーン内の命題の根底にある推論の種類に基づいて、1つまたは複数のタイプが割り当てられます。（これもFigure 2で関連付けが示されているとされています。）</p>
+<p>各推論カテゴリには無視できない数のターンが含まれており（これは後述のFigure 3bで示されます）、このデータセットが<span class="keyword">多様な推論能力</span>を要求することを示しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-clock"></i> アノテーション作業について</p>
+<p>訓練されたアノテーターが各ターンのアノテーションを行うのに、平均して<span class="highlight">20分</span>かかりました。その結果、総労働時間は約<span class="highlight">100時間</span>に達しました。これは、データセットの質の高さを担保するための多大な努力を示しています。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-bar"></i> 3.3 Statistics (統計情報)</h3>
+<div class="content-box">
+<p>このセクションでは、TURNABOUTLLMデータセットの全体的な統計情報についてまとめます。</p>
+<div class="glass-card">
+<p style="text-align: center; font-weight: bold; color: var(--color-primary);"><i class="fas fa-calculator"></i> TURNABOUTLLMの概要統計 (Table 3より)</p>
+<p>Table 3 (論文中に画像あり、ここでは主要な情報を抜粋) は、TURNABOUTLLMの統計情報をまとめたものです。</p>
+<ul>
+<li><i class="fas fa-layer-group"></i> 総ターン数: <span class="highlight keyword">306ターン</span></li>
+<li><i class="fas fa-users"></i> 平均キャラクター数: <span class="highlight">12人</span></li>
+<li><i class="fas fa-file-signature"></i> 平均証拠品数: <span class="highlight">38個</span></li>
+<li><i class="fas fa-comment-dots"></i> 平均証言数: <span class="highlight">11件</span></li>
+<li><i class="fas fa-font"></i> 平均テキスト文字数: <span class="highlight">25,000文字</span></li>
+</ul>
+<p class="reference">(Table 3は、組み込まれた探偵ゲームのタイトル別に分類されたTURNABOUTLLMの全体的な統計を示しています。AA123は「逆転裁判123 成歩堂セレクション」、AA456は「逆転裁判456 王泥喜セレクション」、GAA12は「大逆転裁判1&amp;2 -成歩堂龍ノ介の冒險と覺悟-」、AAI12は「逆転検事1&amp;2 御剣セレクション」、DGRP1は「ダンガンロンパ 希望の学園と絶望の高校生」を指します。)</p>
+<img alt="Table 3: Overall statistics of TURNABOUTLLM" class="table-image" src="table3.png"/>
+</div>
+<p>論文中のFigure 3aとFigure 3bは、データセットのさらなる統計的特徴を示しています。</p>
+<img alt="Figure 3a: Illustration of the number of turns in TURNABOUTLLM with respect to available evidences and testimonies" class="figure-image" src="figure3a.png"/>
+<div class="bubble-box">
+<p><i class="fas fa-search-plus"></i> <strong>Figure 3a の見方</strong></p>
+<p>この図 (Figure 3a) は、TURNABOUTLLMにおける<span class="keyword">回答空間の広さ</span>を示しています。横軸が利用可能な<span class="highlight">証拠品の数</span>、縦軸が利用可能な<span class="highlight">証言の数</span>を表しています。円の大きさは、その証拠品数と証言数の組み合わせに対応する<span class="highlight">ターンの数</span>を示しています。 平均して、<span class="highlight keyword">約200の証拠品-証言ペア</span>から選択する必要があり、これはLLMにとって非常に多くの選択肢があることを意味します。</p>
+</div>
+<img alt="Figure 3b: Number of TURNABOUTLLM turns with respect to required reasoning capabilities" class="figure-image" src="figure3b.png"/>
+<div class="bubble-box">
+<p><i class="fas fa-search-plus"></i> <strong>Figure 3b の見方</strong></p>
+<p>この図 (Figure 3b) は、矛盾を見つけるために必要とされる<span class="keyword">様々な推論能力の分布</span>を示しています。棒グラフは、組み込まれたゲームタイトル別に分類されており、各推論タイプ（例：空間的、時間的など）がどの程度のターン数で要求されるかを表しています。例えば、「Tem. (Temporal: 時間的)」や「Cau. (Causal: 因果的)」といった推論が多く求められることがわかります。この図から、データセットが<span class="highlight">多様な種類の推論能力</span>をテストするように設計されていることが見て取れます。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i> TURNABOUTLLMの挑戦性</p>
+<p>これらの統計情報は、TURNABOUTLLMがLLMの能力にとって<span class="highlight keyword">挑戦的で複雑なベンチマーク</span>であることの証拠となります。特に、広大な回答空間と多様な推論タイプが求められる点が、このデータセットの難易度を高めています。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="4_Evaluation_Protocol">
+<h2 class="section-title"><i class="fas fa-clipboard-check"></i>4 Evaluation Protocol</h2>
+<div class="content-box">
+<p>このセクションでは、提案されたベンチマークデータセット <span class="keyword">TURNABOUTLLM</span> を用いて、大規模言語モデル（LLM）の演繹的推論能力をどのように評価するかの具体的な手順や基準（プロトコル）を定めています。このプロトコルは、モデルの性能を公平かつ多角的に測定するために非常に重要です。🔍</p>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <strong>このセクションの目的</strong>：LLMがどれだけ複雑な探偵ゲームのシナリオで論理的な矛盾を見つけ出せるかを評価するための、一貫した枠組みを提供することです。</p>
+<p><i class="fas fa-question-circle"></i> <strong>主な論点</strong>：モデルへの情報の提示方法、正解の定義、評価に用いる指標、そして様々な条件下でのモデルの振る舞いを分析するための評価設定について詳しく説明します。</p>
+</div>
+<div class="content-box">
+<p>モデルをデータセットで評価するために、ゲームの各データポイント（ターン）から特定のフィールド（キャラクター情報、証拠、証言など）を抽出して、<span class="highlight">単一のプロンプト</span>を形成します。そして、モデルには1ターンにつき1回だけ、このプロンプトが提示されます。</p>
+<p>モデルに求められるタスクは、提示された情報の中から<span class="keyword">矛盾する証拠と証言のペアのインデックス（番号）</span>を特定することです。📝 各ターンには複数の矛盾するペアが存在する可能性があるため、モデルが提案したペアが、あらかじめ用意された正解の矛盾ペアのリストに含まれていれば、その回答は<span class="highlight">正解</span>とみなされます。</p>
+</div>
+<img alt="Table 3: Overall statistics of TURNABOUTLLM" src="table3.png" style="width: 80%; margin-bottom: 15px;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-table"></i> Table 3 解説</p>
+<p>この表 (Table 3) は、<span class="keyword">TURNABOUTLLM</span> データセットの全体的な統計情報を、収録されている探偵ゲームのタイトル別に分類して示しています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-gamepad"></i> <strong>AA123</strong>: Phoenix Wright: Ace Attorney Trilogy (逆転裁判123 成歩堂セレクション)</li>
+<li><i class="fas fa-gamepad"></i> <strong>AA456</strong>: Apollo Justice Ace Attorney Trilogy (逆転裁判456 王泥喜セレクション)</li>
+<li><i class="fas fa-gamepad"></i> <strong>GAA12</strong>: The Great Ace Attorney Chronicles (大逆転裁判1&amp;2 -成歩堂龍ノ介の冒險と覺悟-)</li>
+<li><i class="fas fa-gamepad"></i> <strong>AAI12</strong>: Ace Attorney Investigations Collection (逆転検事1&amp;2 御剣セレクション)</li>
+<li><i class="fas fa-gamepad"></i> <strong>DGRP1</strong>: Danganronpa: Trigger Happy Havoc (ダンガンロンパ 希望の学園と絶望の高校生)</li>
+</ul>
+<p>表には、各ゲームタイトルからのターン数 (#Turns)、平均キャラクター数 (#Characters)、平均証拠数 (#Evidences)、平均証言数 (#Testimonies)、平均テキスト文字数 (#Characters (text)) が記載されています。これにより、データセットの規模や各ゲームソースの特性が分かります。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-bar"></i> Figure 3 解説 (画像パスなしのため、内容を説明します)</p>
+<p>Figure 3 は、TURNABOUTLLMデータセットのさらなる統計情報を示しています。この図は2つのパートから構成されています。</p>
+<p><strong>(a) TURNABOUTLLMにおけるターン数の図解</strong></p>
+<p>この図 (Figure 3a) は、横軸に利用可能な<span class="keyword">証拠の数</span>、縦軸に利用可能な<span class="keyword">証言の数</span>を取り、各ゲームタイトル（AA123, AA456, GAA12, AAI12, DGRP1）におけるターンを円でプロットしています。円の大きさは、その組み合わせにおける<span class="highlight">ターン数</span>を表していると考えられます。この図から、各ゲームタイトルで、プレイヤーが選択肢として考慮しなければならない証拠と証言の組み合わせの規模（つまり<span class="keyword">回答空間の大きさ</span>）が視覚的に理解できます。例えば、証拠数が10個、証言数が5個の場合、回答空間は \(10 \times 5 = 50\) 通りとなります。グラフ上では、AA123が比較的多くの証拠と証言を持つターンを含んでいることが示唆されています。</p>
+<p><strong>(b) 必要な推論能力別のTURNABOUTLLMのターン数</strong></p>
+<p>この図 (Figure 3b) は、矛盾を見つけ出すために必要とされる<span class="keyword">推論能力の種類</span>（例：空間的(Spa.)、時間的(Tem.)、因果的(Cau.)、行動的(Beh.)、数値的(Num.)、物理的(Phy.)、スペル(Spe.)）ごとに、TURNABOUTLLMデータセット中のターン数を分類して示しています。各バーは特定の推論能力に対応し、そのバーの高さが該当するターン数を示します。この図から、データセットが多様な種類の推論能力を評価できるように設計されていることがわかります。例えば、時間的推論や因果推論を必要とする問題が多く含まれていることなどが読み取れます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-pie"></i> Evaluation Metrics (評価指標)</h3>
+<div class="content-box">
+<p>モデルの性能を定量的に評価するために、以下の3つの主要な指標を使用します。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p class="icon-item"><i class="fas fa-bullseye"></i></p>
+<p class="keyword">Overall Accuracy (総合正解率)</p>
+<p>モデルが評価された全ターンの中で、正しく矛盾を指摘できた割合（パーセンテージ）です。これが最も基本的な性能指標となります。</p>
+</div>
+<div class="info-card glass-card">
+<p class="icon-item"><i class="fas fa-file-alt"></i></p>
+<p class="keyword">Evidence Accuracy (証拠正解率)</p>
+<p>モデルが提示した証拠が正しかった割合です。矛盾ペア $(T_i, E_j)$ のうち、$E_j$ が正解リストに含まれる証拠であった割合を示します。</p>
+</div>
+<div class="info-card glass-card">
+<p class="icon-item"><i class="fas fa-comment-dots"></i></p>
+<p class="keyword">Testimony Accuracy (証言正解率)</p>
+<p>モデルが提示した証言が正しかった割合です。矛盾ペア $(T_i, E_j)$ のうち、$T_i$ が正解リストに含まれる証言であった割合を示します。</p>
+</div>
+</div>
+<p>これらの指標により、モデルが全体としてどれだけ優れているかだけでなく、証拠と証言のどちらを特定するのが得意（または苦手）かといった詳細な分析も可能になります。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-columns"></i> Data Splits (データ分割)</h3>
+<div class="content-box">
+<p>TURNABOUTLLMデータセットについて、特定の<span class="keyword">訓練 (train)</span>、<span class="keyword">開発 (develop)</span>、<span class="keyword">テスト (test)</span> の分割方法は推奨していません。この決定は、将来このデータセットを利用する研究者に委ねられています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> 本研究での扱い</p>
+<p>この論文の研究では、<span class="highlight">Ace Attorneyデータセットの全体を評価セット</span>として扱っています。これは、著者らがモデルのハイパーパラメータ調整やモデリングの改善といった、訓練データや開発データを必要とする作業を試みていないためです。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> Evaluation Settings (評価設定)</h3>
+<div class="content-box">
+<p>モデルの推論能力のさまざまな側面をより深く評価するために、データ内で利用可能なプロパティフィールドに基づいて、<span class="highlight">4つのバリエーションの評価プロンプトテンプレート</span>を提案しています。これにより、異なる条件下でモデルがどのように振る舞うかを詳細に調査できます。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge blue">1</span> <strong>Basic zero-shot prompt (基本ゼロショットプロンプト)</strong> ✏️</p>
+<ul>
+<li><strong>平均語数</strong>: 約1,686語。</li>
+<li><strong>内容</strong>: 現在のターンにおける全てのキャラクター、証拠、証言の説明を順番に含みます。</li>
+<li><strong>ゼロショットとは？</strong>: モデルにタスクの具体例（解き方）を事前に示さず、タスクの指示のみを与えて能力を試す方法です。</li>
+<li><strong>追加コンテキスト</strong>: もし証拠の説明だけでは推論に不十分な場合、<span class="keyword">「コンテキストスパン」</span>と呼ばれる短い抜粋（関連性の高いコンテキスト情報を保証するよう、コンテキストフィールドから抽出されたもの）を、対応する証拠の説明に追記します。</li>
+</ul>
+</div>
+<div class="pipeline-step">
+<p><span class="badge orange">2</span> <strong>One-shot, Chain-of-Thought (CoT) prompt (ワンショットCoTプロンプト)</strong> <i class="fas fa-lightbulb"></i> <i class="fas fa-shoe-prints"></i></p>
+<ul>
+<li><strong>平均語数</strong>: 約2,280語。</li>
+<li><strong>Chain-of-Thought (CoT) とは？</strong>: モデルに最終的な答えだけでなく、そこに至るまでの思考プロセス（ステップバイステップの推論）を生成させる手法です。複雑な問題解決能力の向上に繋がることが期待されます。</li>
+<li><strong>ワンショットとは？</strong>: モデルにタスクの具体例を1つだけ示して、同様にタスクを実行させる方法です。</li>
+<li><strong>内容</strong>: プロンプト内に1つの例を含めることで、モデルが質問に答える前に<span class="highlight">「考える」</span>ように誘導します。</li>
+<li><strong>追加指示</strong>: ワンショットの例に加えて、「<span class="keyword">let's think step by step</span> (一歩ずつ考えましょう)」という指示をプロンプトの最後に加えることで、より詳細な思考プロセスを促します。</li>
+<li><strong>適用対象外</strong>: DeepSeek-R1やOpenAIのoシリーズモデルなど、既にCoTを行うように訓練されているモデルには、この追加指示は適用されません。</li>
+</ul>
+</div>
+<div class="pipeline-step">
+<p><span class="badge purple">3</span> <strong>Full-context prompt (フルコンテキストプロンプト)</strong> <i class="fas fa-archive"></i> <i class="fas fa-search"></i></p>
+<ul>
+<li><strong>平均語数</strong>: 約44,000語（非常に長い！）。</li>
+<li><strong>内容</strong>: 現在のターンに至るまでの、<span class="highlight">同じ裁判ケース内の全ての先行ターンの完全なコンテキスト</span>（ゲームの全記録）を含みます。</li>
+<li><strong>特徴</strong>: これは人間プレイヤーが実際にゲームを体験する方法に近く、非常に挑戦的であると同時に現実的な設定です。</li>
+<li><strong>課題</strong>: キャラクター、証拠、証言の情報だけでは自己完結していない（つまり、それだけでは矛盾を見つけられない）ターンの場合、モデルは膨大なコンテキストの中から決定的な情報を探し出す<span class="keyword">「needle-in-a-haystack (干し草の山の中の針探し)」</span>のような情報検索を行う必要があります。</li>
+</ul>
+</div>
+<div class="pipeline-step">
+<p><span class="badge green">4</span> <strong>Ablation prompt (アブレーションプロンプト)</strong> <i class="fas fa-brain"></i> <i class="fas-eraser"></i></p>
+<ul>
+<li><strong>平均語数</strong>: 約537語。</li>
+<li><strong>アブレーションスタディとは？</strong>: モデルや手法の特定の部分を取り除いたときに、性能がどのように変化するかを調べる実験です。その部分の重要性を評価します。</li>
+<li><strong>目的</strong>: モデルが訓練コーパス（学習データ）から<span class="highlight">ゲームの内容を記憶しているかどうか</span>を調べるためです。</li>
+<li><strong>内容</strong>: キャラクターと証拠に関する<span class="keyword">全ての説明文を削除</span>します。モデルはキャラクター名と証拠名「だけ」を頼りに推論しなければなりません。</li>
+<li><strong>推論の困難さ</strong>: 通常、名前だけでは矛盾を特定するには情報が不十分です。</li>
+<li><strong>期待される結果</strong>: もしモデルがゲーム内の重要な出来事を単に記憶しているだけであれば、このプロンプトでは性能が大幅に低下するはずです。逆に、真に推論しているのであれば、説明がなくてもある程度の性能を維持できるかもしれません。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="content-box">
+<p>前述の通り、証拠や時には証言には画像が付随しており、これが矛盾の推論に決定的な役割を果たすことがあります。この研究では、これらの画像の内容を<span class="keyword">完全にキャプション化</span>（テキストで説明）していますが、将来のマルチモーダル評価（テキストと画像の両方を扱えるモデルの評価）のために、全ての画像データも提供し、画像が推論に必要となる箇所を明確にラベル付けしています。🖼️</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-flask"></i> Experiments (実験)</h3>
+<div class="content-box">
+<p>上記4種類のプロンプトバリエーションを用いて、<span class="highlight">12種類の大規模言語モデル (LLM)</span> を評価します。これらのLLMは、以下の4つのモデルファミリーに由来します。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-brain"></i></p>
+<p class="keyword">DeepSeekシリーズ</p>
+<ul class="unstyled-list">
+<li>DeepSeek-R1 (DS-R1) - 671Bパラメータ</li>
+<li>DeepSeek-V3 (DS-V3)</li>
+<li>DeepSeek-R1-70B (DS-R1-70B) - 蒸留モデル</li>
+<li>DeepSeek-R1-32B (DS-R1-32B) - 蒸留モデル</li>
+<li>DeepSeek-R1-8B (DS-R1-8B) - 蒸留モデル</li>
+</ul>
+</div>
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fab fa-openai"></i></p>
+<p class="keyword">OpenAIファミリー</p>
+<ul class="unstyled-list">
+<li>GPT-4.1 (G4.1)</li>
+<li>GPT-4.1-mini (G4.1-M)</li>
+<li>o3-mini (O3-M) - 推論モデル</li>
+<li>o4-mini (O4-M) - 推論モデル</li>
+</ul>
+</div>
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-feather-alt"></i></p>
+<p class="keyword">Llama-3.1-instructファミリー</p>
+<ul class="unstyled-list">
+<li>Llama-70B (L3.1-70B)</li>
+<li>Llama-8B (L3.1-8B)</li>
+</ul>
+</div>
+<div class="feature-item glass-card">
+<p class="icon-item"><i class="fas fa-robot"></i></p>
+<p class="keyword">QwQ-32B (Q-32B)</p>
+<ul class="unstyled-list">
+<li>推論とコーディングに優れたモデル</li>
+</ul>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-server"></i> 実行環境</p>
+<p>OpenAIモデルと最大の2つのDeepSeekモデル（DS-R1, DS-V3）はAPI経由で実行されます。それ以外のモデルは、HuggingFaceとKANI (Zhu et al., 2023) を使用して、<span class="highlight">8基のH100 GPU</span>上でローカルに実行されます。</p>
+</div>
+</div>
+<img alt="Figure 4: Performance comparison on TURNABOUTLLM" src="model_performance_accuracy_evidence_testimony.jpg" style="width: 80%; margin-bottom: 15px;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-bar"></i> Figure 4 解説</p>
+<p>この図 (Figure 4) は、<span class="keyword">TURNABOUTLLM</span> データセットにおける12のモデルの性能比較を示しています。モデルは左から右へと順に並べられています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-bars"></i> <strong>棒グラフ</strong>: 各モデルの<span class="highlight">基本プロンプト (base prompt)</span> を使用した場合の<span class="keyword">総合正解率 (%)</span> を示しています。また、それに対応する<span class="keyword">証拠正解率</span>と<span class="keyword">証言正解率</span>も示されている可能性があります（凡例があればより明確）。</li>
+<li><i class="fas fa-arrows-alt-v"></i> <strong>矢印</strong>: ネイティブな推論能力を持たないモデル（例：CoT訓練されていないモデル）について、<span class="keyword">Chain-of-Thought (CoT) プロンプティング</span>を適用した際の性能変化を示しています。矢印が上向きならCoTで性能向上、下向きなら性能低下を意味します。</li>
+</ul>
+<p>この図から、どのモデルが最も高い正解率を達成したか、CoTプロンプティングが各モデルにどのような影響を与えたかなどを視覚的に把握できます。</p>
+</div>
+<img alt="Figure 5: Model accuracies" src="model_performance_full_context_accuracy.jpg" style="width: 80%; margin-bottom: 15px;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-line"></i> Figure 5 解説 (論文内の図ではFigure 5のキャプションが誤ってFigure 7の画像を指しているように見えますが、ここではFigure 5のキャプションに対応する図の内容を説明します)</p>
+<p>Figure 5は、モデルの正解率をいくつかの異なる要因（推論ステップ数、必要な推論タイプ、回答空間のサイズ）に対してプロットしたものです。スペースの制約から、6つの代表的なモデルの性能のみが示されています。より包括的な図は付録に示されているとのことです。</p>
+<p><strong>(a) 各モデルの平均正解率 (Average accuracy among each model)</strong></p>
+<p>キャプションには「Average accuracy among each model family declines as the number of annotated reasoning steps increases.」とありますが、図の横軸が「# Reasoning steps」（注釈付き推論ステップ数）となっていることから、これは<span class="keyword">注釈付き推論ステップ数が増加するにつれて、モデルファミリー内の平均正解率が低下する</span>傾向を示していると考えられます。つまり、より多くの推論ステップを必要とする問題ほど、モデルは正解しにくくなることを示唆しています。</p>
+<p><strong>(b) 推論タイプに関する正解率 (Accuracy with respect to the reasoning types)</strong></p>
+<p>この図は、横軸に異なる<span class="keyword">推論タイプ</span>（Spa. 空間的, Tem. 時間的, Cau. 因果的, Beh. 行動的, Num. 数値的, Phy. 物理的, Spe. スペル）を取り、縦軸に正解率 (%) を示しています。キャプションには「While performance vary a lot across models, causal reasoning is usually the weakest.」（モデルによって性能は大きく異なるが、因果推論が通常最も弱い）とあります。この図から、各モデルがどのタイプの推論を得意とし、どのタイプを苦手とするかが分かります。</p>
+<p><strong>(c) 回答空間のサイズに関する正解率 (Accuracy with respect to size of answer space)</strong></p>
+<p>この図は、横軸に<span class="keyword">回答空間のサイズ</span> \(|T| \times |E|\)（証言数 × 証拠数）を取り、縦軸に正解率 (%) を示しています。回答空間のサイズは、いくつかの範囲（例：∠60, ∠85, ...）にビン分割されているようです。キャプションには「Results does not show strong negative correlation.」（結果は強い負の相関を示していない）とあります。これは、回答空間の大きさがモデルの正解率に直接的な悪影響を与えているわけではないことを示唆しています。</p>
+<p>これらの図は、モデルの性能がどのような問題特性によって影響を受けるかを多角的に分析するためのものです。</p>
+</div>
+</div>
+<div class="section-card" id="5_Results_and_Analysis">
+<h2 class="section-title"><i class="fas fa-chart-line"></i>5 Results and Analysis</h2>
+<p>このセクションでは、大規模言語モデル（LLM）の<span class="keyword">推論能力</span>に関する主な実験結果と分析を詳しく見ていきます。まず、TURNABOUTLLMデータセットにおける12種類のモデルの全体的な正解率を概観し（図4）、その後、<span class="highlight">推論ステップ数</span>（図5a）、<span class="highlight">推論タイプ</span>（図5b）、<span class="highlight">解答空間のサイズ</span>（図5c）、<span class="highlight">推論トークン数</span>（図6）、そして<span class="highlight">プロンプティング戦略</span>（図4、7）といった要因別にモデルの性能を詳細に分析していきます。</p>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-puzzle-piece"></i>TURNABOUTLLMデータセットの全体的な難易度</h3>
+<p>まず最初に押さえておきたいのは、このTURNABOUTLLMデータセットが、現在の最先端LLMにとっても<span class="keyword">非常に難しい課題</span>であるという点です。下の図4を見てみましょう。</p>
+<img alt="Figure 4: Model performance on TURNABOUTLLM" src="model_performance_accuracy_evidence_testimony.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図4の読み解き方</span>
+<p>このグラフは、12種類のLLMの性能を比較しています。各モデルについて3つのバーがあります：</p>
+<ul>
+<li><span style="color: #CD5C5C;">■</span> <span class="keyword">Base Prompt Accuracy</span>: 基本的なプロンプトを使用した際の、証拠と証言のペアを正しく特定できた総合的な正解率。</li>
+<li><span style="color: #FFA07A;">■</span> <span class="keyword">Correct Evidence</span>: 正しい証拠を選択できた正解率（点線）。</li>
+<li><span style="color: #ADD8E6;">■</span> <span class="keyword">Correct Testimony</span>: 正しい証言を選択できた正解率（点線）。</li>
+</ul>
+<p>モデルは左から右へ、ベースラインの性能が低い順に並んでいます。ネイティブな推論能力を持たないモデルについては、<span class="highlight">矢印</span>がChain-of-Thought (CoT) プロンプティングを適用した際の性能変化を示しています。</p>
+</div>
+<p>図4が示すように、評価された12モデル全てが、TURNABOUTLLM内で正しい<span class="keyword">証拠と証言のペア</span>を特定するのに苦労しています。最も性能が高かった <span class="highlight">DS-R1</span>モデルでさえ、基本プロンプトでの正解率は<span class="keyword">$45.72\%$</span>に留まりました。これは、このデータセットがLLMの推論能力にとって大きな挑戦であることを示しています。</p>
+<p>また、興味深い点として、G4.1モデルを除き、ほとんどのモデルが<span class="highlight">正しい証言を選ぶよりも正しい証拠を選ぶ方が得意</span>でした。これは、一般的に評価対象となる証言の候補よりも証拠の候補の方が少ないという事実と一致していると考えられます。</p>
+<p>これらの結果から、TURNABOUTLLMは<span class="keyword">最先端LLMにとっても非常に困難なベンチマーク</span>であると言えます。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-shield-alt"></i>データセットの信頼性：最小限の記憶効果</h3>
+<p>LLMの評価において重要なのは、モデルが訓練データに含まれる情報を単に「記憶」しているのではなく、真に「推論」しているかを測ることです。TURNABOUTLLMデータセットは、この点で<span class="keyword">信頼性の高い独立したベンチマーク</span>として機能します。</p>
+<p>その根拠として、<span class="highlight">証拠の説明を一切与えないアブレーションプロンプト</span>（情報を削ったプロンプト）で4つのモデルを評価した結果があります。これらのモデルは、平均してわずか<span class="keyword">$15\%$</span>程度の正解率しか達成できませんでした。モデルの推論過程を詳しく見ると、証拠の名前だけを頼りに、最もありえそうな「賭け」をしていることが分かりました。</p>
+<div class="bubble-box">
+<p><i class="fas fa-brain"></i> ここでのポイント：モデルがゲーム内容を覚えてしまっていたら、証拠の説明がなくてもある程度正解できてしまうはずです。しかし、実際には成績が大幅に低下したため、モデルは<span class="highlight">ゲーム内容をほとんど記憶していなかった</span>と考えられます。</p>
+</div>
+<p>この結果から、主要なモデルはTURNABOUTLLMの内容を最小限しか記憶しておらず、このデータセットがLLM評価のための<span class="keyword">新規かつ公正な土壌</span>を確立していると結論付けられます。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-exchange-alt"></i>推論トークン数と正解率の関係</h3>
+<p>LLMが答えを出すまでには、中間的な思考プロセスとして多くの「<span class="keyword">推論トークン</span>」を生成します。この推論トークンの数と、最終的な答えの正しさにはどのような関係があるのでしょうか？</p>
+<div class="definition-box">
+<span class="definition-title"><i class="fas fa-book-open"></i>用語解説：推論トークン (Reasoning Tokens)</span>
+<p>モデルが最終的な回答（例：矛盾する証拠と証言のペア）を提示する前に、内部的に生成する中間的なテキストの単位（トークン）のことです。「えーと、この証拠はこう言っているから...でもあの証言は...」といった思考の過程のようなものとイメージできます。</p>
+</div>
+<img alt="Figure 6: Distributions of the number of generated reasoning tokens" src="reasoning_tokens_correctness_comparison.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図6の読み解き方</span>
+<p>このグラフ（バイオリンプロット）は、モデルが生成した<span class="keyword">推論トークン数</span>の分布を示しています。縦軸は推論トークン数（対数スケール）、横軸は評価対象のモデルです。</p>
+<ul>
+<li><span style="color: green; font-weight: bold;">緑色 (Correct Answers)</span>: 正しい答えを導き出した場合の推論トークン数の分布。</li>
+<li><span style="color: red; font-weight: bold;">赤色 (Incorrect Answers)</span>: 間違った答えを出した場合の推論トークン数の分布。</li>
+</ul>
+<p>各バイオリンプロットの幅が広いほど、そのトークン数のデータが多いことを示します。中央の黒い太線は中央値、箱ひげは四分位数範囲を表しています。</p>
+</div>
+<p>図6を見ると、全てのモデルにおいて、<span class="highlight">不正解だった場合の方が、正解だった場合に比べて推論トークン数の中央値も最大値も高い</span>傾向が見られます。これは、<span class="keyword">モデルの正解率と推論トークン数との間に負の相関</span>があることを示唆しています。</p>
+<p>つまり、モデルが間違った答えを出す際には、<span class="highlight">より多くの推論トークンを費やしても、必ずしも結果の改善には繋がらない</span>可能性があることを示しています。むしろ、迷走して余計な思考を重ねてしまうケースが多いのかもしれません。</p>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i>洞察：単に長く考えれば良いというわけではない</p>
+<p>この結果は、「たくさん考えれば（多くのトークンを生成すれば）良い答えが出る」という単純な考え方への警鐘と言えます。効率的な思考が重要です。</p>
+</div>
+<p>図6（対数スケールであることに注意）では、特に <span class="keyword">Q-32B</span> と <span class="keyword">DS-R1</span> が他のモデルよりも多くの推論トークンを生成していることが分かります。しかし興味深いことに、<span class="highlight">G4.1</span> は Q-32B よりもはるかに少ない推論トークンを使用しているにもかかわらず、ほぼ同等の正解率を達成しており、限られたトークン予算の下で優れた<span class="keyword">推論効率</span>を示しています。</p>
+<p>これは、「<span class="highlight">解答空間を意図的に探索すること</span>が、大量の推論トークンを出力することよりもモデルの性能にとって決定的である」という推測をさらに裏付けるものかもしれません。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-file-alt"></i>フルコンテキスト提供の影響</h3>
+<p>プロンプトに事件の<span class="keyword">完全な背景情報（フルコンテキスト）</span>を含めることは、モデルの性能にどのような影響を与えるのでしょうか？図7は、その影響がモデルのサイズによって異なることを示しています。</p>
+<img alt="Figure 7: Model performance with or without full story context" src="model_performance_full_context_accuracy.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図7の読み解き方</span>
+<p>この棒グラフは、いくつかのモデルについて、プロンプトに<span class="keyword">フルコンテキストを含めた場合（オレンジ色のバー）</span>と<span class="keyword">含めない場合（青色のバー）</span>の正解率（Accuracy %）を比較しています。</p>
+<ul>
+<li><span style="color: #6495ED;">■</span> <span class="keyword">w/o full context</span>: フルコンテキストなし（基本的なプロンプト）。</li>
+<li><span style="color: #FFA07A;">■</span> <span class="keyword">w/ full context</span>: フルコンテキストあり。</li>
+</ul>
+<p>バーの上の数値は、フルコンテキストありの場合となしの場合の正解率の差を示しています（緑色が向上、赤色が低下）。</p>
+</div>
+<p><span class="highlight">大規模モデル</span>（例：<span class="keyword">G4.1</span>、<span class="keyword">DS-R1</span>）は、フルコンテキストを提供されると、基本プロンプトの場合と比較して<span class="highlight">約15%という顕著な正解率の向上</span>を示しました。これらのモデルは、大量の情報の中から必要な情報を探し出す「干し草の中の針を探す（needle-in-a-haystack）」能力を活かせたと考えられます。</p>
+<p>一方で、<span class="highlight">小規模および中規模モデル</span>（例：<span class="keyword">L3.1-70B</span>、<span class="keyword">L3.1-8B</span>）は、逆に性能が低下しました。これは、これらのモデルがパラメータサイズの制約から、追加の文脈情報を十分に活用できないだけでなく、<span class="keyword">補助的なデータの流入によって「混乱」してしまう</span>可能性を示唆しています。</p>
+<div class="bubble-box">
+<p><i class="fas fa-exclamation-triangle"></i> 注意点：情報が多ければ良いとは限らない</p>
+<p>特に小規模なモデルにとっては、情報過多が混乱を招き、かえって性能を悪化させる可能性があることが分かります。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-sitemap"></i>推論ステップ数と解答空間サイズの影響</h3>
+<p>次に、正解にたどり着くために必要な<span class="keyword">論理的なステップの数（推論ステップ数）</span>と、<span class="keyword">解答の候補の多さ（解答空間サイズ）</span>がモデルの性能にどう影響するかを見ていきましょう。図5aと図5cを参照します。(以下の図は論文AppendixのFigure 11に掲載されているもので、本文Figure 5の議論をより詳細に示したものです)</p>
+<div class="two-column">
+<div class="column">
+<p class="keyword" style="text-align: center;">推論ステップ数の影響 (図5a相当)</p>
+<img alt="Figure 5a: Accuracy vs. Number of Reasoning Steps" src="reasoning_steps_accuracy_model_comparison.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図の見方 (推論ステップ数)</span>
+<p>このグラフは、横軸に<span class="keyword">注釈付き推論ステップ数</span>、縦軸に各モデルファミリーの平均正解率を示しています。異なる色の線が異なるモデルファミリーを表します。</p>
+</div>
+<p>図5a (上図) から、モデルアーキテクチャファミリー内の平均正解率と<span class="keyword">推論ステップ数との間には負の相関</span>があることが分かります。<span class="highlight">推論ステップ数が増えるにつれて、性能は徐々に低下</span>します。これは、より多くの論理的接続を必要とする問題ほど難易度が高いことを示しており、注釈付き推論チェーンが難易度の指標として有効であることを裏付けています。</p>
+</div>
+<div class="column">
+<p class="keyword" style="text-align: center;">解答空間サイズの影響 (図5c相当)</p>
+<img alt="Figure 5c: Accuracy vs. Size of Answer Space" src="model_accuracy_answer_space_reasoning_steps.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図の見方 (解答空間サイズ)</span>
+<p>このグラフは、横軸に<span class="keyword">解答空間のサイズ</span>（証言数×証拠数、7つのビンに分類）、縦軸に各モデルの正解率を示しています。異なる色の線が異なるモデルを表します。</p>
+</div>
+<p>対照的に、図5c (上図) を見ると、<span class="keyword">解答空間のサイズはモデルの正解率に大きな影響を与えていない</span>ように見えます。解答空間をほぼ同数のデータポイントを持つ7つのビンに分類した結果、全てのビンでモデルの性能は一貫していました。</p>
+</div>
+</div>
+<p>さらなる分析によると、推論モデルは、<span class="highlight">より深い推論を行うことなく、可能性のある証言と証拠のペアを網羅的に列挙するために多くの推論トークンを使用する傾向がある</span>ことが明らかになりました。つまり、選択肢が多くても、虱潰しに調べようとするため、選択肢の多さ自体はパフォーマンスのボトルネックになっていないのかもしれません。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-comment-dots"></i>Chain-of-Thought (CoT) プロンプティングの効果</h3>
+<p>「ステップバイステップで考えましょう」といった指示を与える <span class="keyword">Chain-of-Thought (CoT) プロンプティング</span>は、一般的にLLMの推論性能を高めるとされています。しかし、このTURNABOUTLLMデータセットではどうだったのでしょうか？図4の矢印に注目してください。</p>
+<img alt="Figure 4: CoT prompting effect (arrows)" src="model_performance_accuracy_evidence_testimony.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図4再訪：CoTプロンプティングの影響</span>
+<p>図4のグラフで、一部のモデル（ネイティブな推論能力を持たないモデル）には、基本プロンプトの性能（バーの高さ）から矢印が伸びています。この<span class="keyword">矢印の先端</span>がCoTプロンプティングを適用した際の性能を示しています。</p>
+</div>
+<p>CoTプロンプティングが推論性能に与える恩恵は<span class="highlight">最小限</span>であることが分かりました。最も小さいL3.1-8Bモデルを除く5つのモデル全てで、このプロンプティング手法は<span class="keyword">改善なしか、わずかな性能低下</span>をもたらしました。</p>
+<p>モデルの推論過程を調べると、CoTプロンプティングによって、モデルが最終結論に達するまでの時間が長くなり、「より多く考える」ようにはなりました。しかし、その<span class="highlight">延長された思考は、しばしば単一の証拠と証言のペアに固執</span>し、解答空間を広範囲に探索するには至りませんでした。</p>
+<div class="bubble-box">
+<p><i class="fas fa-exclamation-circle"></i> CoTの限界？</p>
+<p>この結果は、CoTプロンプティングが、<span class="keyword">広大な解答空間と大きなコンテキストサイズを持つ演繹的推論タスク</span>の解決には効果的ではない可能性を示唆しています。単純な思考の連鎖だけでは太刀打ちできない複雑さが、このデータセットにはあるのかもしれません。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-cogs"></i>モデルごとの特性とパラメータサイズの影響</h3>
+<p>最後に、モデルの種類による得意不得意や、モデルの規模（パラメータサイズ）が性能にどう関わるかを見ていきましょう。図5bと図4を参照します。</p>
+<p class="keyword" style="text-align: center;">推論タイプ別の性能 (図5b相当)</p>
+<img alt="Figure 5b: Accuracy with respect to reasoning types" src="model_performance_reasoning_types_accuracy.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図の見方 (推論タイプ別性能)</span>
+<p>このグラフは、横軸に<span class="keyword">推論タイプ</span>（空間、時間、因果、行動、数値、物理、スペリング）、縦軸に各モデルの正解率を示しています。異なる色の線が異なるモデルを表します。(この図も論文AppendixのFigure 11bに対応します)</p>
+</div>
+<p>図5b (上図) が示すように、要求される<span class="keyword">推論の種類によって、各モデルの得意不得意</span>が異なります。一般的にモデルは、<span class="highlight">計数や比較といった数値関連タスクで最も良い性能</span>を示し、多くは<span class="highlight">時間的推論や因果的推論で最も低いスコア</span>を示しました。これらの複雑な推論は、現在のLLMにとって依然として難しい課題のようです。</p>
+<div class="info-grid" style="grid-template-columns: 1fr;"> <!-- 1列に変更 -->
+<div class="info-card">
+<p class="keyword" style="text-align: center;">パラメータサイズと性能 (図4再訪)</p>
+<img alt="Figure 4: Model performance and parameter size" src="model_performance_accuracy_evidence_testimony.jpg"/>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-search-plus"></i>図4再訪：パラメータサイズとの関係</span>
+<p>図4のモデルは、おおむね左から右へパラメータサイズが大きくなるように（ただし厳密ではない）並んでいます。全体的な傾向として、右側のモデル（より大規模なモデル）ほど正解率が高い傾向が見られます。</p>
+</div>
+<p>さらに、図4を概観すると、<span class="keyword">モデルの性能はパラメータサイズが大きくなるにつれて向上する傾向</span>が見られます。注目すべき例外は<span class="highlight">Q-32B</span>で、これは671BのDS-R1を除く全てのより大きなモデルよりも優れた性能を示しています。パラメータサイズとモデルの正解率の間に見られるこの正の相関は、<span class="highlight">より大きなモデルが本質的に強力な演繹的推論能力を持つ可能性がある</span>ことを示唆しています。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i>解答空間の広範な探索の重要性 (図8の議論より)</h3>
+<p>論文の結論部(Section 6)で触れられている図8 (画像自体は提供されていませんが、その内容は以下で解説します)の例は、モデルが<span class="keyword">解答空間をより長く探索することで精度を向上できる</span>ことを示唆しています。この例では、G4.1とDS-R1の推論過程で明確な違いが観察されました。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-columns"></i> G4.1 vs DS-R1 の推論スタイルの比較 (図8の例より)</p>
+<div class="two-column">
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-secondary);">
+<p style="text-align: center; font-weight: bold; color: var(--color-secondary);"><i class="fas fa-robot"></i> G4.1の推論 (111トークン)</p>
+<hr/>
+<p>G4.1は、わずか111トークンしか生成せず、<span class="highlight">1つの可能性のある証拠を検討しただけ</span>で、間違った答えにたどり着きました。</p>
+<p>例示された思考プロセス (論文中のテキストブロックより抜粋・要約):</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 証言3 (T3): レイファは午後2時頃から中庭を眺めており、父親しか見ていない。</li>
+<li><i class="fas fa-search" style="color: var(--color-primary);"></i> 比較対象: 証拠24 (E24) - シャー堂の写真。午後2時頃撮影。</li>
+<li><i class="fas fa-question-circle" style="color: var(--color-accent3);"></i> 推論: もしレイファの降霊の儀式が午後2時に行われていたなら、彼女は中庭にはいなかったはず...。</li>
+<li><i class="fas fa-times-circle" style="color: var(--color-secondary);"></i> 結論: (T3, E24) <span class="badge red">不正解</span></li>
+</ul>
+<p class="reference">元の論文に記載されたGPT-4.1の推論トークン数は111。出力例はDeepSeek-R1と比較するために簡略化されています。</p>
+</div>
+</div>
+<div class="column">
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p style="text-align: center; font-weight: bold; color: var(--color-accent1);"><i class="fas fa-brain"></i> DS-R1の推論 (1418トークン)</p>
+<hr/>
+<p>対照的に、DS-R1は1,418トークンを生成し、<span class="highlight">複数の証拠を探索</span>した後、最も可能性の高い3つの候補に絞り込み、正しい答えに到達しました。</p>
+<p>例示された思考プロセス (論文中のテキストブロックより抜粋・要約):</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-list-ol" style="color: var(--color-primary);"></i> (全ての証拠を反復検証...)</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 証言3 (T3): レイファは午後2時頃から中庭を眺めており、父親しか見ていない。</li>
+<li><i class="fas fa-search" style="color: var(--color-primary);"></i> 証拠25 (E25) - アルビの供述: 午後2時頃、シャー堂が中庭にいた。</li>
+<li><i class="fas fa-exclamation-triangle" style="color: var(--color-accent3);"></i> 矛盾点: 証言3では父親しか見ていない。証拠25ではシャー堂がいた。これは矛盾。</li>
+<li><i class="fas fa-check-double" style="color: var(--color-accent1);"></i> 結論: (T3, E25) <span class="badge green">正解</span></li>
+</ul>
+<p class="reference">元の論文に記載されたDeepSeek-R1の推論トークン数は1418。出力例はGPT-4.1と比較するために簡略化されています。</p>
+</div>
+</div>
+</div>
+</div>
+<p>この観察から、<span class="keyword">広大な解答空間においては、成功する演繹的推論は広範な試行錯誤の探索に基づいており、認知的な近道はない</span>、と推測されます。つまり、じっくりと多くの可能性を検討することが、複雑な問題解決の鍵となるようです。</p>
+</div>
+<div class="note-box">
+<span class="note-title"><i class="fas fa-clipboard-check"></i>このセクションのまとめ</span>
+<ul>
+<li>✏️ TURNABOUTLLMは最先端LLMにとっても<span class="keyword">困難な課題</span>である。</li>
+<li>📌 データセットはモデルの<span class="keyword">記憶に頼らない公正な評価</span>が可能。</li>
+<li>📝 <span class="keyword">不正解の方が多くの推論トークンを消費</span>し、トークンが多いほど良いとは限らない。</li>
+<li>🔍 <span class="keyword">フルコンテキスト</span>は大規模モデルには有益だが、小・中規模モデルには逆効果のことも。</li>
+<li>📊 モデル性能は<span class="keyword">推論ステップ数が増えると低下</span>するが、解答空間サイズにはあまり影響されない。</li>
+<li>🤔 <span class="keyword">CoTプロンプティング</span>は本データセットでは限定的な効果。</li>
+<li>💡 モデルは<span class="keyword">推論タイプによって得意不得意</span>があり、一般に<span class="keyword">パラメータサイズが大きいほど高性能</span>。</li>
+<li>🔄 広大な解答空間では、<span class="keyword">広範な探索</span>が重要。</li>
+</ul>
+</div>
+</div>
+<div class="section-card" id="6_Conclusion">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i> 6 Conclusion</h2>
+<p style="font-family: 'Yomogi', cursive; text-align: center; font-size: 1.1em; margin-bottom: 25px; padding: 15px; background-color: rgba(74, 111, 165, 0.05); border-radius: 8px; border: 1px dashed var(--color-primary);">
+<i class="fas fa-project-diagram" style="color: var(--color-primary);"></i> この論文の結論として、大規模言語モデル(LLM)の推論能力に関する重要な発見と、私たちが開発した新しい評価ベンチマーク「TURNABOUTLLM」の意義、そして今後の研究への展望を詳しく見ていきましょう！ 🔍
+    </p>
+<h3 class="subsection-title"><i class="fas fa-search-plus"></i> 解答空間の探索が導く精度向上</h3>
+<div class="content-box">
+<p>大規模言語モデル（LLM）は、<span class="keyword">解答空間</span>をより<span class="highlight" style="background-color: rgba(255, 126, 95, 0.2); padding: 2px 4px; border-radius: 3px;">時間をかけて広範囲に探索する</span>ことで、その精度を効果的に向上させることができることが示唆されました。このことは、論文中の図8に示された質的な例からも明らかです。</p>
+<div class="note-box" style="margin-top: 20px; margin-bottom: 20px;">
+<p class="note-title"><i class="fas fa-lightbulb"></i> 用語解説：解答空間</p>
+<p><span class="keyword">解答空間</span>とは、問題に対して考えられる<span class="highlight">全ての可能性のある解答の集合</span>を指します。例えば、ある事件の犯人を特定する場合、容疑者全員が解答空間を構成します。この空間が大きいほど、正しい答えを見つけ出すのは難しくなります。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-user-friends fa-2x" style="color: var(--color-accent1); margin-right: 5px;"></i>
+<i class="fas fa-user-secret fa-2x" style="color: var(--color-accent1); margin-right: 5px;"></i>
+<i class="fas fa-user-tie fa-2x" style="color: var(--color-accent1);"></i>
+<p style="font-size: 0.9em;">(例：容疑者リスト)</p>
+</div>
+</div>
+<p>図8の例では、<span class="keyword">G4.1</span>モデルと<span class="keyword">DS-R1</span>モデルの推論過程で明確な行動の違いが観察されました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="info-card" style="border-left: 5px solid var(--color-secondary);">
+<h4 class="subsection-title" style="font-size: 1em; color: var(--color-secondary); border-left: none; padding-left:0;"> <i class="fas fa-robot"></i> G4.1モデルの挙動</h4>
+<p>G4.1は、わずか<span class="highlight" style="background-color: rgba(255, 213, 79, 0.3); padding: 2px 4px; border-radius: 3px;">111トークン</span>しか生成せず、<span class="highlight">1つの可能性のある証拠</span>を検討しただけで、最終的に<span class="keyword">誤った解答</span>にたどり着いてしまいました。</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-brain fa-2x" style="color: var(--color-secondary);"></i>
+<p style="font-size: 0.9em; margin-top: 5px;">少ない思考量 ➡️ 誤答</p>
+</div>
+</div>
+<div class="info-card" style="border-left: 5px solid var(--color-accent1);">
+<h4 class="subsection-title" style="font-size: 1em; color: var(--color-accent1); border-left: none; padding-left:0;"><i class="fas fa-robot"></i> DS-R1モデルの挙動</h4>
+<p>対照的に、DS-R1は<span class="highlight" style="background-color: rgba(92, 184, 92, 0.2); padding: 2px 4px; border-radius: 3px;">1,418トークン</span>を生成し、<span class="highlight">複数の証拠</span>を検討した後、最も可能性の高い<span class="keyword">3つの候補</span>に絞り込み、最終的に<span class="keyword">正しい解答</span>に到達しました。</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-accent1);"></i>
+<p style="font-size: 0.9em; margin-top: 5px;">多くの思考量 &amp; 多角的な検討 ➡️ 正答</p>
+</div>
+</div>
+</div>
+<div style="text-align: center; margin: 25px 0;">
+<p style="font-family: 'Yomogi', cursive; font-size:1.2em; color: var(--color-primary);">G4.1 と DS-R1 の推論プロセスの比較</p>
+<div style="display: flex; justify-content: space-around; align-items: flex-start; margin-top: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 8px;">
+<div style="text-align: center; width: 45%;">
+<p style="font-weight: bold;">G4.1 (111トークン)</p>
+<div style="border: 2px dashed var(--color-secondary); padding: 10px; border-radius: 8px; min-height: 120px;">
+<i class="fas fa-search fa-lg" style="color: var(--color-secondary);"></i> <span style="font-size:0.9em;">1つの証拠検討</span><br/>
+<i class="fas fa-arrow-right fa-lg" style="color: var(--color-secondary); margin: 10px 0;"></i><br/>
+<i class="fas fa-times-circle fa-lg" style="color: var(--color-secondary);"></i> <span style="font-size:0.9em;">誤答</span>
+</div>
+</div>
+<div style="text-align: center; width: 45%;">
+<p style="font-weight: bold;">DS-R1 (1,418トークン)</p>
+<div style="border: 2px dashed var(--color-accent1); padding: 10px; border-radius: 8px; min-height: 120px;">
+<i class="fas fa-search-plus fa-lg" style="color: var(--color-accent1);"></i> <span style="font-size:0.9em;">複数の証拠検討</span><br/>
+<i class="fas fa-filter fa-lg" style="color: var(--color-accent1); margin: 5px 0;"></i> <span style="font-size:0.9em;">3候補に絞込</span><br/>
+<i class="fas fa-arrow-right fa-lg" style="color: var(--color-accent1); margin: 5px 0;"></i><br/>
+<i class="fas fa-check-circle fa-lg" style="color: var(--color-accent1);"></i> <span style="font-size:0.9em;">正答</span>
+</div>
+</div>
+</div>
+</div>
+<p>この観察から、私たちは次のような<span class="keyword">仮説</span>を立てています：<br/>
+<span class="highlight" style="background-color: rgba(149, 117, 205, 0.2); padding: 3px 5px; border-radius: 3px;">広大な解答空間においては、成功する演繹的推論は、広範な試行錯誤による探索に基づいており、認知的な近道（ショートカット）は存在しないのではないか</span>、ということです。</p>
+<div class="bubble-box" style="margin-top:20px; border-color: var(--color-accent2);">
+<p style="font-family: 'Kaisei Decol', serif; font-weight: bold; color: var(--color-accent2);"><i class="fas fa-lightbulb"></i> <span class="keyword">重要な仮説</span></p>
+<p>複雑な問題（広大な解答空間を持つ問題）を解くためには、LLMは近道を見つけるのではなく、<span class="highlight">丹念に多くの可能性を検証する</span>必要があると考えられます。これは、人間が難しいパズルを解くときに、様々なアプローチを試すのに似ていますね！ 🧩</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-trophy"></i> TURNABOUTLLMの導入とその意義</h3>
+<div class="content-box">
+<p>本研究では、<span class="keyword">TURNABOUTLLM</span>という新しいベンチマークを紹介しました。これは、<span class="highlight">探偵もののビジュアルノベル</span>から抽出された、物語性が豊かで非常に長い文脈の中に、<span class="highlight">記号論理パズル</span>を埋め込んだ、初めてのベンチマークです。</p>
+<div class="feature-card-grid">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.1);">
+<i class="fas fa-book-open fa-2x" style="color: var(--color-primary); margin-bottom: 10px;"></i>
+<p style="font-weight: bold;">物語リッチな長文脈</p>
+<p style="font-size: 0.9em;">探偵ゲームのシナリオを使用</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1);">
+<i class="fas fa-puzzle-piece fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<p style="font-weight: bold;">記号論理パズル</p>
+<p style="font-size: 0.9em;">矛盾点指摘タスク</p>
+</div>
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.1);">
+<i class="fas fa-vial fa-2x" style="color: var(--color-accent1); margin-bottom: 10px;"></i>
+<p style="font-weight: bold;">初の試み</p>
+<p style="font-size: 0.9em;">この組み合わせは新しい！</p>
+</div>
+</div>
+<p>私たちは、現代の<span class="keyword">12種類のLLM</span>に対して広範な実証的研究を行いました。その結果、TURNABOUTLLMはこれらのLLMにとって<span class="highlight">非常に挑戦的な課題</span>であり、LLMの推論能力を評価するための<span class="highlight">公平な土俵</span>を提供することを示しました。</p>
+<div class="glass-card" style="margin-top: 20px; margin-bottom: 20px;">
+<p style="font-weight: bold; color: var(--color-dark); text-align: center; font-size: 1.1em;">
+<i class="fas fa-chart-line" style="color: var(--color-accent2);"></i> 実証研究のポイント
+            </p>
+<ul class="unstyled-list" style="margin-top: 10px; padding-left: 20px;">
+<li style="margin-bottom: 8px;"><i class="fas fa-check-circle" style="color: var(--color-accent1); margin-right: 5px;"></i> 12種類の最先端LLMを評価</li>
+<li style="margin-bottom: 8px;"><i class="fas fa-exclamation-triangle" style="color: var(--color-secondary); margin-right: 5px;"></i> LLMにとって高難易度であることを確認</li>
+<li style="margin-bottom: 8px;"><i class="fas fa-balance-scale" style="color: var(--color-primary); margin-right: 5px;"></i> 推論能力評価の公平な基準を提供</li>
+</ul>
+</div>
+<p>この研究の成果として、以下のものを公開します：</p>
+<ul class="tag-list" style="margin: 15px 0;">
+<li class="tag" style="background-color: var(--color-primary); color: white;">データセット <i class="fas fa-database"></i></li>
+<li class="tag" style="background-color: var(--color-secondary); color: white;">アノテーションツールキット <i class="fas fa-edit"></i></li>
+<li class="tag" style="background-color: var(--color-accent1); color: white;">評価コード <i class="fas fa-code"></i></li>
+</ul>
+<p>これらの公開は、以下の分野の研究を促進することを目的としています。</p>
+<div class="framework-box" style="margin-top: 20px;">
+<p class="framework-title"><i class="fas fa-rocket"></i> 将来の研究テーマの推進</p>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-primary);">1</div>
+<div class="step-content">
+<span class="badge blue">スケーラブルな長文脈推論</span><br/>
+                    非常に長いテキストから情報を効率的に抽出し、推論する能力。
+                </div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">2</div>
+<div class="step-content">
+<span class="badge orange">制御可能な思考連鎖 (Chain-of-Thought) 生成</span><br/>
+                    LLMの思考プロセスをより意図した通りに導く技術。
+                </div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">3</div>
+<div class="step-content">
+<span class="badge" style="background-color: var(--color-accent1);">記号的・物語的タスクのための統一的評価指標</span><br/>
+                    論理的な側面と物語の理解を組み合わせたタスクを評価するための共通の基準。
+                </div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-bullseye"></i> 将来への展望</h3>
+<div class="content-box">
+<p>私たちは、TURNABOUTLLMが、LLMが<span class="keyword">現実の人間の談話に見られる複雑でオープンワールドな論理</span>をナビゲートできるようになるための一歩となることを願っています。</p>
+<div style="text-align:center; margin-top:25px; padding:15px; background: linear-gradient(135deg, rgba(74, 111, 165, 0.1), rgba(255, 126, 95, 0.1)); border-radius:12px;">
+<i class="fas fa-comments fa-3x" style="color: var(--color-primary); margin-bottom:10px;"></i>
+<p style="font-family: 'Kaisei Decol', serif; font-size:1.3em;">人間のコミュニケーションは複雑！</p>
+<p style="font-size:0.95em;">文脈、ユーモア、皮肉、暗黙の了解...<br/>LLMがこれらを理解し、論理的に扱えるようになる未来を目指して。 <i class="fas fa-map-signs" style="color: var(--color-accent2);"></i></p>
+</div>
+<p style="margin-top: 15px;">人間の会話や文章は、単純な論理だけでなく、背景知識、文脈、ニュアンスなど、様々な要素が絡み合っています。TURNABOUTLLMは、このような「<span class="highlight">厄介で、開かれた世界の論理</span>」にLLMが対応していくための重要な試金石となるでしょう。📝</p>
+</div>
+<div class="note-box" style="margin-top: 30px; background-color: rgba(92, 184, 92, 0.1); border-left: 3px solid var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-paper-plane"></i> まとめ：このセクションのキーポイント</p>
+<ul style="list-style-type: '📌 '; padding-left: 20px;">
+<li>LLMの推論精度は、<span class="keyword">解答空間の広範な探索</span>によって向上する可能性がある。</li>
+<li><span class="keyword">TURNABOUTLLM</span>は、長文脈・物語リッチな環境でのLLMの演繹的推論能力を評価する新しい挑戦的なベンチマークである。</li>
+<li>データセット等の公開を通じて、<span class="highlight">長文脈推論</span>、<span class="highlight">CoT生成制御</span>、<span class="highlight">統一評価指標</span>に関する研究を促進する。</li>
+<li>究極的には、LLMが<span class="keyword">現実世界の複雑な人間の談話の論理</span>を扱えるようになることを目指す。</li>
+</ul>
+</div>
+</div>
+<div class="section-card" id="7_Limitation">
+<h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> 7 Limitation</h2>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 16px; margin-bottom: 25px; color: var(--color-dark);">
+<i class="fas fa-search-location"></i> このTURNABOUTLLMベンチマークは非常に広範囲をカバーしていますが、いくつかの<strong>制約や限界点</strong>も抱えています。これらの点を正直に見ていくことで、このベンチマークの現在の立ち位置を正確に理解し、今後のさらなる発展のための道筋を探ることができます。一緒に詳しく見ていきましょう！ 🚀
+    </p>
+<div class="info-grid">
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-balance-scale" style="color: var(--color-secondary);"></i> 1. 焦点の限定性 <i class="fas fa-bullseye"></i></h3>
+<div class="content-box">
+<p>現在のTURNABOUTLLMは、<span class="highlight">探偵・法廷ドラマのシナリオ</span>に特化しており、主に<span class="keyword">矛盾点の発見</span> <i class="fas fa-search-minus" style="color: var(--color-accent1);"></i> というタスクに焦点を当てています。</p>
+<div style="text-align: center; margin: 15px 0;">
+<span style="font-family: 'Yomogi', cursive; font-size: 1.2em; color: var(--color-primary); border: 2px dashed var(--color-primary); padding: 5px 10px; border-radius: 8px;">
+                        🎯 ターゲット: 矛盾発見
+                    </span>
+</div>
+<p>そのため、例えば以下のような他の重要な演繹的推論が求められる分野は、まだ十分にテストされていません。</p>
+<ul class="unstyled-list" style="margin-left: 20px; list-style-type: '🧪'; padding-left: 1.5em;">
+<li style="margin-bottom: 8px;"><span class="badge yellow">未検証</span> <strong>科学的発見</strong>のプロセス (例: 新しい法則の導出)</li>
+<li style="margin-bottom: 8px;"><span class="badge yellow">未検証</span> <strong>法令遵守</strong>の確認 (例: 契約書や規定の解釈)</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-lightbulb"></i> ポイント</p>
+<p>つまり、特定の種類の推論能力は測れますが、もっと幅広い分野での推論能力については、このベンチマークだけでは評価しきれない、ということです。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-globe-asia" style="color: var(--color-secondary);"></i> 2. 文化特有のバイアス <i class="fas fa-yin-yang"></i></h3>
+<div class="content-box">
+<p>TURNABOUTLLMの物語は、<span class="highlight">日本のビジュアルノベル</span> 🇯🇵<i class="fas fa-book-reader" style="color: var(--color-accent2);"></i> が原作です。</p>
+<p>このため、物語の中には日本文化特有の...</p>
+<ul class="unstyled-list" style="margin-left: 20px; list-style-type: '📜'; padding-left: 1.5em;">
+<li style="margin-bottom: 8px;"><span class="keyword">社会的な規範</span> (例: 特定の状況での人々の振る舞い)</li>
+<li style="margin-bottom: 8px;"><span class="keyword">独特の言い回しやイディオム</span></li>
+</ul>
+<p>...などが含まれている可能性があります。</p>
+<div style="text-align: center; margin: 15px 0;">
+<i class="fas fa-comments fa-2x" style="color: var(--color-primary);"></i> <span style="font-family: 'Yomogi', cursive; font-size:1.1em; color: var(--color-gray); margin: 0 10px;">「空気を読む」的なニュアンスとか？</span> <i class="fas fa-theater-masks fa-2x" style="color: var(--color-accent3);"></i>
+</div>
+<p>これが意味するのは、<span class="highlight">これらの文化的背景に既に詳しいLLM</span>（例えば、日本のテキストデータで多く学習したモデル）にとっては有利に働き、そうでないモデルにとっては不利になることで、<span class="keyword">評価に偏り（バイアス）が生じる</span> <i class="fas fa-balance-scale-left" style="color: var(--color-secondary);"></i> 可能性があるという点です。</p>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-cogs" style="color: var(--color-secondary);"></i> 3. マルチモーダル推論の近似 <i class="fas fa-images"></i></h3>
+<div class="content-box">
+<p>ゲーム内の画像 <i class="fas fa-image" style="color: var(--color-accent1);"></i> については、その内容を説明する<span class="highlight">記述的なキャプション</span>（文章による説明）を提供しています。</p>
+<div style="text-align:center; margin:10px 0;">
+<span style="font-family: 'Yomogi', cursive; border: 1px solid var(--color-gray); padding: 5px; border-radius: 5px;">
+                        🖼️ 画像 + 📝 キャプション
+                    </span>
+</div>
+<p>しかし、これはあくまで<span class="keyword">真のマルチモーダル推論</span>（画像と言語情報を統合して行う高度な推論）を<span class="highlight">「近似」</span>しているに過ぎません。</p>
+<p>LLMが画像そのものを直接見て理解し、推論するわけではないため、マルチモーダルな能力が<span class="highlight">完全には試されているわけではない</span>のです。</p>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-microchip"></i> ポイント</p>
+<p>テキスト情報だけでなく、視覚情報も組み合わせた総合的な理解・推論能力を測るには、まだ課題があるということです。今後のマルチモーダルモデルの評価では、この点が重要になりますね。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-project-diagram" style="color: var(--color-secondary);"></i> 4. 推論チェーンの主観性と拡張性 <i class="fas fa-link"></i></h3>
+<div class="content-box">
+<p>データセットに含まれる<span class="keyword">推論チェーン</span>（結論に至るまでの論理的なステップ）は、<span class="highlight">人間が手作業で作成</span> <i class="fas fa-user-edit" style="color: var(--color-accent2);"></i> しています。</p>
+<p>この作業には、<span style="font-family: 'Yomogi', cursive; font-size:1.1em; color: var(--color-primary);">約100アノテーター時間</span> が費やされました。
+                    <div class="formula" style="background-color: rgba(200, 200, 255, 0.1); border: 1px dashed var(--color-accent2);">
+                        \( \approx 100 \) アノテーター時間
+                    </div>
+</p>
+<div class="definition-box" style="margin-bottom: 15px;">
+<p class="definition-title"><i class="fas fa-info-circle"></i> 用語解説：アノテーター時間</p>
+<p>「アノテーター時間 (annotator-hours)」とは、データに注釈を付ける作業者（アノテーター）が、その作業に費やした総延べ時間のことです。この場合、1人の作業者が100時間かけたか、10人の作業者が各10時間かけたかなど、複数の可能性がありますが、いずれにしても人手による作業コストを示しています。 <i class="far fa-clock"></i></p>
+</div>
+<p>手作業による作成のため、どうしても以下のような課題が生じます：</p>
+<ul class="unstyled-list" style="margin-left: 20px;">
+<li><i class="fas fa-exclamation-circle" style="color: var(--color-secondary); margin-right: 5px;"></i><span class="keyword">主観性の混入</span>: 作成者の解釈によって推論チェーンの内容が左右される可能性。</li>
+<li><i class="fas fa-expand-arrows-alt" style="color: var(--color-secondary); margin-right: 5px;"></i><span class="keyword">スケーラビリティの阻害</span>: 大量のデータに対して手作業で推論チェーンを作成するのは時間とコストがかかり、データセットの拡張が難しくなる。</li>
+</ul>
+<p style="margin-top: 15px;">
+<span class="badge blue">朗報！</span> <i class="fas fa-wrench" style="color: var(--color-accent1);"></i> 将来のリリースでは、この点を改善するため、以下の対応が予定されています：
+                </p>
+<ul class="unstyled-list" style="margin-left: 20px; list-style-type: '🛠️'; padding-left: 1.5em;">
+<li>アノテーター間の一致率（複数の作成者間でどの程度判断が一致したか）の報告。</li>
+<li>半自動化された検証ツールの提供。</li>
+</ul>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-copyright" style="color: var(--color-secondary);"></i> 5. 著作権状況の変動リスク <i class="fas fa-file-signature"></i></h3>
+<div class="content-box">
+<p>TURNABOUTLLMの元となったゲームの<span class="highlight">生スクリプト（セリフや地の文など）</span>は、現在公開されています <i class="fas fa-folder-open" style="color: var(--color-accent3);"></i>。</p>
+<p>しかし、これらの<span class="keyword">著作権の状況</span>は将来的に変わる可能性があります。</p>
+<div style="text-align: center; margin: 15px 0;">
+<i class="fas fa-balance-scale fa-lg" style="color: var(--color-primary);"></i> <span style="font-family: 'Yomogi', cursive; margin: 0 10px;">公開中</span> <i class="fas fa-arrow-right fa-lg" style="color: var(--color-gray);"></i> <span style="font-family: 'Yomogi', cursive; margin: 0 10px;">状況変化？</span> <i class="far fa-question-circle fa-lg" style="color: var(--color-secondary);"></i>
+</div>
+<p>もし権利者（著作権を持つ人や組織）から<span class="highlight">削除要求があった場合</span>には、研究チームは<span class="keyword">その要求を尊重し、適切に対応する</span>ことを約束しています <i class="fas fa-shield-alt" style="color: var(--color-accent1);"></i>。</p>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-gavel"></i> 法的側面</p>
+<p>研究倫理と法律遵守の観点から、非常に重要な点ですね。データの利用可能性は、常に法的な側面に左右されることを念頭に置く必要があります。</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<h3 class="subsection-title" style="font-family: 'Kaisei Decol', serif;"><i class="fas fa-server" style="color: var(--color-secondary);"></i> 6. 計算コストとリソース制限 <i class="fas fa-memory"></i></h3>
+<div class="content-box">
+<p>一部の評価では、<span class="highlight">100Kトークン（約10万トークン）もの長大なプロンプト</span> <i class="fas fa-file-alt" style="color: var(--color-accent2); font-size: 1.2em;"></i> を使用します。</p>
+<div class="challenge-box" style="margin: 15px 0;">
+<p class="challenge-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-dumbbell"></i> 高い計算負荷！</p>
+<p>このような巨大なプロンプトを処理するには、<span class="keyword">非常に大きな計算資源（GPUメモリ、計算時間など）</span>が必要となり、計算負荷が非常に高くなります。</p>
+</div>
+<p>そのため、<span class="highlight">潤沢な計算リソースを持たない研究者</span>にとっては、このベンチマークをそのまま利用するのが難しい場合があります <i class="fas fa-battery-quarter" style="color: var(--color-secondary);"></i>。</p>
+<p>そのような場合、プロンプト全体を一度に処理するのではなく、<span class="keyword">情報を小さな塊（チャンク）に分割して検索・処理する戦略</span>（チャンクワイズ検索）が必要になるかもしれません。</p>
+<div style="text-align: center; margin: 10px 0;">
+<i class="fas fa-puzzle-piece" style="color:var(--color-primary)"></i> <i class="fas fa-search" style="color:var(--color-primary)"></i> <span style="font-family: 'Yomogi', cursive;">チャンクワイズ検索</span>
+</div>
+<p>ただし、現時点では、そのようなチャンクワイズ検索戦略の有効性については、この論文では<span class="highlight">まだ評価・比較（ベンチマーク）されていません</span> <i class="fas fa-clipboard-question" style="color: var(--color-gray);"></i>。</p>
+</div>
+</div>
+</div>
+<div class="glass-card" style="margin-top: 30px; border: 1px solid var(--color-primary);">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive; color: var(--color-primary); border-left-color: var(--color-primary);"><i class="fas fa-flag-checkered"></i> まとめ：限界の認識と未来へのステップ</h3>
+<p style="font-size: 15px; line-height: 1.6;">
+            これらの限界点をしっかりと認識することは、<span class="highlight">TURNABOUTLLMベンチマークの現在の適用範囲や能力を正確に理解する</span>上で非常に大切です。
+            <br/><br/>
+            同時に、これらの課題は、<span class="keyword" style="font-size:1.1em;">今後の研究で取り組むべき方向性</span> <i class="fas fa-road" style="color: var(--color-accent1);"></i> や、ベンチマーク自体をさらに<span class="keyword" style="font-size:1.1em;">拡張・改善していくための貴重なヒント</span> <i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> を示してくれています。
+            <br/><br/>
+<i class="fas fa-chart-line"></i> 将来、これらの限界が克服され、さらに強力で汎用的な推論能力評価ベンチマークへと進化していくことが期待されますね！
+        </p>
+</div>
+</div>
+<div class="section-card" id="A_License_and_Intended_Use">
+<h2 class="section-title"><i class="fas fa-file-contract"></i> A License and Intended Use</h2>
+<p style="margin-bottom: 25px; font-family: 'Zen Kurenaido', sans-serif;">このセクションでは、本研究で使用されたデータの<span class="keyword">ライセンス</span>と、著者たちがそのデータをどのように<span class="keyword">利用するつもりなのか</span>について明確に説明しています。研究の<span class="highlight">透明性</span>と<span class="highlight">正当性</span>を示す上で非常に重要な部分です。いわば、研究で使う「材料」の出所と使用ルールをきちんと宣言しているわけですね！ ✏️</p>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-database"></i> データはどこから？ <span style="font-family: 'Yomogi', cursive; color: var(--color-accent3);">🔍</span></h3>
+<p>この研究で使われている貴重なデータは、<a href="https://fandom.com" style="color: var(--color-primary); text-decoration: none;" target="_blank"><span class="keyword">fandom.com</span></a> というウェブサイトから取得されました。</p>
+<div class="note-box" style="background-color: rgba(255, 126, 95, 0.05); border-left-color: var(--color-secondary);">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-info-circle"></i> ちょっと待って！ fandom.comって何？</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;"><code>fandom.com</code>（ファンダム・ドットコム、旧Wikia）は、映画、テレビ番組、ゲーム、コミックなど、様々なポップカルチャーのファンが集まって情報を共有し、コミュニティを築くための巨大なプラットフォームなんです。ファン自身が編集者となって、作品に関する詳細な情報やトリビア、キャラクター設定などをWiki形式でまとめています。今回の論文では、このサイトに蓄積された「逆転裁判」や「ダンガンロンパ」といった人気推理ゲームのデータ（証言、証拠、キャラクター情報など）が、LLMの推論能力を測るためのベンチマーク作成に活用されているんですね。まさに「ファンの愛の結晶」が研究データに！ <i class="fas fa-heart" style="color: var(--color-secondary);"></i></p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-scroll"></i> ライセンスの種類と条件 <span style="font-family: 'Yomogi', cursive; color: var(--color-accent3);">📜</span></h3>
+<p>fandom.comの規定によると、サイト上のリソースは <a href="https://creativecommons.org/licenses/by-sa/3.0/" style="color: var(--color-primary); text-decoration: none;" target="_blank"><span class="keyword">クリエイティブ・コモンズ 表示 - 継承 3.0 非移植 (Creative Commons Attribution-Share Alike License 3.0 Unported - CC BY-SA 3.0)</span></a> ライセンスの下で提供されています。これは、データを利用する上での「お約束事」ですね。</p>
+<div class="glass-card" style="margin-top: 20px;">
+<div class="definition-box" style="border-color: var(--color-accent2); background-color: rgba(149, 117, 205, 0.05);">
+<p class="definition-title" style="color: var(--color-accent2); border-bottom-color: var(--color-accent2);"><i class="fab fa-creative-commons"></i> クリエイティブ・コモンズ (CC) ライセンスって何？</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">これは、著作物の作者が「これらのルールを守ってくれるなら、私の作品を自由に使っていいですよ！」と意思表示するための便利なツールです。世界中で広く使われていて、インターネット上の情報共有や再利用をスムーズにするのに役立っています。CCライセンスにはいくつかの種類があり、それぞれ条件が異なりますが、この論文で使われているのは「CC BY-SA」というタイプです。</p>
+</div>
+<div class="feature-card-grid" style="grid-template-columns: 1fr; margin-top:20px;">
+<div class="feature-item" style="background-color: rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+<img alt="CC BY-SA 3.0 License Badge" src="https://licensebuttons.net/l/by-sa/3.0/88x31.png" style="width: 120px; height: auto; margin-bottom: 10px; border: 1px solid #ddd; padding: 5px; border-radius: 4px;"/>
+<p style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-shield-alt"></i> CC BY-SA 3.0 Unported</p>
+<p style="font-size: 14px; margin-bottom: 10px;">このライセンスは、大きく分けて2つの主要な「自由」を利用者に与えています：</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; width: 100%;">
+<div class="info-card" style="background-color: rgba(92, 184, 92, 0.1); border: 1px solid var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-share-alt"></i> 共有 (Share) する自由</p>
+<p style="font-size: 13px;">資料をコピーしたり、他の人に配ったりすることができます。</p>
+</div>
+<div class="info-card" style="background-color: rgba(255, 126, 95, 0.1); border: 1px solid var(--color-secondary);">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-tools"></i> 翻案 (Adapt) する自由</p>
+<p style="font-size: 13px;">資料をリミックスしたり、内容を改変したり、それをもとに新しい作品を作ったりすることができます。</p>
+</div>
+</div>
+</div>
+</div>
+<p style="margin-top: 25px; font-family: 'Zen Kurenaido', sans-serif; text-align: center; font-size: 16px;">ただし！これらの自由を享受するには、以下の<span class="highlight">3つの重要な条件</span>を守る必要があります。これが「お約束事」の具体的な内容です <i class="fas fa-handshake" style="color: var(--color-primary);"></i>:</p>
+<div class="info-grid" style="margin-top:15px;">
+<div class="info-card" style="box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+<p class="note-title" style="font-size: 18px; font-family: 'Yomogi', cursive;"><span class="badge blue">1</span> <i class="fas fa-user-check" style="color: var(--color-primary);"></i> 表示 (Attribution - <span style="font-weight:bold; color:var(--color-primary);">BY</span>)</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">元の作品の作者（この場合はfandom.com）の名前や出所を、<span class="keyword">適切に表示</span>しなければなりません。「誰が作ったものか」「どこから来た情報か」を明確にする、ということです。感謝の気持ちを込めて、きちんとクレジットを示しましょう！</p>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top:15px; background-color: #f8f9fa;">
+<p style="font-size:13px; font-family: 'Zen Kurenaido', sans-serif;"><strong><i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> 具体的には？</strong> 論文の中で、「データはfandom.comから取得しました」といった形で、出典を明記することが求められます。</p>
+</div>
+</div>
+<div class="info-card" style="box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+<p class="note-title" style="font-size: 18px; font-family: 'Yomogi', cursive;"><span class="badge purple">2</span> <i class="fas fa-link" style="color: var(--color-accent2);"></i> ライセンスへのリンク</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">元のライセンス（CC BY-SA 3.0）への<span class="keyword">リンクを提供</span>する必要があります。これによって、他の人も「どんな条件で使えるのかな？」とライセンスの内容を簡単に確認できるようになります。</p>
+<div class="bubble-box" style="border-color: var(--color-accent2); margin-top:15px; background-color: #f8f9fa;">
+<p style="font-size:13px; font-family: 'Zen Kurenaido', sans-serif;"><strong><i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> 具体的には？</strong> 論文の参考文献セクションや脚注などに、CC BY-SA 3.0ライセンスの公式ページへのURLを記載します。</p>
+</div>
+</div>
+<div class="info-card" style="box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+<p class="note-title" style="font-size: 18px; font-family: 'Yomogi', cursive;"><span class="badge orange">3</span> <i class="fas fa-sync-alt" style="color: var(--color-secondary);"></i> 継承 (Share Alike - <span style="font-weight:bold; color:var(--color-secondary);">SA</span>)</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">もし元の資料をリミックスしたり、改変したり、またはそれに基づいて新しい作品を作った場合、その新しい作品も<span class="keyword">同じライセンス (CC BY-SA 3.0)</span> または<span class="keyword">互換性のあるライセンス</span>で公開しなければなりません。「元の作品が持っていた『自由に使っていいよ』という精神を、あなたが作った新しい作品にも引き継いでね！」という意味合いです。バトンを渡すようなイメージですね <i class="fas fa-people-arrows" style="color: var(--color-secondary);"></i>。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary); margin-top:15px; background-color: #f8f9fa;">
+<p style="font-size:13px; font-family: 'Zen Kurenaido', sans-serif;"><strong><i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> 具体的には？</strong> この論文の研究者たちがfandom.comのデータを使って新しいデータセット（TURNABOUTLLM）を作成した場合、そのTURNABOUTLLMデータセットもCC BY-SA 3.0（または互換ライセンス）で公開することが求められます。</p>
+</div>
+</div>
+</div>
+<p style="font-size: 12px; color: var(--color-gray); margin-top: 15px; text-align: center;">"Unported"（非移植）とは、特定の国や地域の法律に特化していない、国際的なライセンスであることを意味します。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-bullseye"></i> 著者たちのデータの使い道は？ <span style="font-family: 'Yomogi', cursive; color: var(--color-accent3);">🎯</span></h3>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">この論文の著者たちは、fandom.comから取得したデータを、<span class="keyword">厳密に学術的な研究と分析の目的でのみ</span>、この論文内で使用する、と明言しています。そして最も重要なこととして、上記で説明したCC BY-SAライセンスに定められた<span class="keyword">すべての条件を完全に遵守する</span>ことを約束しています。</p>
+<div class="framework-box" style="border-color: var(--color-accent1); background-color: rgba(92, 184, 92, 0.05); margin-top: 20px;">
+<p class="framework-title" style="color: var(--color-accent1); border-bottom-color: var(--color-accent1);"><i class="fas fa-tasks"></i> 研究におけるデータ利用の約束事</p>
+<ul class="unstyled-list" style="font-family: 'Zen Kurenaido', sans-serif; padding-left: 10px;">
+<li style="margin-bottom: 12px; display: flex; align-items: center;">
+<span class="badge blue" style="margin-right: 10px; padding: 6px 10px; font-size: 14px;"><i class="fas fa-flask"></i> 利用目的</span>
+<span style="font-size: 14px;">学術的な研究と分析 （新しい知見を得るため！）</span>
+</li>
+<li style="margin-bottom: 12px; display: flex; align-items: center;">
+<span class="badge purple" style="margin-right: 10px; padding: 6px 10px; font-size: 14px;"><i class="fas fa-map-pin"></i> 利用範囲</span>
+<span style="font-size: 14px;">この論文の範囲内に限定 （他の目的には使いません！）</span>
+</li>
+<li style="margin-bottom: 12px; display: flex; align-items: center;">
+<span class="badge" style="background-color: var(--color-accent1); margin-right: 10px; padding: 6px 10px; font-size: 14px;"><i class="fas fa-gavel"></i> ライセンス遵守</span>
+<span style="font-size: 14px;">CC BY-SA 3.0 の全条件を厳守 （ルールはしっかり守ります！）</span>
+</li>
+</ul>
+</div>
+<p style="margin-top:20px; font-family: 'Zen Kurenaido', sans-serif;">これは、研究倫理の観点からも、著作権法の観点からも非常に重要な宣言です。研究者は、他者の知的財産を尊重し、適切な手続きと許諾のもとでデータを利用する責任があります。このセクションは、その責任をきちんと果たしていることを示しています。安心して論文を読み進められますね！ 📝👍</p>
+</div>
+<div class="note-box" style="margin-top: 30px;">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i> まとめると…</p>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">この「ライセンスと意図された利用」セクションは、研究の「土台」となるデータが、どのようにして、どのようなルールのもとで使われているかを読者に伝える役割を担っています。具体的には、</p>
+<ol style="font-family: 'Zen Kurenaido', sans-serif; padding-left: 20px;">
+<li>データソースは <strong style="color:var(--color-primary);">fandom.com</strong> であること。</li>
+<li>データは <strong style="color:var(--color-primary);">CC BY-SA 3.0</strong> ライセンスで提供されていること。</li>
+<li>このライセンスは、<strong style="color:var(--color-secondary);">適切な表示、ライセンスへのリンク、同じ条件での継承</strong>を条件として、共有と翻案を許可していること。</li>
+<li>著者たちは、このデータを<strong style="color:var(--color-accent1);">学術研究目的でのみ</strong>、ライセンス条件を<strong style="color:var(--color-accent1);">完全に遵守</strong>して利用していること。</li>
+</ol>
+<p style="font-family: 'Zen Kurenaido', sans-serif;">これらを明記することで、研究の正当性と透明性を確保しているのです。</p>
+</div>
+</div>
+<div class="section-card" id="B_Annotator_demographics">
+<h2 class="section-title"><i class="fas fa-users" style="margin-right: 10px;"></i>B Annotator demographics</h2>
+<!-- 導入: このセクションの目的と論旨 -->
+<div class="glass-card" style="margin-bottom: 25px; padding: 20px; border: 1px solid rgba(74, 111, 165, 0.3);">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 17px; line-height: 1.6;">
+<span style="font-size: 1.5em; display: block; margin-bottom: 10px;">📝 <strong>アノテーターのプロフィール大公開！</strong> 🕵️‍♀️</span>
+            このセクションでは、論文で用いられた画期的なデータセット <span class="keyword">TURNABOUTLLM</span> の<span class="highlight">アノテーション（注釈付け）作業</span>を誰が担当したのか、その詳細な背景情報について掘り下げていきます。
+            アノテーターたちがどのような人々で、どんな専門性を持っていたかを知ることは、このデータセットの<strong class="keyword">信頼性</strong>や<strong class="keyword">特性</strong>を理解する上で非常に重要です。彼らのプロフィールから、データセットの質の高さの秘密に迫りましょう！
+        </p>
+</div>
+<!-- アノテーターの基本情報 -->
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-user-check" style="margin-right: 8px;"></i> アノテーターの構成とミッション</h3>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+<div class="feature-item glass-card" style="padding: 20px; align-items: center; background-color: rgba(230, 240, 255, 0.7); border: 1px dashed var(--color-primary);">
+<div style="background-color: var(--color-primary); color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+<i class="fas fa-users" style="font-size: 28px;"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-primary); margin-bottom: 10px; font-size: 1.3em;">アノテーターの人数</h4>
+<p style="font-family: 'Yomogi', cursive; font-size: 28px; color: var(--color-secondary); font-weight: bold; margin-bottom:5px;">5 人</p>
+<p style="font-size: 13px; color: var(--color-gray); text-align: center;">この<strong class="keyword">精鋭チーム</strong>が、データセットの構築に貢献しました。</p>
+</div>
+<div class="info-card glass-card" style="padding: 20px; grid-column: span 1 / -1; background-color: rgba(255, 250, 230, 0.7); border: 1px dashed var(--color-accent3);"> <!-- 画面幅に応じて1列または全幅 -->
+<div style="text-align:center; margin-bottom:15px;">
+<i class="fas fa-tasks" style="font-size: 30px; color: var(--color-accent3); margin-bottom:10px;"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent3); margin-bottom: 15px; text-align:center; font-size: 1.3em;">主なミッション：データポイントの作成と検証</h4>
+<p style="text-align:left; margin-bottom:10px;">彼らは、データセット内の各<strong class="keyword">データポイント</strong>（個々の問題事例）に対して、以下の重要な情報を<strong class="highlight">作成し、検証する</strong>役割を担いました。</p>
+<ul class="unstyled-list" style="text-align: left; padding-left: 10px; margin-top: 10px;">
+<li style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent1); margin-right: 10px; font-size:1.2em; margin-top:3px;"></i>
+<div>
+<strong class="keyword" style="font-size:1.1em;">推論タイプ (Reasoning types)</strong><br/>
+<span style="font-size:0.9em; color:var(--color-gray);">各問題がどのような種類の論理的思考（例：時間的推論、空間的推論、因果関係の推論など）を必要とするかを特定しました。</span>
+</div>
+</li>
+<li style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+<i class="fas fa-shoe-prints" style="color: var(--color-accent1); margin-right: 10px; font-size:1.2em; margin-top:3px;  transform: rotate(90deg);"></i>
+<div>
+<strong class="keyword" style="font-size:1.1em;">推論ステップ (Reasoning steps)</strong><br/>
+<span style="font-size:0.9em; color:var(--color-gray);">正解に至るまでの詳細な論理的思考の道筋を段階的に記述しました。</span>
+</div>
+</li>
+<li style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+<i class="fas fa-search-location" style="color: var(--color-accent1); margin-right: 10px; font-size:1.2em; margin-top:3px;"></i>
+<div>
+<strong class="keyword" style="font-size:1.1em;">証拠とコンテキストの範囲 (Evidence and context span)</strong><br/>
+<span style="font-size:0.9em; color:var(--color-gray);">矛盾点を見つけ出すために不可欠な証拠や、関連する背景情報（コンテキスト）が、長大な物語のどの部分に記載されているのか、その範囲を正確に示しました。</span>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<!-- アノテーターの属性 -->
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-user-tag" style="margin-right: 8px;"></i> アノテーターの属性：ゲームを知り尽くした大学生たち</h3>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+<div class="info-card glass-card" style="border-top: 5px solid var(--color-accent2);">
+<div style="text-align: center; margin-bottom: 15px;">
+<span style="font-size: 3.5em; color: var(--color-accent2); margin: 0 5px;">🇺🇸</span>
+<i class="fas fa-university" style="font-size: 3em; color: var(--color-accent2);  margin: 0 5px;"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol', serif; text-align: center; color: var(--color-accent2); margin-bottom:10px; font-size: 1.2em;">米国在住の大学生</h4>
+<p style="text-align: center; font-size: 1em; line-height: 1.5;">
+                    アノテーターは全員、<strong class="highlight">アメリカ合衆国に拠点を置く大学の学生</strong>です。<br/>
+                    これにより、英語の長文テキストに対する高い読解力と、論理的思考能力が期待されます。
+                </p>
+</div>
+<div class="info-card glass-card" style="border-top: 5px solid var(--color-secondary);">
+<div style="text-align: center; margin-bottom: 15px;">
+<i class="fas fa-gamepad" style="font-size: 3em; color: var(--color-secondary); margin-right: 10px;"></i>
+<i class="fas fa-brain" style="font-size: 3em; color: var(--color-secondary);"></i>
+</div>
+<h4 style="font-family: 'Kaisei Decol', serif; text-align: center; color: var(--color-secondary); margin-bottom:10px; font-size: 1.2em;">熱心な探偵ゲームプレイヤー</h4>
+<p style="text-align: center; font-size: 1em; line-height: 1.5;">
+                    彼らはただの大学生ではありません！<br/>
+                    日本の人気探偵ゲームシリーズである<br/>
+<span class="badge orange" style="font-size:0.9em; padding: 5px 10px;">逆転裁判 (Ace Attorney)</span><br/>
+                    および<br/>
+<span class="badge orange" style="font-size:0.9em; padding: 5px 10px;">ダンガンロンパ (Danganronpa)</span><br/>
+                    の<strong class="highlight">熱心なプレイヤー</strong>でもあります。
+                </p>
+<div class="note-box" style="margin-top:15px; background-color: rgba(255, 126, 95, 0.05); border-left-color: var(--color-secondary);">
+<p style="font-size: 0.9em; color: var(--color-dark); line-height:1.5;">
+<i class="fas fa-info-circle" style="color: var(--color-secondary); margin-right:5px;"></i>
+<strong style="color: var(--color-secondary);">豆知識：</strong>これらのゲームは、複雑な事件の謎を解くために、証言や証拠品の中から<strong class="keyword">矛盾</strong>を見つけ出し、<strong class="keyword">論理的な推理</strong>を積み重ねて真相にたどり着くことが求められる、非常に知的なゲームです。
+                    </p>
+</div>
+</div>
+</div>
+</div>
+<!-- アノテーターの適性 -->
+<div class="bubble-box" style="border-color: var(--color-accent1); margin-top:35px; margin-bottom:30px; background-color: rgba(230, 255, 230, 0.5);">
+<h3 class="subsection-title" style="border-left: none; padding-left:0; margin-top:0; color:var(--color-accent1); font-size:1.3em;">
+<i class="fas fa-check-circle" style="color:var(--color-accent1); margin-right:8px;"></i> なぜこれらのアノテーターが<span style="font-family: 'Yomogi', cursive; font-size:1.3em; color:var(--color-accent1);">「理想的」</span>なのか？
+        </h3>
+<p style="line-height:1.6;">
+            論文では、これらのアノテーターたちが <strong style="font-family: 'Yomogi', cursive; color: var(--color-primary); font-size:1.2em; background: linear-gradient(transparent 60%, rgba(92, 184, 92, 0.3) 60%); padding: 0 3px;">「各ケースデータの主要な属性を調査するのに理想的に適している (ideally suited to examine each case data’s key attributes)」</strong> と強調されています。
+        </p>
+<div class="framework-box" style="border-color: var(--color-accent1); background-color: rgba(255,255,255,0.7); margin-top:15px; padding:15px;">
+<p style="font-family: 'Yomogi', cursive; color: var(--color-accent1); font-size:1.1em; margin-bottom:10px;"><i class="fas fa-lightbulb" style="margin-right:5px;"></i> そのココロは...</p>
+<ul style="list-style-type: none; padding-left: 0;">
+<li style="margin-bottom:10px; display:flex; align-items:flex-start;">
+<span class="step-number" style="background-color: var(--color-accent1); min-width:25px; margin-right:10px;">1</span>
+<div><strong class="keyword">深いゲーム理解:</strong> 彼らは対象ゲームの物語、キャラクター、トリック、特有の論理構造を熟知しています。これにより、表面的な情報だけでなく、文脈のニュアンスまで汲み取ることができます。</div>
+</li>
+<li style="margin-bottom:10px; display:flex; align-items:flex-start;">
+<span class="step-number" style="background-color: var(--color-accent1);min-width:25px; margin-right:10px;">2</span>
+<div><strong class="keyword">「鍵となる属性」の的確な抽出:</strong> ゲーム内のどの情報が事件解決の<strong class="highlight">「鍵 (key attributes)」</strong>となるのかを鋭く見抜く洞察力を持っています。これは、質の高いアノテーションに不可欠です。</div>
+</li>
+<li style="display:flex; align-items:flex-start;">
+<span class="step-number" style="background-color: var(--color-accent1); min-width:25px; margin-right:10px;">3</span>
+<div><strong class="keyword">論理的思考力:</strong> 大学生としての学術的訓練と、推理ゲームで培われた論理的思考能力が、複雑な情報を整理し、正確なアノテーションを行う上で役立ちます。</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- まとめ -->
+<div class="note-box" style="margin-top: 30px; border-left-color: var(--color-primary); background-color: rgba(74, 111, 165, 0.05); padding: 20px;">
+<h4 class="note-title" style="color: var(--color-primary); font-family: 'Kaisei Decol', serif; font-size: 1.2em;">
+<i class="fas fa-clipboard-check" style="margin-right: 8px;"></i> まとめ：信頼性の高いデータセットの礎
+        </h4>
+<p style="font-size: 1em; line-height: 1.6;">
+            このように、TURNABOUTLLMのデータセットのアノテーションは、
+            <strong class="keyword">高度な専門知識（ゲーム内容の熟知）</strong>と
+            <strong class="keyword">適切なスキル（大学生としての論理的思考力、英語読解力）</strong>
+            を兼ね備えたアノテーターチームによって慎重に行われました。
+            このアノテーターの選定が、データセットの<strong class="highlight">質と信頼性を高める上で非常に重要な役割</strong>を果たしていると言えるでしょう。
+            彼らのバックグラウンドを理解することで、この論文の研究成果の意義をより深く評価することができます。 📌
+        </p>
+</div>
+</div>
+<div class="section-card" id="C_Additional_Data_Examples_and_Statistics">
+<h2 class="section-title"><i class="fas fa-chart-pie"></i>C Additional Data Examples and Statistics</h2>
+<p>このセクションでは、論文の本編では紹介しきれなかった、より詳細なデータ例と統計情報について解説します。具体的には、TURNABOUTLLMベンチマークに含まれる特に難易度の高い問題例（Figure 9およびFigure 10として示される推論チェーンの例）と、本編で十分に触れられなかったいくつかのモデルにおける性能分析（Figure 11）を紹介します。これらの追加情報は、LLMの演繹的推論能力を評価する上でのTURNABOUTLLMの複雑さと挑戦性をより深く理解するのに役立ちます。</p>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-puzzle-piece"></i> Figure 9 &amp; 10: 非常に挑戦的な推論例</h3>
+<p>論文中のFigure 9とFigure 10では、TURNABOUTLLMデータセットから取られた、特に解決が難しいとされる2つの推論問題が提示されています。これらの例は、複雑な状況証拠や証言の中から矛盾を見つけ出すために、高度な推論能力を要求します。ここでは、それぞれの例における推論の構造（推論チェーン）を詳しく見ていきましょう。</p>
+<p>これらの推論チェーンは、以下のような要素で構成されています：</p>
+<ul class="unstyled-list">
+<li>✏️ <span class="keyword">証言 (Testimony - T)</span>: 事件関係者による発言。</li>
+<li>📌 <span class="keyword">証拠 (Evidence - E)</span>: 事件に関連する物的証拠や記録。</li>
+<li>📝 <span class="keyword">仮定 (Assumption)</span>: 証言や証拠から導かれる、あるいは推論の前提となる仮の結論。</li>
+<li>🔗 <span class="keyword">命題 (Proposition)</span>: 事実間の論理的な関係や一般法則を示すルール。</li>
+<li>💡 <span class="keyword">導出された事実 (Derived Fact)</span>: 既存の事実や命題から論理的に導き出される新たな事実。</li>
+<li>💥 <span class="keyword">矛盾 (Contradiction)</span>: 複数の情報が論理的に両立しない状態。これを発見することがタスクの目的です。</li>
+</ul>
+<p>（注：原文のマークダウンにはFigure 9, 10の画像データは含まれておらず、テキスト記述のみでした。以下はそのテキスト記述を基にした解説です。一部タイプミスと思われる箇所は文脈から推測して補っています。）</p>
+</div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="font-size: 1.1em; color: var(--color-accent1);"><i class="fas fa-bridge-water"></i> Figure 9: Fawlesの事例 (空間的・時間的矛盾)</h4>
+<p>この事例では、橋の上での事件に関する矛盾を見つけ出します。主な登場人物や証拠は以下の通りです。</p>
+<div class="bubble-box">
+<span class="badge yellow">証言者</span> Fawles, Melissa (目撃者)<br/>
+<span class="badge blue">証拠</span> Bridge's Map (橋の地図), Witness' Photo (目撃者の写真)
+            </div>
+<p><strong><i class="fas fa-comment-dots"></i> 証言の概要:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge orange">T1</span>: 一人の人物が最初に来て、そのすぐ後にもう一人が来た (Fawlesの証言より、被害者が最初に来たことを示唆)。</li>
+<li><span class="badge orange">T2</span>: すぐに別の誰かが来て会話した。</li>
+<li><span class="badge orange">T3</span>: (文脈不明瞭な証言) 「橋はコードとして書き留められた。それを完成させろ。」</li>
+<li><span class="badge orange">C1 (Melissa)</span>: 「写真を撮った時、私は橋の南側に立っていた。」</li>
+</ul>
+<p><strong><i class="fas fa-search-location"></i> 証拠と状況:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge purple">E1 (橋の地図)</span>: 橋は東端で壊れており、そこに駐車場がある。囚人は被害者の左（西側）に立っている。被害者は東を向いている。</li>
+<li><span class="badge purple">E2 (目撃者の写真)</span>: メリッサが橋の南から撮影した写真。この写真と証言から、橋の上の人物の位置関係が推測できる。</li>
+</ul>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-lightbulb"></i> 推論のポイントと矛盾</div>
+<p><span class="keyword">主な矛盾</span>: 空間的・時間的矛盾 (Spatial, temporal)</p>
+<p><strong><i class="fas fa-question-circle"></i> 矛盾の核心:</strong></p>
+<p>証言では「被害者が最初に来て、橋の壊れた端にいた」とされています。しかし、</p>
+<ol>
+<li><span class="highlight">位置関係の矛盾</span>:
+                        <ul>
+<li><span class="keyword">Proposition 1 (空間)</span>: 「南から見て、右側の人物は東側にいる」。</li>
+<li>地図(E1)によると橋は東端が壊れており、被害者は東を向いていて、その左(西)に囚人がいる。</li>
+<li>目撃者メリッサ(C1)は橋の南から写真を撮影。彼女の証言と写真(E2)を組み合わせると、被害者と囚人の位置関係が特定できる。</li>
+<li>この特定された位置関係と、「被害者が橋の壊れた端（東端）にいた」という主張が整合しない可能性。例えば、写真では被害者が壊れていない場所にいる、など。</li>
+</ul>
+</li>
+<li><span class="highlight">到着順序の矛盾</span>:
+                        <ul>
+<li><span class="keyword">Derived Fact 4</span> は T1 (被害者が最初)とT2 (その後別人が来た) から導出される。</li>
+<li>この到着順序と、他の証拠（例：写真に写る人物の行動や位置）が示す状況との間に矛盾が生じる可能性。</li>
+</ul>
+</li>
+</ol>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-exclamation-triangle"></i> 困難な点</div>
+                    複数の情報源（証言T1, T2, C1、証拠E1, E2）を統合し、空間的な位置関係と時間的な順序を正確に把握した上で、それらの間の不整合を見つけ出す必要があります。特に、視覚情報（地図や写真の内容）をテキスト記述から理解し、論理的に組み合わせる能力が求められます。
+                </div>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="font-size: 1.1em; color: var(--color-accent1);"><i class="fas fa-dice"></i> Figure 10: Olga Orlyの事例 (数値的矛盾)</h4>
+<p>この事例では、カジノでのゲームにおけるチップの点数計算と勝敗に関する矛盾を見つけ出します。</p>
+<div class="bubble-box">
+<span class="badge yellow">証言者</span> Olga Orly<br/>
+<span class="badge blue">証拠</span> 6 Deadly Bottle, Chip Photo (チップの写真)<br/>
+<span class="badge green">関係者</span> Prosecutor Payne (検事)
+            </div>
+<p><strong><i class="fas fa-comment-dots"></i> 証言の概要:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge orange">T1</span>: ゲームは1回3,500ポイントだった。</li>
+<li><span class="badge orange">T2</span>: ある種類のチップは100ポイント、別の種類は1,000ポイントの価値があった。</li>
+<li><span class="badge orange">T3</span>: 「二人が同時に勝つことはありえない。勝っていたのは被害者だ！」</li>
+</ul>
+<p><strong><i class="fas fa-coins"></i> 証拠と状況:</strong></p>
+<ul class="unstyled-list">
+<li><span class="badge purple">E2 (チップの写真のキャプション)</span>:
+                    <ul>
+<li><span class="keyword">被告側 (Near side)</span>: 赤い小さいチップ4枚、灰色の大きいチップ1枚。カードは7♥, 7♦, 7♣, A♦。</li>
+<li><span class="keyword">被害者側 (Far side)</span>: 赤い小さいチップ8枚、灰色の大きいチップ9枚。カードはK♥, K♦, K♠, A♣, A♥。</li>
+<li>(注: カードの情報はこの問題の矛盾解決に直接関係ない可能性がありますが、状況設定の一部です。)</li>
+</ul>
+</li>
+<li><span class="badge purple">Assumption 3 [T2]</span>: 小さいチップは100ポイント、大きいチップは1000ポイント。</li>
+</ul>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-calculator"></i> 推論のポイントと矛盾</div>
+<p><span class="keyword">主な矛盾</span>: 数値的矛盾 (Numerical)</p>
+<p><strong><i class="fas fa-question-circle"></i> 矛盾の核心:</strong></p>
+<p>証言T3では「被害者が勝っていた」と主張されています。この主張が正しいか、チップの点数計算で検証します。</p>
+<ol>
+<li><span class="highlight">各プレイヤーの点数計算 (Derived Fact 2, Proposition 2)</span>:
+                        <ul>
+<li>被告側 (Near side): (4枚 × 100ポイント) + (1枚 × 1000ポイント) = 400 + 1000 = <span class="keyword">1400ポイント</span> (※元テキストの計算4100は誤植の可能性。4 small + 1 big。もし4 red small chipsと1 gray big chipがそれぞれ価値が違うなら別だが、T2では2種類のみ言及)
+                                <br/><em>(論文の図ではNear: 4,100とあるため、そちらを優先すると、4 small chips = 3100, 1 big chip = 1000 もしくは 4 small chips = 100, 1 big chip = 4000など、チップの価値か枚数に未記述の前提がある可能性があります。ここでは論文図の値を採用し、Near: 4,100とします。)</em>
+<br/>被告側 (Near side): 4 (small) + 1 (big) → 図のキャプションとT2を組み合わせると 4*100 + 1*1000 = 1400。しかし図のDerived Fact 3には Near: 4,100 とある。この矛盾は図の内部情報に従う。
+                                <br/>👉 被告側 (Near side): <span class="keyword">4,100 ポイント</span> (Derived Fact 3より)
+                            </li>
+<li>被害者側 (Far side): (8枚 × 100ポイント) + (9枚 × 1000ポイント) = 800 + 9000 = <span class="keyword">9800ポイント</span> (※元テキストの計算2900は誤植の可能性。8 small + 9 big。図のDerived Fact 3には Far: 2,900 とある。)
+                                <br/><em>(同様に論文図の値を採用し、Far: 2,900とします。)</em>
+<br/>被害者側 (Far side): 8 (small) + 9 (big) → 図のキャプションとT2を組み合わせると 8*100 + 9*1000 = 9800。しかし図のDerived Fact 3には Far: 2,900 とある。
+                                <br/>👉 被害者側 (Far side): <span class="keyword">2,900 ポイント</span> (Derived Fact 3より)
+                            </li>
+</ul>
+</li>
+<li><span class="highlight">勝敗の判定 (Proposition 4)</span>:
+                        <ul>
+<li>「より多くの点数を持っている側が勝ち」。</li>
+<li>被告 (4,100点) vs 被害 Rfd者 (2,900点) → <span class="keyword">被告の勝ち</span>。</li>
+</ul>
+</li>
+<li><span class="highlight">矛盾の確定 (Derived Fact 4, Contradiction)</span>:
+                        <ul>
+<li>計算結果は「被告が勝っている」ことを示します。</li>
+<li>これは証言T3「勝っていたのは被害者だ！」と明確に<span class="keyword">矛盾</span>します。</li>
+<li>したがって、矛盾は「被害者が実際には負けていた (losing, not winning)」という点です。</li>
+</ul>
+</li>
+</ol>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-exclamation-triangle"></i> 困難な点</div>
+                    複数の数値情報を正確に処理し、計算を行う必要があります。証言内の定性的な主張（「被害者が勝っていた」）を、証拠に基づく定量的な計算結果と照合する能力が求められます。図中のキャプションや導出された事実に一部不整合な数値が見られる場合、どの情報を優先すべきかの判断も課題となりえますが、ここでは図に最終的に記載された数値を元に推論が進められています。
+                </div>
+</div>
+</div>
+</div>
+<p style="text-align: center; margin-top: 20px;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> これらの例が示すように、TURNABOUTLLMは、詳細な情報読解、複数ステップの論理的推論、そして時には数値計算や空間把握といった多様な能力を組み合わせる必要がある、非常にチャレンジングなベンチマークです。
+    </p>
+<div class="arrow-connector"></div>
+<h3 class="section-title"><i class="fas fa-shoe-prints"></i>Reasoning steps</h3>
+<p>このサブセクションでは、Figure 11で示されている、論文本文ではカバーしきれなかったモデルの追加的なパフォーマンス分析について解説します。Figure 11は、モデルの精度が(a)推論ステップ数、(b)要求される推論タイプ、(c)解答空間のサイズといった要因によってどのように変化するかを示しています。</p>
+<div class="glass-card" style="padding: 20px; margin-top: 20px;">
+<p class="note-title" style="font-size: 1.2em; color: var(--color-primary);"><i class="fas fa-chart-line"></i> Figure 11: モデルの精度分析</p>
+<p>この図は、以下の6つのモデルファミリーの派生モデルに関する結果を示しています：</p>
+<ul class="unstyled-list tag-list" style="justify-content: center;">
+<li class="tag" style="background-color: #d9534f; color: white;">DS-R1-8 (DeepSeek-R1-8B)</li>
+<li class="tag" style="background-color: #d9534f; color: white; filter: brightness(1.2);">DS-R1-32 (DeepSeek-R1-32B)</li>
+<li class="tag" style="background-color: #f0ad4e; color: white;">DS-R1-70 (DeepSeek-R1-70B)</li>
+<li class="tag" style="background-color: #5bc0de; color: white;">G-4.1-M (GPT-4.1-mini)</li>
+<li class="tag" style="background-color: #337ab7; color: white;">L-3.1-8 (Llama-3.1-8B)</li>
+<li class="tag" style="background-color: #c9302c; color: white; filter: brightness(1.5);">L-3.1-70 (Llama-3.1-70B)</li>
+</ul>
+<p>(グラフ中の凡例はこれらに対応しています)</p>
+</div>
+<div class="content-box">
+<h4 class="subsection-title" style="font-size: 1em; color: var(--color-secondary);"><i class="fas fa-stairs"></i> (a) 推論ステップ数と精度 (Accuracy vs. Number of Reasoning Steps)</h4>
+<img alt="Figure 11a: Accuracy vs. Number of Reasoning Steps" src="reasoning_steps_accuracy_model_comparison.jpg"/>
+<div class="bubble-box">
+<p><span class="badge yellow">グラフの見方</span> 横軸は問題解決に必要な<span class="keyword">推論ステップ数</span>（2ステップから6ステップまで）、縦軸は各モデルの<span class="keyword">正解率 (%)</span> を示します。</p>
+<p><strong><i class="fas fa-chart-bar"></i> 分析結果:</strong></p>
+<ul>
+<li>一般的に、<span class="highlight">推論ステップ数が増加するにつれて、モデルの精度は低下する傾向</span>にあります。これは、問題が複雑になり、より多くの論理的なつながりを見つけ出す必要があるためだと考えられます。</li>
+<li>例えば、L-3.1-70B (ピンク色の線、四角マーカー) は2ステップで約50%の正解率ですが、5ステップでは約5%まで低下しています。</li>
+<li>DS-R1-70 (オレンジ色の線、ひし形マーカー) も同様に、2ステップで約30%から、ステップ数が増えるにつれて精度が低下しています。</li>
+<li>G-4.1-M (水色の線、丸マーカー) は比較的安定していますが、それでもステップ数が多い領域 (5, 6ステップ) でやや低下が見られます。</li>
+<li><span class="keyword">注意点</span>: データセットの制約上、7ステップ以上を必要とする問題は数が少ないため、この分析からは除外されています。</li>
+</ul>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-info-circle"></i> 示唆すること</div>
+<p>多段階の推論を必要とする問題は、現在のLLMにとって依然として大きな課題であることを示しています。ステップ数が増えるほど、途中で誤った推論をしてしまったり、関連情報を見落としたりする可能性が高まります。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h4 class="subsection-title" style="font-size: 1em; color: var(--color-secondary);"><i class="fas fa-brain"></i> (b) 推論タイプと精度 (Accuracy vs. Reasoning Types)</h4>
+<img alt="Figure 11b: Accuracy vs. Reasoning Types" src="model_performance_reasoning_types_accuracy.jpg"/>
+<div class="bubble-box">
+<p><span class="badge yellow">グラフの見方</span> 横軸は要求される<span class="keyword">推論タイプ</span>（Spa: 空間、Tem: 時間、Cau: 因果、Beh: 行動、Num: 数値、Phy: 物理、Spe: スペル）、縦軸は各モデルの<span class="keyword">正解率 (%)</span> を示します。</p>
+<p><strong><i class="fas s fa-chart-bar"></i> 分析結果:</strong></p>
+<ul>
+<li>モデルによって得意不得意な推論タイプが異なりますが、全体的な傾向として<span class="highlight">時間的推論 (Temporal, Tem) が最も難しい</span>部類に入ることが多いようです。</li>
+<li>例えば、多くのモデルでTemのバーが他のタイプに比べて低くなっています。</li>
+<li>一方で、<span class="keyword">数値的推論 (Numerical, Num)</span> は比較的多くのモデルで高い精度を示す傾向があります。これは、数値の比較や簡単な計算が、他の抽象的な推論よりも比較的得意であることを示唆しているかもしれません。</li>
+<li>DS-R1-70 (オレンジ色のバー) は、数値 (Num) や物理 (Phy) で比較的高い性能を示していますが、時間 (Tem) や因果 (Cau) ではやや低い結果となっています。</li>
+<li>L-3.1-70B (ピンク色のバー) は、全体的に他のモデルよりも高い精度を示しているものの、やはり時間 (Tem) が他のタイプと比較してやや低い傾向が見られます。</li>
+</ul>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-info-circle"></i> 示唆すること</div>
+<p>LLMは、推論の種類によって性能にばらつきがあることを示しています。特に、イベントの順序や時間的関係性を正確に把握し、それに基づいて論理的な結論を導き出す「時間的推論」は、多くのモデルにとって共通の課題である可能性があります。</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h4 class="subsection-title" style="font-size: 1em; color: var(--color-secondary);"><i class="fas fa-th-large"></i> (c) 解答空間のサイズと精度 (Accuracy vs. Size of Answer Space)</h4>
+<img alt="Figure 11c: Accuracy vs. Size of Answer Space" src="model_accuracy_answer_space_reasoning_steps.jpg"/>
+<div class="bubble-box">
+<p><span class="badge yellow">グラフの見方</span> 横軸は<span class="keyword">解答空間のサイズ</span>（|T| × |E|、つまり証言の数 × 証拠の数。値が小さいビンから大きいビンへ）、縦軸は各モデルの<span class="keyword">正解率 (%)</span> を示します。</p>
+<p><strong><i class="fas fa-chart-bar"></i> 分析結果:</strong></p>
+<ul>
+<li>このグラフからは、<span class="highlight">解答空間のサイズとモデルの精度との間に、明確な負の相関関係は見られません</span>。つまり、解答の選択肢が増えたからといって、必ずしも精度が著しく低下するわけではないようです。</li>
+<li>いくつかのモデル（例：L-3.1-70B ピンク色の線）では、解答空間のサイズが大きくなっても、精度が比較的安定しているか、むしろ若干上昇する区間も見られます。</li>
+<li>G-4.1-M (水色の線) は、解答空間のサイズが &lt;105 のあたりでピークがありますが、その後も極端には低下していません。</li>
+<li>DS-R1シリーズ (赤やオレンジの線) も、解答空間のサイズに対して精度が大きく変動するというよりは、ある程度の範囲で推移しています。</li>
+</ul>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-info-circle"></i> 示唆すること</div>
+<p>これは少し意外な結果かもしれません。直感的には、選択肢が増えれば増えるほど問題は難しくなりそうですが、これらのモデルは、ある程度解答空間の広がりに対してロバスト（頑健）である可能性を示唆しています。ただし、これはあくまで「強い負の相関がない」ということであり、全く影響がないわけではない点に注意が必要です。他の要因（問題の複雑さ、推論の質など）がより支配的である可能性も考えられます。</p>
+</div>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 30px;">
+<div class="framework-title"><i class="fas fa-glasses"></i> Figure 11 全体のまとめ</div>
+<p>Figure 11で示されたこれらの追加実験結果は、論文の主要な結論を補強し、モデルの性能に関するより詳細な洞察を提供します。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 推論ステップ数が増えると精度が低下する傾向は、より複雑な多段階推論がLLMにとって困難であることを再確認させます。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 推論タイプによる精度の違いは、モデルが特定の種類の論理構造や知識の扱いに偏りがある可能性を示唆します。特に時間的推論は多くのモデルにとっての弱点であるようです。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 解答空間のサイズが精度に強い負の相関を示さないという結果は、モデルが単に選択肢の数に圧倒されるわけではない可能性を示唆し、むしろ推論プロセス自体の質が重要であることを示唆しています。</li>
+</ul>
+<p>これらの分析は、LLMの推論能力をさらに向上させるための研究開発において、どのような点に焦点を当てるべきかについての重要な手がかりを与えてくれます。</p>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Federated Learning for Cyber Physical Systems: A Comprehensive Survey解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">Federated Learning for Cyber Physical Systems: A Comprehensive Survey</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="I._INTRODUCTION">
+<h2 class="section-title"><i class="fas fa-book-open"></i> I. INTRODUCTION</h2>
+<div class="glass-card">
+<p>このセクションでは、本論文の導入として、サイバーフィジカルシステム（CPS）と連合学習（Federated Learning, FL）の重要性、そしてこれらを組み合わせるFL-CPSという新しい領域について解説します。</p>
+<p><span class="keyword">主な目的</span>は、CPSにおけるFLの最新の動向、応用分野、システム構成、アルゴリズムを包括的に分析し、FL-CPSの可能性と課題を明らかにすることです。</p>
+<p><span class="keyword">主な論旨</span>として、FLがCPSのインテリジェンス向上、プライバシー保護、リアルタイム意思決定といった課題に対応できる有望な技術であることを示し、本サーベイ論文がその理解を深めるための一助となることを目指します。</p>
+</div>
+<div class="content-box">
+<p><i class="fas fa-microchip"></i> <span class="keyword">サイバーフィジカルシステム（CPS）</span>は、近年さまざまな産業でその重要性を増しており、急速に普及しています [1]。CPSとは、<span class="highlight">計算能力を持つコンポーネント（サイバー空間）と物理的なプロセス（フィジカル空間）が密接に統合され、特定の機能やタスクを実行するシステム</span>のことです [2]。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-industry fa-2x" style="color: var(--color-primary);"></i>
+<p><strong>製造業</strong></p>
+</div>
+<div class="feature-item">
+<i class="fas fa-car-side fa-2x" style="color: var(--color-secondary);"></i>
+<p><strong>輸送</strong></p>
+</div>
+<div class="feature-item">
+<i class="fas fa-heartbeat fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>ヘルスケア</strong></p>
+</div>
+<div class="feature-item">
+<i class="fas fa-leaf fa-2x" style="color: var(--color-accent2);"></i>
+<p><strong>農業</strong></p>
+</div>
+<div class="feature-item">
+<i class="fas fa-bolt fa-2x" style="color: var(--color-accent3);"></i>
+<p><strong>エネルギー</strong></p>
+</div>
+</div>
+<p style="text-align: center; margin-top: 10px; font-style: italic;">図：CPS技術によって変革の可能性を秘める産業分野 [3]</p>
+<p>これらのシステムに<span class="keyword">人工知能（AI）</span>を統合することは、CPSの生産性に影響を与える最も重要な要素の一つです。AIアルゴリズムは、CPSセンサーから受信したデータを評価し、この評価に基づいて意思決定を行ったり行動を起こしたりするために使用され [4]、CPSが変化する環境条件に<span class="highlight">リアルタイムで適応</span>することを可能にします。これにより、さまざまな応用においてCPSの<span class="keyword">精度、有効性、安全性</span>が向上します。</p>
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p><i class="fas fa-brain"></i> <strong>AIとCPSの統合深化</strong></p>
+<p>CPSの数が増え続け、その能力が向上するにつれて、AIはますますCPSに統合されると予測されています [5]。そのため、CPSはアプリケーションへの意図しない影響を減らすために、<span class="highlight">適切なプライバシーとセキュリティ保護策</span>を講じて運用されなければなりません [6]。</p>
+</div>
+<p>この傾向は、CPS分野におけるさらなる研究開発を促進し、また、<span class="keyword">IoT（モノのインターネット）</span>、<span class="keyword">センサーネットワーク</span>、<span class="keyword">クラウドコンピューティング</span>、<span class="keyword">マルチエージェントシステム</span>といった類似技術の他産業への導入を促すと期待されています [7]。</p>
+<div class="arrow-connector"></div>
+<p>最近の研究では、インテリジェントでプライベートなCPSを構築するために<span class="keyword">連合学習（Federated Learning, FL）</span>[8]を利用することが提案されています。FLは、<span class="highlight">データセット全体を提供することなく、複数センサーと中央サーバーを協調させることで機能する、分類モデル向けの分散型機械学習（ML）アプローチ</span>です [9]。</p>
+<p>インテリジェントCPSネットワークでは、複数のCPSデバイスが「<span class="keyword">ワーカー</span>」として機能し、「<span class="keyword">アグリゲータ</span>」（例：サーバー）と協力して全体的な<span class="keyword">ニューラルネットワーク（NN）</span>モデルを訓練するシステムを採用しています。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-network-wired"></i> FLにおける役割分担</p>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">1</div>
+<div class="step-content">
+<p><strong>アグリゲーションサーバーの主な責務:</strong></p>
+<p>事前に決定された学習パラメータを使用して<span class="highlight">汎用モデル（グローバルモデル）</span>を生成します。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">2</div>
+<div class="step-content">
+<p><strong>各「ワーカー」（CPSデバイス）の動作:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-download" style="color: var(--color-primary);"></i> アグリゲータから最新のモデルを取得します。</li>
+<li><i class="fas fa-database" style="color: var(--color-primary);"></i> ローカルデータセットを使用してモデルを改善します（例：何らかの形の<span class="keyword">確率的勾配降下法（SGD）</span>を実行）。
+                            <div class="note-box" style="margin-top: 5px;">
+<p class="note-title"><i class="fas fa-sticky-note"></i> 用語解説: 確率的勾配降下法 (SGD)</p>
+<p>機械学習モデルのパラメータを少しずつ調整して、モデルの性能を良くしていくための代表的な最適化アルゴリズムの一つです。全データの一部（ミニバッチ）を使って勾配を計算し、パラメータを更新します。</p>
+</div>
+</li>
+<li><i class="fas fa-upload" style="color: var(--color-primary);"></i> この更新されたモデル（ローカルモデル）をアグリゲータに送信します。</li>
+</ul>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">3</div>
+<div class="step-content">
+<p><strong>アグリゲーションサーバーの更新:</strong></p>
+<p>すべての地域的な変更（ローカルモデルの更新情報）を収集することで、<span class="highlight">最新のグローバルフレームワーク</span>を生成できます。</p>
+</div>
+</div>
+</div>
+<p><i class="fas fa-shield-alt"></i> <i class="fas fa-cogs"></i> ワーカーデバイスの分散コンピューティング能力のおかげで、<span class="keyword">訓練品質が向上</span>し、同時に<span class="keyword">ユーザーのプライバシーも強化</span>できます。グローバルモデルが収束すると、ローカルデバイスはアグリゲータから最新バージョンをダウンロードし、自身のローカル調整の計算を開始します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> A. Background and Motivation</h3>
+<div class="content-box">
+<p>FLは、その革新的な運用哲学の結果として、CPSアプリケーションに対して以下の実質的な改善を提供できます。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4><i class="fas fa-user-secret" style="color: var(--color-primary);"></i> プライバシーの向上 (Improved Privacy)</h4>
+<p>FLは、デバイスが自身の情報を中央サーバーや他のデバイスに<span class="highlight">開示することなく</span>モデル訓練に参加することを可能にします。これは、機密性の高い個人データや専有データが含まれる可能性のあるCPSアプリケーションにおいて特に重要です。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary); margin-top:10px;">
+<p><i class="fas fa-balance-scale"></i> <strong>データプライバシー法 (例: GDPR)</strong></p>
+<p><span class="keyword">GDPR（一般データ保護規則）</span>[10]のようなデータプライバシー法がますます厳格になるにつれて、FLがプライバシー保護を強化する可能性は、安全でインテリジェントなCPSシステムを構築するための魅力的な選択肢となります。これは、FLがデータを個人デバイス上でローカルに分析することを可能にし、機密情報が中央サーバーに送信されるリスクを低減するためです。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4><i class="fas fa-id-badge" style="color: var(--color-secondary);"></i> データ所有権 (Data Ownership)</h4>
+<p>FLでは、各デバイスは<span class="highlight">自身のデータの所有権と制御を保持</span>します。なぜなら、生データを中央サーバーや他のデバイスと交換する必要がないからです。各デバイスは、グローバルモデルを初期点として、自身のデータを使用して独自のモデルを訓練します。</p>
+<p>訓練プロセスはローカライズされていますが、グローバルモデルは各デバイスでのさらなる洗練の基盤として機能します。モデルを更新した後、デバイスは新しいモデルパラメータ（重みなど）を中央サーバーまたは他のデバイスに送信します。CPSアプリケーションでは、デバイスが複数の関係者によって所有され、異なる法的または規制上の制約を受ける場合があるため、これは特に重要となる可能性があります [11]。</p>
+</div>
+</div>
+<div class="info-grid" style="margin-top: 20px;">
+<div class="info-card glass-card">
+<h4><i class="fas fa-exchange-alt" style="color: var(--color-accent1);"></i> 通信・計算要件の削減 (Reduced Communication and Computation Requirements)</h4>
+<p>FLは、中央集権型の学習技術と比較して<span class="highlight">通信と計算を削減</span>します [12]。伝統的な中央集権型学習では、すべての訓練データを単一のサーバーに送信しますが、これはデータ送信と処理に関してリソース集約的です。</p>
+<p>FLは各デバイスがローカルでモデルを訓練することを可能にし、これにより、すべてのデータが中央サーバーに送信される中央集権型訓練と比較して<span class="keyword">データ転送量が削減される可能性</span>があります。</p>
+<div class="note-box" style="background-color: rgba(255, 165, 0, 0.1); border-left-color: orange;">
+<p class="note-title" style="color: orange;"><i class="fas fa-exclamation-triangle"></i> 注意点</p>
+<ul class="unstyled-list">
+<li>FLの反復的な性質（複数ラウンドのモデル交換）は、場合によっては<span class="highlight">総データ伝送量が増加</span>する可能性があります。</li>
+<li>同様に、各デバイスでのローカル処理は負荷が少ないかもしれませんが、すべてのデバイスとサーバーにわたる<span class="highlight">総処理量は中央集権型訓練よりも多くなる可能性</span>があります。</li>
+</ul>
+</div>
+<p>これは、デバイスが限られた通信または処理能力しか持たない可能性があるCPSアプリケーションにおいて特に有益です。</p>
+</div>
+<div class="info-card glass-card">
+<h4><i class="fas fa-chart-line" style="color: var(--color-accent2);"></i> モデル性能の向上 (Improved Model Performance)</h4>
+<p>FLは、各デバイスがより<span class="highlight">広範で多様なデータセット</span>で訓練することを可能にします。唯一のコストは、各デバイスが自身のデータの処理済みバージョンを提供する必要があることです。これは、<span class="keyword">異種（heterogeneous）で分散したデータ</span>を持つCPSアプリケーションにとって重要です。</p>
+<p>例えば、スマートシティアプリケーションでは、各センサーやカメラが異なる場所や環境からデータをキャプチャする可能性があり、その結果、より包括的で代表的な訓練セットが得られます。これにより、モデルがより広範囲の情報と経験を吸収できるため、単一デバイスまたは中央集権型データセットでの訓練と比較して<span class="keyword">モデル性能が向上</span>します [13]。</p>
+</div>
+</div>
+<div class="info-grid" style="margin-top: 20px;">
+<div class="info-card glass-card">
+<h4><i class="fas fa-expand-arrows-alt" style="color: var(--color-accent3);"></i> スケーラビリティ、堅牢性、適応性の向上 (Improved scalability, robustness, and adaptability)</h4>
+<p>FLでは、より多くのデバイスが分散型方式でモデル訓練プロセスに参加できるため、<span class="highlight">訓練プロセスのスケーリングが容易</span>になります。単一のデータセットでモデルを訓練するのとは対照的に、多様なデータで訓練することで<span class="keyword">モデルの回復力（resilience）</span>を高めることができます。これにより、データが頻繁に変化する可能性のあるCPSアプリケーションにおいて、モデルが時間の経過に伴うデータ分布の変化に<span class="keyword">適応</span>できるようになります [14]。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<p>FLは、<span class="keyword">無人航空機（UAV）</span>、<span class="keyword">スマートトランスポーテーション</span>、<span class="keyword">スマートヘルスケア</span>などの分野における固有の利点により、いくつかのCPSアプリケーションの解決策として提案されています。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-car" style="color: var(--color-primary);"></i>
+<p><strong>スマートトランスポーテーション</strong> [15]</p>
+<p style="font-size: 0.9em;">路側ユニットと協力して共同データ学習を行うことで、FLは路面安全予測や自動運転などのインテリジェントな車両サービスを成功裏に提供しています。これにより、訓練中の精度が向上し、車両認識のプライバシーが向上しました。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-hospital-user" style="color: var(--color-accent1);"></i>
+<p><strong>スマートヘルスケア</strong> [16]</p>
+<p style="font-size: 0.9em;">MLモデルを搭載したインテリジェントなヘルスケアサービスは、患者データを複数の医療機関間で共有することなく、FLを通じて提供できます。FLにより、病院などの医療機関は独自のデータを使用してMLモデルを開発し、学習したパラメータのみをアグリゲータに送信してさらなる処理を行うことができます。この改善された病院間コミュニケーションは、ユーザーのプライバシーも優先し、臨床診断と治療の迅速化など、いくつかの利点を提供します。</p>
+</div>
+</div>
+<p style="text-align: center; margin-top: 15px;">CPSアプリケーションにとって、FLは機密情報を保護し、データの主権と分散化を可能にする能力があるため、重要なリソースです。<span class="highlight">FL-CPSアプリケーションでの大きな成果</span>に鑑み、この重要な研究分野を強調することが適切です。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> B. Our Contributions</h3>
+<div class="content-box">
+<p>FLは広範囲に研究されてきましたが、私たちの知る限り、CPSネットワークにおけるFLの潜在的な使用を調査した最近の研究はありません。データオフロード、CPS接続、ローカリゼーションを含むCPSサービスでのFL利用の実現可能性は、[17]から[18]のどの調査でも検討されていません。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-search"></i> 既存研究のギャップ</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-wifi" style="color: var(--color-secondary);"></i> IoT、IIoT [19] [20]、UAV対応システム [21] 向けのFLに関する研究はいくつかありますが、CPS向けのFLの可能性はほとんど未踏です。</li>
+<li><i class="fas fa-city" style="color: var(--color-secondary);"></i> さらに、スマートシティからスマートトランスポーテーションに至るまでのFL-CPSアプリケーションの全範囲は、まだ詳細には議論されていません。</li>
+</ul>
+</div>
+<p>これらの制約を考慮すると、CPSシステムへのFLの組み込みに関する完全な調査が必要であると考えます。</p>
+<p><span class="badge blue">本論文の貢献</span> 私たちは、センサー間のデータ共有、キャッシング、攻撃検出、ローカリゼーション、CPSプライバシーなど、さまざまな重要なCPSアプリケーションにおけるFLの使用に関する最先端の検討を提供します。</p>
+<div class="bubble-box" style="border-color: var(--color-primary);">
+<p><i class="fas fa-key"></i> <strong>本論文の主な貢献</strong></p>
+<p>スマートトランスポーテーション、スマートシティ、スマートヘルスケア、スマート攻撃検出など、いくつかのCPSドメインにおける<span class="highlight">FLの適用可能性を探求し、評価する</span>ことです。さらに、調査から得られた最も注目すべき発見を提示します。さらに、この作業はFL-CPS分野における<span class="keyword">重要な研究ギャップ</span>を特定し、Table Iは以前の出版物と比較したこの作業の革新的な発見を強調しています。結論として、FL-CPSに関する興味深い将来の可能性と重要な研究課題の範囲について議論します。</p>
+</div>
+<p>この目的のために、私たちの論文はFL-CPSにおけるFLという新たな分野にいくつかの明確な貢献を提供します：</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<span class="badge purple">1</span> 多様な研究活動を統合し、FLとCPS間の相乗効果と機会を強調することで、CPSネットワーク内での<span class="keyword">FL統合の最初の包括的かつ体系的な分析</span>を提示します。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple">2</span> 密接に関連しているが異なるパラダイムである<span class="keyword">IoTとCPSの詳細な比較</span>を提供し、それぞれの違いと類似点を明確にすることで、現在の理解を深め、各々におけるFLの適用可能性をより良く評価します。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple">3</span> スマートシティ、インテリジェント交通システム、ヘルスケア、脅威検出など、重要なCPSドメインにおける<span class="keyword">FLアプリケーションを探求</span>し、それぞれの技術的要素、貢献、限界を分類する詳細な<span class="keyword">分類表（taxonomy tables）</span>を提示します。
+            </div>
+<div class="pipeline-step">
+<span class="badge purple">4</span> 既存の研究を要約するだけでなく、FL-CPSの状況を<span class="keyword">批判的に評価</span>し、主要な課題と研究ギャップを特定することで、この分野の将来の研究のための<span class="keyword">ロードマップ</span>を提供します。
+            </div>
+<div class="pipeline-step" style="margin-bottom:0;">
+<span class="badge purple">5</span> これらのギャップに基づいて、FL-CPSの<span class="keyword">有望な将来の研究方向</span>を提案し、継続的な開発と革新を促進する洞察を提供します。
+            </div>
+</div>
+<p style="margin-top:20px;">これらの特徴的な貢献により、私たちの論文はFL-CPS研究に関わる学者と実務家の両方にとって<span class="highlight">不可欠な参考文献</span>として位置づけられます。その包括的な分析、徹底的な比較、そして将来を見据えた洞察を通じて、私たちの作業はFL-CPSの理論的枠組みと実践的理解の両方を大幅に強化し、それによってその継続的な進化と進歩を支援します。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-sitemap"></i> C. Structure of the Survey</h3>
+<div class="content-box">
+<p>この論文の残りの部分は、Fig. 1に示されるように構成されています。（Fig. 1は現時点では提示されていませんが、論文の構成を示す図のようです。）</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションII:</strong> FLとCPSの概要を提供します。</li>
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションIII:</strong> ヘルスケアCPSにおけるFLの主要な応用について議論します。</li>
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションIV:</strong> スマートシティに焦点を当てたCPSのためのFLについて議論します。</li>
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションV:</strong> 大部分が車両CPSのFLに充てられます。</li>
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションVI:</strong> CPSにおけるサイバーセキュリティとプライバシーサービスのFL展開を分析します。</li>
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションVII:</strong> 残された懸念事項と将来の研究分野を強調します。</li>
+<li><i class="fas fa-chevron-right" style="color: var(--color-primary);"></i> <strong>セクションVIII:</strong> 論文の最終部分です。</li>
+</ul>
+<div class="note-box" style="margin-top:15px; background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-list-alt"></i> 略語一覧</p>
+<p>さらに、Table IIはこの研究全体で使用される略語と頭字語のリストを提供します。（Table IIは現時点では提示されていませんが、論文中の略語をまとめた表のようです。）</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="II._LITERATURE_REVIEW_AND_FOUNDATIONS">
+<h2 class="section-title"><i class="fas fa-book-open"></i>II. LITERATURE REVIEW AND FOUNDATIONS</h2>
+<p style="font-size: 16px; margin-bottom: 20px; padding: 10px; background-color: rgba(74, 111, 165, 0.05); border-left: 5px solid var(--color-primary); border-radius: 5px;">
+        このセクションでは、<span class="keyword">サイバーフィジカルシステム（CPS）</span>における<span class="keyword">連合学習（FL）</span>の基礎となる既存研究のレビューと、その基盤技術について詳しく解説します。 <i class="fas fa-lightbulb"></i> 主な目的は、CPSの基本的な仕組み、FLとCPSそれぞれの分野での最近の技術的進歩、そしてこれら二つの技術を効果的に統合するための中心的なフレームワークを明らかにすることです。これにより、読者はFL-CPSという融合領域の全体像と、その詳細な構成要素を理解することができます。
+    </p>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i>A. FL Mechanisms in CPS</h3>
+<div class="content-box">
+<p>このサブセクションでは、CPS環境におけるFLの基本的なメカニズムについて掘り下げます。まずCPSとは何かを定義し、その構成要素と特徴、アーキテクチャを説明します。次に、FLの主要な概念、典型的なワークフロー、CPSでよく使われるFLアルゴリズム、そしてFL-CPSシステムを評価するための指標について解説します。</p>
+</div>
+<h4 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left-color: var(--color-accent1);"><i class="fas fa-question-circle"></i>1) What is CPS:</h4>
+<div class="content-box" style="padding-left: 20px;">
+<p><span class="keyword">サイバーフィジカルシステム（CPS）</span>とは、現実世界の<span class="highlight">物理的なプロセス</span>と、情報処理や通信を行う<span class="highlight">サイバー（計算・情報）の世界</span>を緊密に統合したシステムのことです。これらは単に融合するだけでなく、両者が重なり合う領域に焦点が当てられています。</p>
+<p>CPSの概念や動作モデルは、工学のほぼ全ての分野からの知見を参考にして発展してきましたが、既存の枠組みに収まらない独自の特性を持つため、CPS独自の標準や手順が確立されてきました。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-circle"></i>重要ポイント</p>
+            CPSの各要素（物理側とサイバー側）の情報は、バランス良く収集・分析される必要があります。片方だけでは不十分で、両者を包括的に理解することが不可欠です。デジタルシステムとアナログシステム、ソフトウェアとハードウェアの相互接続を理解することが、CPSを把握する鍵となります。
+        </div>
+<p>CPSは、制御システム、センサー、中央処理装置（CPU）などから構成される、複雑で安全性の高いネットワーク化されたシステムです。その主な目的は、<span class="highlight">精密なセンシング</span>と<span class="highlight">物理システムとのインタラクション</span>です。CPSは、ハードウェアベースのサービスからソフトウェア対応のサービスへの移行という形で、多くの課題に対する解決策を提供してきました。人間や他の機械と「思考」し、コミュニケーションする能力を持っています。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-puzzle-piece"></i>a) Typical CPS parts and features: (CPSの典型的な構成要素と特徴)</p>
+<p>CPSは、主に以下の3つの部分から構成されます [33]:</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-robot fa-2x" style="color: var(--color-secondary);"></i></div>
+<h5 style="color: var(--color-secondary);">📌 物理部分 (Physical Parts)</h5>
+<p>センサーやアクチュエータなど、現実世界と直接やり取りする物理的な装置や機械を含みます。これらは環境からのデータを収集したり、物理的な操作を行ったりします。</p>
+<p class="reference" style="font-style: italic;">(論文では「システムのロジックに対処する」とありますが、これはソフトウェア部分の説明と重複しているように見えます。一般的に物理部分はセンサー、アクチュエーター、物理プロセスそのものを指します。)</p>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-laptop-code fa-2x" style="color: var(--color-accent1);"></i></div>
+<h5 style="color: var(--color-accent1);">📝 ソフトウェア部分 (Software Parts)</h5>
+<p>システムの「頭脳」にあたる部分で、入力された情報に基づいて意思決定を行うためのアルゴリズムや技術が含まれます。システムのロジックを処理する役割を担います。</p>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-network-wired fa-2x" style="color: var(--color-accent2);"></i></div>
+<h5 style="color: var(--color-accent2);">📡 通信部分 (Communication Parts)</h5>
+<p>様々なソフトウェアコンポーネントとハードウェアコンポーネントを接続し、ネットワークを介したデータ転送をサポートします。これにより、システム全体が連携して動作できます。</p>
+</div>
+</div>
+<hr style="margin: 20px 0; border-color: var(--color-primary-light);"/>
+<p>CPSを特徴づける4つの識別要素は以下の通りです:</p>
+<ul class="unstyled-list" style="padding-left: 10px;">
+<li style="margin-bottom: 10px;"><span class="badge blue">適応性 (Adaptive System)</span>: 環境との相互作用を維持しながら、状況の変化に柔軟に対応できる能力。生態系によって決定される価値で相互作用を維持するという概念がこれを示します。</li>
+<li style="margin-bottom: 10px;"><span class="badge orange">システム統合 (Systemic Integration)</span>: 連続的・離散的、または独立した複数の振る舞いが共存します。これにより、CPSはデジタルシステムとアナログシステムの両方の側面を持つと見なされ、高度なシステムの機動性が可能になります。</li>
+<li style="margin-bottom: 10px;"><span class="badge green">ソフトウェアへの注力 (Dedication to Software)</span>: ソフトウェアの重要性が高く、ハードウェアの特定の要素の重要性を相対的に低下させるのに役立ちます。ユーザー体験の効率化が期待されます。</li>
+<li style="margin-bottom: 10px;"><span class="badge purple">信頼性の高いアプローチ (Reliable Approaches)</span>: 環境の予期せぬ変化に対する応答性を示します。観測・置換されたデータの総重量の変化に適応でき、リアルタイムで変化する要件にも対応可能です。</li>
+</ul>
+<p>さらに、CPSはユーザーに優れたサービスを提供するために、有線または無線メディアを介してデバイスと通信する必要があり、最先端のハードウェアとソフトウェアを開発するために両方の通信機能を利用します。</p>
+</div>
+<div class="framework-box" style="margin-top: 20px;">
+<p class="framework-title"><i class="fas fa-sitemap"></i>b) Infrastructure of CPS Architecture: (CPSアーキテクチャのインフラストラクチャ)</p>
+<p>CPSアーキテクチャとは、機械やフレームワーク、または適切なタイプを確立するための物理コンポーネントを設計・実装することです。CPSは図2に示すように、物理コンポーネントとサイバーコンポーネントを持っています。</p>
+</div>
+</div>
+<img alt="典型的なCPSの全体アーキテクチャ (Fig. 2)" class="research-image" src="typical_cps_architecture.jpg"/>
+<div class="content-box" style="padding-left: 20px; margin-top: 10px;">
+<div class="bubble-box">
+<p><strong>図2の解説: 典型的なCPSの全体アーキテクチャ</strong> ✏️</p>
+<p>この図は、典型的なCPS内の動的な相互作用を示しています。</p>
+<ol>
+<li><strong>物理部分 (Physical Part)</strong>: プロセスはここから始まります。センサーが環境からリアルタイムデータを収集します。(<span class="keyword">例:</span> 工場の機械の温度センサー、自動運転車のカメラやLIDAR)</li>
+<li><strong>ネットワーク (Network)</strong>: 収集されたデータは、安全なネットワークを通じてサイバー部分に送られます。</li>
+<li><strong>サイバー部分 (Cyber Part)</strong>: ここでデータの分析、シミュレーション、意思決定が行われます。CPSは知的で適応性があり、リアルタイム応答性を特徴とします。</li>
+<li><strong>制御動作 (Control Actions)</strong>: 分析されたデータに基づいて生成された制御アクションが、アクチュエータを通じて物理部分にフィードバックされ、物理環境に影響を与えます。(<span class="keyword">例:</span> 温度が高ければ冷却装置を作動、障害物を検知したらブレーキをかける)</li>
+<li><strong>ユーザーインターフェース (User Interface)</strong>: 人間の操作やCPSの動作の可視化を可能にします。</li>
+</ol>
+<p>この物理領域とサイバー領域間の継続的なフィードバックループと人間の監視により、CPSは環境に効果的に適応し応答することができます。</p>
+</div>
+<p>CPSフレームワークのアーキテクチャ層を概観するために、以下に紹介します:</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<h5 style="color:var(--color-primary);"><i class="fas fa-link"></i> 接続層 (Connection layer)</h5>
+<p>CPSネットワークの主要な焦点です。センサーが収集したリアルタイムデータから始まります。センサーは周囲の環境に関するデータを収集し、連続的なメディアを介して他のセンサーに送信し、分析のためにインテリジェントゲートウェイにデータを転送します。この層は、情報受信デバイスの<span class="highlight">プラグアンドプレイ機能</span>（例: PCのマウスやキーボード、ビデオカード、ハードドライブ）を可能にします。また、CPSはデバイス間の<span class="highlight">マシンツーマシン（M2M）接続</span>も可能にします。これらの特性がCPSの通信能力を支えています。センサーは、収集するデータによっても区別されます。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<h5 style="color:var(--color-primary);"><i class="fas fa-exchange-alt"></i> 変換層 (Conversion layer)</h5>
+<p>分析を使用して、アナログデータをデジタル形式に変換します。データは、現代的で規制された、簡単な手法を使用して収集・整理されます。このレベルでは、データは他のシステム層とは別に収集されます。分析により、機械の健康状態の予測を確認し、故障を予測することができます。データ組み合わせの統計的真実性を検証します。このシステムにより、CPSは「意識」を持つことが可能になります。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="step-number">3</div>
+<div class="step-content">
+<h5 style="color:var(--color-primary);"><i class="fas fa-server"></i> サイバー層 (Cyber layer)</h5>
+<p>データのバックアップと復元に使用されます。以前に完了したタスクを保存することで、タイムマシンのように機能することができます。ファイルの以前のバージョンは自動または手動でバックアップできます。<span class="highlight">データマイニング</span>を開始する前に、システム全体から収集し、傾向を特定し、重複を削除し、データを適切に整理する必要があります。このレベルでは、データ管理と意思決定が処理されます。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="step-number">4</div>
+<div class="step-content">
+<h5 style="color:var(--color-primary);"><i class="fas fa-brain"></i> 認知層 (Perception layer)</h5>
+<p>システムで問題が発見された場合にトラブルシューティングが行われる場所です。エラーの特定と修正のシミュレーションは、この層のアルゴリズムによって実行されます。エラーと故障の診断は、認知層の能力によって監督されます。診断の視覚化と、最終的なバグが除去された後のグループでの意思決定の促進の両方に、人間の関与が必要です。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="step-number">5</div>
+<div class="step-content">
+<h5 style="color:var(--color-primary);"><i class="fas fa-tools"></i> 設定層 (Configuration layer)</h5>
+<p>CPSを使用して、システムの可用性と信頼性を調査できます。出力レポートはこの層で処理されます。システムの設定プロセスでは、プロセス中に<span class="highlight">レジリエンスチェック</span>を実行できるか、差異を調整できるか、ランダムな外乱によって引き起こされる故障プロセスを最適化できるかどうかも評価します。このレベルは管理タスクを実行し、システム全体で適切な設定を保証します。</p>
+</div>
+</div>
+<div class="pipeline-step" style="border-bottom: none;">
+<div class="step-number">6</div>
+<div class="step-content">
+<h5 style="color:var(--color-primary);"><i class="fas fa-store"></i> 商業層 (Commercial layer)</h5>
+<p>信頼性の高いCPSの提供に関して、商業レベルは組織の管理システムに積極的に参加します。最終結果が得られると、システムの出力、有用性、人気度がすべて向上する可能性があります。さらに、この層は顧客やプロバイダーとの協調的な努力を通じて開発機会を開始します。</p>
+</div>
+</div>
+</div>
+</div>
+<h4 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left-color: var(--color-accent1); margin-top: 30px;"><i class="fas fa-project-diagram"></i>2) Key FL Concepts and Workflow: (FLの主要概念とワークフロー)</h4>
+<div class="content-box" style="padding-left: 20px;">
+<p><span class="keyword">連合学習（FL: Federated Learning）</span>は、CPS内で図3に示すように、CPSデバイスのような<span class="highlight">データクライアント</span>と、<span class="keyword">中央集権的接続点（CCP: Centralized Point of Connection）</span>にいる<span class="highlight">アグリゲータ（集約者）</span>が関与します。</p>
+</div>
+<img alt="CPSにおけるFLの通信プロセス (Fig. 3)" class="research-image" src="fl_communication_process_in_cps.jpg"/>
+<div class="content-box" style="padding-left: 20px; margin-top: 10px;">
+<div class="bubble-box">
+<p><strong>図3の解説: CPSにおけるFLの通信プロセス</strong> 📊</p>
+<p>この図は、CPSにおけるFLの典型的な通信の流れを示しています。</p>
+<ol>
+<li><strong>初期化と選択フェーズ (Initialize and select phase)</strong>:
+                    <ul>
+<li>中央のCCP（サーバー）が学習タスクを定義し、学習パラメータ（学習率、通信イテレーション数など）を設定します。</li>
+<li>FLプロセスに参加するCPSデバイス（クライアント）を選択します。</li>
+<li>CCPは初期グローバルモデルを生成し、選択されたCPSデバイスに送信します。</li>
+</ul>
+</li>
+<li><strong>ローカルモデル学習とアップロード (Upload local models)</strong>:
+                    <ul>
+<li>各CPSデバイスは、自身のローカルデータセットを用いて、受信したグローバルモデルを基にローカルモデルを学習・更新します。この際、データはデバイス内に留まり、外部には送信されません。</li>
+<li>学習後、更新されたローカルモデル（またはモデルの更新差分）をCCPにアップロードします。</li>
+</ul>
+</li>
+<li><strong>モデル集約とグローバルモデル更新 (Model Gathering &amp; Transmit updated the global model)</strong>:
+                    <ul>
+<li>CCPは、各CPSデバイスからアップロードされたローカルモデルを集約します（例：重み平均）。</li>
+<li>集約によって新しいグローバルモデルが生成されます。</li>
+<li>更新されたグローバルモデルが、次の学習ラウンドのために再びCPSデバイスに送信されます。</li>
+</ul>
+</li>
+</ol>
+<p>このサイクル (1-3) を、グローバルモデルが収束するか、所定のイテレーション数に達するまで繰り返します。</p>
+</div>
+<p>このパラダイムでは、各ユーザー（ \\( \mathsf{C_i} \\) で表される）はプライベートなデータセット \\( \mathsf{S_i} \\) を保持します。これらのデータセットは、FLアルゴリズムのための入力 \\( \mathbf{x_{ik}} \\) と対応する出力 \\( y_{ik} \\) から構成されます。例えば、自動車が関与するCPSネットワークでは、中央のFL集約プロセスで協力することで、周囲の交通状況に関するデータを収集し、混雑緩和を目指すリルートマップを作成できます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-key"></i>FLの重要性</p>
+            FLはCPSネットワークにおいて非常に重要です。なぜなら、CCPが機械学習（ML）トレーニングのために全ての入力を集約することができない（またはプライバシー上すべきでない）ため、ネットワークのエッジ（末端のデバイス）で包括的なインテリジェンスを確保できるからです。
+        </div>
+<p>CPSネットワーク内では、ユーザーとCCPがデータ分析と推論を行うことができます。ユーザーデータセットでトレーニングされた個々のFLモデルは<span class="keyword">ローカルFLモデル ( \\( \mathsf{W_{local}} \\) )</span> と呼ばれ、中央FLモデルはこれらのローカルモデルを使用して<span class="keyword">グローバルFLモデル ( \\( \mathsf{W_{global}} \\) )</span> を作成します。CPSアクチュエータ（物理的な操作を行うデバイス）での分散データトレーニングを活用することで、CCPはユーザーのプライバシーを大幅に損なうことなく予測精度を向上させることができます。</p>
+<p>図3は、文献で最も広く使用されている、モデル集約に中央サーバーを使用する<span class="keyword">中央集権型FL（CFL: Centralized FL）</span>の主要な段階を示しています。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="feature-item" style="background-color: #e9f5ff;">
+<h5 style="color:var(--color-primary);"><span class="step-number" style="float: left; margin-right: 10px;">1</span> アクチュエータの初期化と選択戦略</h5>
+<p>CCPでのFL集約は、ジェスチャー認識などのCPS内のタスクを特定し、学習速度や通信イテレーションなどの学習パラメータを調整します。さらに、FL手順に参加するCPSアクチュエータの選択が決定されます。チャネルの状況や各CPS機器のローカルアップデートの重要性など、多くの選択パラメータがこの選択に使用される可能性があります。</p>
+</div>
+<div class="feature-item" style="background-color: #fff0e6;">
+<h5 style="color:var(--color-secondary);"><span class="step-number" style="float: left; margin-right: 10px; background-color: var(--color-secondary);">2</span> ローカルユーザーによる分散型更新とトレーニング</h5>
+<p>トレーニング設定が完了すると、サーバーは \\( w_{g0lobal} \\) と呼ばれる初期化モデルを生成し、分散トレーニングを開始するためにCPSユーザーに配信します。保護されたデータセット \\( \mathsf{S_i} \\) はCPSのノード \\( \mathsf{C_i} \\) に保持されます。ニューラルネットワーク（NN）の損失関数が \\( \mathsf{L}(.) \\) であると仮定すると、時間 \\( \Delta \\) において、 \\( \mathsf{C_i} \\) は他のノードと連携して、自身のデータセット \\( \mathsf{S_i} \\) 、ステップサイズ \\( B \\) 、現在の重み \\( \mathsf{w_i^\Delta} \\) に基づいて重みを変更します。</p>
+<div class="formula">
+                    $$ \mathsf { w } _ { \mathrm { i } } ^ { \Delta + 1 } = \mathsf { w } _ { \mathrm { i } } ^ { \Delta } - \mathsf { \mathsf { B } } ^ { \Delta } . \frac { \partial \mathsf { L } ( \mathsf { w } _ { \mathrm { i } } ^ { \Delta } . \mathsf { S } _ { \mathrm { i } } ) } { \partial \mathsf { w } } $$
+                    <p style="font-size: 0.9em; color: var(--color-gray);">この数式は、各クライアント \\( \mathsf{C_i} \\) が時刻 \\( \Delta \\) から \\( \Delta+1 \\) へと自身のモデルの重み \\( \mathsf{w_i} \\) を更新する過程を示しています。更新は、現在の重み \\( \mathsf{w_i^\Delta} \\) から、学習率 \\( \mathsf{B^\Delta} \\) と損失関数 \\( \mathsf{L} \\) の勾配（偏微分）を掛けたものを引くことで行われます。勾配は、自身のデータセット \\( \mathsf{S_i} \\) を使って計算されます。つまり、自分のデータでモデルがどれだけ間違っているか（損失）を計算し、その間違いを減らす方向にモデルを少し修正する、という操作です。</p>
+</div>
+<p>この局所的な更新は1回または複数回実行できます。さらに、異なるFL技術は多様な \\( \mathsf{L}(.) \\) 関数を使用する場合があります [9]。</p>
+</div>
+<div class="feature-item" style="background-color: #e6ffed;">
+<h5 style="color:var(--color-accent1);"><span class="step-number" style="float: left; margin-right: 10px; background-color: var(--color-accent1);">3</span> モデルの収集と配布</h5>
+<p>すべてのエンドポイント（クライアントデバイス）の重みがサーバーに集約されます。収集関数 \\( \mathsf{M}(.) \\) のサポートにより、中央サーバーは次のイテレーションのための平均重みを計算します。時刻 \\( \triangle \\) でモデルを再配布することによって計算された改訂された重みは次のように書けます。</p>
+<div class="formula">
+                    $$ \mathsf { w } ^ { \Delta } = \mathsf { M } ( \mathsf { w } _ { 1 } ^ { \Delta } , \mathsf { w } _ { 2 } ^ { \Delta } , . . . , \mathsf { w } _ { \mathsf { n } } ^ { \Delta } ) $$
+                    <p style="font-size: 0.9em; color: var(--color-gray);">この数式は、サーバーが全クライアント（ \\( n \\) 台）から集めたローカルモデルの重み（ \\( \mathsf{w_1^\Delta, w_2^\Delta, ..., w_n^\Delta} \\) ）を、集約関数 \\( \mathsf{M} \\) を使って新しいグローバルモデルの重み \\( \mathsf{w^\Delta} \\) に統合することを示しています。最も一般的な集約関数は平均化です。</p>
+</div>
+<p>グローバルモデルを更新する際、FLアグリゲータは頻繁に平均化アルゴリズムを使用して、提供されたすべての重みを単一の値に結合します。ローカル予測に使用される各エッジデバイスにモデルのコピーを作成するのが通常の慣行です。エッジデバイスは異種であるため、すべての \\( n \\) 個のコンピューティングエッジが同じ情報交換方法を使用する必要はありません。この計算では、コンピューティングエッジのサブセットのみが使用されます。</p>
+</div>
+</div>
+</div>
+<h4 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left-color: var(--color-accent1); margin-top: 30px;"><i class="fas fa-microchip"></i>3) Common FL Algorithms for CPS Environments: (CPS環境向けの一般的なFLアルゴリズム)</h4>
+<div class="content-box" style="padding-left: 20px;">
+<p>FLは、分散環境でデータプライバシーを保護しながら協調的なモデルトレーニングを可能にするために設計された一連のアルゴリズムを含みます。これらのアルゴリズムの中で、いくつかの主要なものを紹介します。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h5 style="color:var(--color-primary);"><i class="fas fa-users-cog"></i> Federated Averaging (FedAvg) [9]</h5>
+<p>最も基本的なFLアルゴリズムです。複数のクライアントがそれぞれの損失関数を最小化することでローカルモデルパラメータを繰り返し計算し、これらのパラメータを中央サーバーに送信します。サーバーはそれらを集約してグローバルモデルを更新します。このプロセスにより、基礎となるデータは分散化されプライベートなままとなり、画像分類や自然言語処理（NLP）など幅広い分野で適用可能です。</p>
+<div class="bubble-box" style="border-color: var(--color-primary); margin-top:10px;">
+<p style="font-size:0.9em"><strong><i class="fas fa-hand-point-right"></i> 具体例:</strong> スマートウォッチの健康データ（歩数、心拍数など）を使って、全ユーザーに共通の活動量予測モデルを学習する場合。各ユーザーのスマートウォッチがローカルでモデルを学習し、更新情報だけをサーバーに送ります。サーバーは集まった更新情報を平均化して、より汎用的なグローバルモデルを作ります。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h5 style="color:var(--color-secondary);"><i class="fas fa-user-check"></i> Personalized Federated Learning (PersFL) [34]</h5>
+<p>グローバルモデルを個々のクライアントの特性に合わせて調整することで、FedAvgのパラダイムを拡張します。PersFLでは、各クライアントのデータは一意であるため、パーソナライズされた損失関数を最適化することでグローバルモデルを適応させる必要があります。結果として、PersFLはモデルのパフォーマンスとユーザー満足度を向上させるとともに、公平性の考慮事項にも対応します。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary); margin-top:10px;">
+<p style="font-size:0.9em"><strong><i class="fas fa-hand-point-right"></i> 具体例:</strong> スマートフォンのキーボード入力予測。基本的な予測モデル（グローバルモデル）は全ユーザーで共有しつつ、各ユーザーの過去の入力傾向（ローカルデータ）に合わせて、予測候補をパーソナライズします。Aさんは専門用語をよく使うので、Aさん用のモデルはその単語を優先的に表示します。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h5 style="color:var(--color-accent1);"><i class="fas fa-user-edit"></i> pFedMe (Personalized Federated Mean Encoding) [35]</h5>
+<p>クライアント固有の埋め込みを使用してパーソナライズされた情報をグローバルモデルにエンコードすることにより、FLをさらに改良します。これらの埋め込みをグローバルモデルパラメータに統合することにより、pFedMeは、リソースに制約のあるFL設定における重要な考慮事項である通信オーバーヘッドを最小限に抑えながら、モデルのパーソナライズを強化します。</p>
+</div>
+<div class="info-card glass-card">
+<h5 style="color:var(--color-accent2);"><i class="fas fa-shield-alt"></i> Secure Aggregation (SecAgg) [36]</h5>
+<p>暗号化されたモデル更新を集約することで、FLシステムをプライバシー侵害から強化し、集約プロセス中に機密情報を保護します。準同型暗号などの暗号技術を採用することで、SecAggは計算効率を維持しながら堅牢なプライバシー保護を保証します。</p>
+<div class="bubble-box" style="border-color: var(--color-accent2); margin-top:10px;">
+<p style="font-size:0.9em"><strong><i class="fas fa-hand-point-right"></i> 具体例:</strong> 複数の病院が協力して病気の診断モデルを学習する際、各病院の患者データから得られたモデル更新を暗号化してからサーバーに送信します。サーバーは暗号化されたまま集約処理を行い、個々の病院のデータ内容を直接見ることはありません。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h5 style="color:var(--color-accent3); color: var(--color-dark);"><i class="fas fa-cogs"></i> Meta-Learning for FL (FedMeta) [37]</h5>
+<p style="color: var(--color-dark);">メタパラメータを学習し、ローカル更新から計算されたメタ勾配に基づいてグローバルモデルを更新することにより、新しいクライアントやタスクへの適応性を導入します。これにより、動的なFL環境での迅速な適応が容易になりますが、過学習を軽減するために慎重な初期化と正則化が必要です。</p>
+</div>
+</div>
+<p style="margin-top: 15px;">これらのアルゴリズムは、データの不均一性やプライバシー懸念への対処から、動的なモデル適応の促進まで、多様なFLシナリオに対応し、協調的でプライバシーを保護するMLの広範な状況を支えています。</p>
+</div>
+<h4 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left-color: var(--color-accent1); margin-top: 30px;"><i class="fas fa-chart-line"></i>4) Evaluation Metrics for FL-CPS: (FL-CPSの評価指標)</h4>
+<div class="content-box" style="padding-left: 20px;">
+<p>評価指標は、FLモデルの<span class="highlight">パフォーマンス</span>、<span class="highlight">プライバシー</span>、<span class="highlight">公平性</span>を評価する上で重要な役割を果たします。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card" style="border-top: 5px solid var(--color-primary);">
+<h5 style="color:var(--color-primary);"><i class="fas fa-tachometer-alt"></i> モデルパフォーマンス指標</h5>
+<p>精度（Accuracy）、F1スコア、適合率（Precision）、再現率（Recall）、AUC-ROC（受信者動作特性曲線下面積）など。これらはFLモデルの予測能力と識別力を定量化します。これらの数学的概要は表IIIにまとめられています。（表IIIは後述のセクションで提示されると想定）</p>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-secondary);">
+<h5 style="color:var(--color-secondary);"><i class="fas fa-comments"></i> 通信指標</h5>
+<p>通信ラウンド数、総送信データ量など。クライアントとサーバー間の対話中の効率を最適化します。</p>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-accent1);">
+<h5 style="color:var(--color-accent1);"><i class="fas fa-user-secret"></i> プライバシー指標</h5>
+<p>特に差分プライバシー（DP: Differential Privacy）や攻撃に対する堅牢性など。プライバシー保護と敵対的脅威への耐性を評価します。</p>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-accent2);">
+<h5 style="color:var(--color-accent2);"><i class="fas fa-balance-scale"></i> 公平性指標</h5>
+<p>バイアス検出、均等化オッズなど。クライアントグループ間での公平性を保証します。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title" style="margin-top: 30px;"><i class="fas fa-rocket"></i>B. Advances in FL and CPS</h3>
+<div class="content-box">
+<p>FLとCPSにおける最近の進歩は、それらの相乗的な統合の基礎を築いてきました。このセクションでは、両方の領域における基礎的な発展を統合し、それらの収束点と残された課題を強調します。</p>
+</div>
+<h4 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left-color: var(--color-accent1);"><i class="fas fa-brain"></i>1) Recent Advances in FL: (FLにおける最近の進歩)</h4>
+<div class="content-box" style="padding-left: 20px;">
+<p>最先端のFLの4つの最新バリアントは、<span class="keyword">連合転移学習（FTL: Federated Transfer Learning）</span>、<span class="keyword">分割連合学習（SFL: Split Federated Learning）</span>、<span class="keyword">パーソナライズ連合学習（PFL: Personalized Federated Learning）</span>、および<span class="keyword">分散型連合学習（DFL: Decentralized Federated Learning）</span>です。これらの4つのグループは、クライアントの多様性、ネットワーキング構造への重点、およびトレーニングデータがサンプル空間と特徴空間に分散される方法において区別されます。</p>
+<div class="info-card glass-card" style="margin-bottom: 20px;">
+<h5 style="color:var(--color-primary);"><i class="fas fa-user-graduate"></i>1) Personalized Federated Learning (PFL): (パーソナライズ連合学習)</h5>
+<p>従来のFLは、モデル、デバイス、統計的多様性により、複雑なCPSへの直接展開に大きな困難をもたらします。このため、インテリジェントCPSのインフラストラクチャではPFLが有効になります[38]。PFLは、<span class="highlight">エッジコンピューティング</span>を利用してエッジで計算と通信を実行し[39]、多様な能力を持つ多数のデバイスによって与えられる障害に対処します。高い処理速度と低遅延の要求を解決するために、各CPSデバイスは自身の高計算量学習アクティビティをエッジにシフトするオプションがあります。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-tasks"></i>Processes of PFL: (PFLのプロセス)</p>
+<p>PFLにおける共有学習プロセスは、基本的に以下の3つのプロセスで構成されます。</p>
+<ol class="unstyled-list">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-primary);">a</div>
+<div class="step-content">
+<strong>学習プロセス (Learning process):</strong> 個人データサンプルに基づいて、エッジデバイスは独自のモデルを計算し、このモデルをサーバーに配信できます。参加エッジからのローカルモデル情報は、サーバーによって共通モデルに平均化され、再配信されます。所定の反復回数の後、モデル情報の交換は収束します。その後、グローバルモデルをカスタマイズのためにエッジに配信できます。
+                        </div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-secondary);">b</div>
+<div class="step-content">
+<strong>オフロードプロセス (Off-loading process):</strong> エッジが信頼できる場合、CPSデバイスのオペレーターは、計算効率のためにトレーニングモデル全体をオフロードできます（例：住宅または産業用ゲートウェイ[40]）。オペレーターは、デバイス-エッジ協調コンピューティングのためにモデルを分割し、データサンプルと入力レイヤーをサーバー側に保持しながら、残りの作業をエッジに送信します[41]。
+                        </div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">c</div>
+<div class="step-content">
+<strong>カスタマイズプロセス (Customization process):</strong> 各ユーザーの特性とニーズの詳細を特定するために、各デバイスは一般化されたモデルデータとローカライズされたデータの両方を使用して独自のユニークなモデルを構築します。この時点で、選択されたPFLメソッドが実行される正確な学習手順を決定します。
+                        </div>
+</li>
+</ol>
+</div>
+<img alt="パーソナライズドFLアーキテクチャ (Fig. 5)" class="research-image" src="personalized_fl_architecture.jpg" style="margin-top:15px; margin-bottom:15px;"/>
+<div class="bubble-box" style="margin-top:10px;">
+<p><strong>図5の解説: パーソナライズドFLアーキテクチャ</strong> ✏️</p>
+<p>この図は、パーソナライズドFLの概念を示しています。デバイスモデルは、クラウドサーバーから転送されたモデルの一部と、ユーザーがローカルに保持しているパーソナライズされたレイヤーの両方を統合します。</p>
+<ul>
+<li><strong>Cloud:</strong> グローバルモデルとサーバーが存在します。サーバーからエッジデバイスへモデルの一部が転送されます。</li>
+<li><strong>Edge:</strong> エッジコンピューティングデバイスがローカルモデルを保持し、IoT/CPSデバイスと連携します。</li>
+<li><strong>IoT/CPS Devices:</strong> ローカルデータセットを持ち、グローバル共有レイヤーとパーソナライズドレイヤーを組み合わせて学習します。
+                        <ul>
+<li><span class="keyword">Global-shared Layers:</span> 全デバイスで共通の知識を学習する部分。</li>
+<li><span class="keyword">Personalized Layers:</span> 各デバイス固有のデータに合わせて調整される部分。</li>
+</ul>
+</li>
+</ul>
+<p>これにより、共通の知識を活かしつつ、個々のユーザーの特性に合わせたモデルを構築できます。</p>
+</div>
+<div class="note-box" style="margin-top: 15px;">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-user-shield"></i>Security and Privacy in PFL: (PFLにおけるセキュリティとプライバシー)</p>
+<p>PFLにエッジデバイスを統合すると、多層的なアプローチで対処できるセキュリティとプライバシーの考慮事項が生じます。</p>
+<ul style="list-style-type: '🛡️ '; padding-left: 20px;">
+<li><span class="keyword">エッジでの安全な集約 (Secure aggregation at the edge):</span> 多者間計算（SMPC）[42]を採用し、集約プロセス中に単一ノードが生の更新にアクセスするのを防ぎます。</li>
+<li><span class="keyword">エッジ強制差分プライバシー (Edge-enforced differential privacy):</span> 勾配にガウスノイズを追加し、許容可能な精度レベルを維持しながらデータ漏洩リスクを制限します。</li>
+<li><span class="keyword">信頼できる実行環境（TEE）[43]:</span> 機密操作を暗号化されたメモリエンクレーブ内に分離し、敵対的なサーバーが生データを抽出するのを防ぎます。</li>
+<li><span class="keyword">連合認証メカニズム (Federated authentication mechanisms):</span> 楕円曲線暗号（ECC）証明書[44]を使用し、PFLラウンドに承認されたデバイスのみが参加することを保証します。</li>
+</ul>
+</div>
+<div class="framework-box" style="margin-top: 15px;">
+<p class="framework-title"><i class="fas fa-sitemap"></i>Strategies of PFL: (PFLの戦略)</p>
+<p>インテリジェントCPSアプリケーションは、PFLとカスタマイズされた学習アプローチを組み込むことができます。PFL技術には、FTL（次節で説明）、連合多タスク学習（FML）[45]、連合メタ学習（FMeL）[46]、および連合蒸留（FD）[47]が含まれます。前述の技術は、PFLにおける協調モデル学習のためにサーバーとエッジがモデルデータを共有する方法を決定します。注目すべきは、FTL構成ではモデルパラメータのサブセットのみを交換することが許可されている点です。FD技術を使用すると、サーバーは多くのCPSデバイスでトレーニングされたローカルモデルの出力トレーニングセットを取得できます。</p>
+</div>
+</div>
+<div class="info-card glass-card" style="margin-bottom: 20px;">
+<h5 style="color:var(--color-secondary);"><i class="fas fa-exchange-alt"></i>2) Federated Transfer Learning (FTL): (連合転移学習)</h5>
+<p>本質的に、私たちは常に、自信を持って結論を出すための共通の特徴やサンプルが不十分な状況に遭遇します。FLモデルと、知識が同じ知識ドメインの異なるエンティティ間で共有される転移学習（TL）戦略を統合することにより、より良い結果を達成することができます。このFLとTLの組み合わせはFTLと呼ばれます[48]。</p>
+</div>
+<img alt="FTLのワークフロー (Fig. 6)" class="research-image" src="ftl_workflow.jpg"/>
+<div class="content-box" style="padding-left: 20px; margin-top: 10px;">
+<div class="bubble-box" style="margin-top:10px;">
+<p><strong>図6の解説: FTLのワークフロー</strong> 🚀</p>
+<p>この図は、連合転移学習（FTL）のプロセスを示しています。データが少ない新しい組織（Organization N, N-1）が、データが豊富な既存の組織（Organization 1）の事前学習済みモデルを活用して、自身のモデル性能を向上させることを目指します。</p>
+<ol>
+<li><strong>ローカル学習の開始:</strong>
+<ul>
+<li>既存組織（Organization 1）は、自身のデータ（Feature Sample）と事前学習された特徴（Training Features）を用いてローカル学習（Local Training）を行います。</li>
+<li>新しい組織（Organization N, N-1）も同様に、限られた自身のデータでローカル学習を開始します。</li>
+</ul>
+</li>
+<li><strong>暗号化と送信:</strong> 各組織は、ローカル学習で得られたモデルの更新情報（Local Updates）や勾配、損失などを暗号化（Encrypt）し、FTLサーバー（Trusted Executor）に送信します。</li>
+<li><strong>安全な集約と転送:</strong> FTLサーバーは、信頼できる実行者として機能し、暗号化された更新情報を安全に集約します。この際、暗号化技術を用いてプライバシーを保護します。集約された情報（Global Model）は、再び各組織に送信されます。</li>
+<li><strong>グローバルモデルの活用とローカルモデルの改良:</strong>
+<ul>
+<li>各組織は、FTLサーバーから受信したグローバルモデル（またはその更新情報）を利用して、自身のローカルモデルをさらに改良します。損失関数を最小化するために、収集された更新情報を使用します[49]。</li>
+<li>特に新しい組織は、既存組織の知識が転移されたモデルから恩恵を受け、データ不足を補います。</li>
+</ul>
+</li>
+<li><strong>結果収集:</strong> FTLサーバーは、各組織の学習結果や進捗（Collectors）を収集し、全体の学習プロセスを管理します。</li>
+</ol>
+<p>このプロセスを通じて、FTLはデータプライバシーを保護しつつ、異なる組織間での知識共有を可能にし、特にデータが限られている状況でのモデル性能向上に貢献します。</p>
+</div>
+<p><strong>The workflow of FTL: (FTLのワークフロー)</strong></p>
+<p>私たちの知る限り、FTLは、データプライバシーを保護しながら転移学習技術を活用することにより、連合設定におけるデータ不足の課題に対処します。事前トレーニング済みモデルから新しいクライアントまたはデータが限られているクライアントへの知識転移を可能にし、ローカルデータが不十分な場合でもモデルのパフォーマンスを向上させます。FTLは、異なるクライアントのデータ分布間に不一致がある場合に特に価値があります。FTLプロセスでは、新しい組織と既存の組織が協力し、既存の組織が事前トレーニング済みモデルを提供します。<span class="keyword">信頼できる実行者（Trusted executor）</span>が安全なモデル集約と転送を促進し、多くの場合、通信中のデータプライバシーを保護するために暗号技術を使用します。ローカル学習からの収集された更新を使用して損失関数を最小化することにより[49]、実行者は勾配を収集し、損失収束テストを実行できます。図6に示すように、新しい組織は既存の組織の事前トレーニング済みモデルを活用してデータ不足に対処します。信頼できる実行者が安全なモデル集約と転送を促進します。新しい組織と既存の組織の両方が自身のデータでローカル計算を実行し、結果を暗号化してから実行者に送信します。実行者は暗号化された更新を集約し、結果を復号化し、それらを使用してグローバルモデルを更新します。最後に、更新されたモデルは参加しているすべての組織と共有され、転送された知識に基づいてモデルをさらに改良できるようになります。FTLでは、新しい組織と既存の組織の両方が、ローカルで自身のデータを使用して勾配と損失を計算し、結果を暗号化します。暗号化された値のコレクションが実行者に提供されます。新しい組織と既存の組織の両方が、復号化された勾配と損失を使用してモデルを改良します。</p>
+<p><strong>Current applications of FTL for CPS: (CPS向けのFTLの現在の応用)</strong></p>
+<p>実際、FTLには、連合ヘルスケア学習[50]を含む多くのCPSアプリケーションがあります。例えば、疾患診断の場合、FTLは、多様な患者集団と薬理学的アッセイ（それぞれサンプル空間と特徴空間）を持つ複数の機関間の協力を促進できます。これにより、FTLは共通AIモデルの結果の精度を向上させることができます。</p>
+</div>
+<div class="info-card glass-card" style="margin-bottom: 20px;">
+<h5 style="color:var(--color-accent1);"><i class="fas fa-columns"></i>3) Split Federated Learning (SFL): (分割連合学習)</h5>
+<p>FLと<span class="keyword">分割学習（SL: Split Learning）</span>の両方からの方法論を統合することにより、SFLは、追加のクライアント側計算の需要、モデルのプライバシー、およびトレーニング時間コスト（SL）の問題を回避します[51]。FLとSLの両方の主な利点がSFLに組み合わされており、クライアント側とサーバー側の両方で同時にネットワークをトレーニングすることが可能になります。図7はSFLの基本アーキテクチャを表しています。</p>
+</div>
+<img alt="SFLのワークフロー (Fig. 7)" class="research-image" src="sfl_workflow.jpg"/>
+<div class="content-box" style="padding-left: 20px; margin-top: 10px;">
+<div class="bubble-box" style="margin-top:10px;">
+<p><strong>図7の解説: SFLのワークフロー</strong> 🧩</p>
+<p>この図は、分割連合学習（SFL）のワークフローを示しており、クライアントがプライマリサーバーとフェデレーテッドサーバーの両方と対話する協調的なモデルトレーニングプロセスを描いています。</p>
+<ol>
+<li><strong>クライアント処理とデータ送信:</strong> クライアント（Client 1, 2, ..., N）はローカルデータを処理し、モデルの一部（Model portion from Client）を計算します。この計算結果（'smashed data'と呼ばれる中間データ）をプライマリサーバー（Primary Server）に送信します。</li>
+<li><strong>プライマリサーバー処理:</strong> プライマリサーバーは、各クライアントから受信した 'smashed data' を用いて、モデルの残りの部分の順伝播（Forward pass）と逆伝播（Backward pass）を実行します。</li>
+<li><strong>勾配の返送:</strong> プライマリサーバーは計算した勾配（gradients of crushed data）を各クライアントに返送します。</li>
+<li><strong>クライアント側ローカルモデル更新:</strong> 各クライアントは受信した勾配を用いて、自身のローカルモデル（Client-side Local Models）を更新します。</li>
+<li><strong>連合サーバーへの更新送信:</strong> 更新されたクライアント側のモデル（またはその更新差分）は、フェデレーテッドサーバー（Federated Server）に安全に送信されます。</li>
+<li><strong>連合サーバーでの集約:</strong> フェデレーテッドサーバーは、FedAvgなどの集約アルゴリズムを使用して、各クライアントからのモデル更新を統合し、新しいクライアント側グローバルモデル（Client-side Global Models）を生成します。</li>
+<li><strong>グローバルモデルの共有:</strong> 更新されたクライアント側グローバルモデルは、さらなるトレーニングイテレーションのためにすべてのクライアントに共有されます。</li>
+<li><strong>プライマリサーバーのモデル:</strong> プライマリサーバーも、クライアントからの情報に基づいて自身のモデル部分（Full Model）を更新します。</li>
+</ol>
+<p>SLとは対照的に、ここではすべてのクライアントがプライマリサーバーとフェデレーテッドサーバーの両方と同時に情報交換を行います。これにより、計算負荷の分割と連合学習によるプライバシー保護・モデル汎化の両方の利点を得ようとします。</p>
+</div>
+<p><strong>Components in SFL: (SFLのコンポーネント)</strong></p>
+<p>プライマリサーバーはクラウドサーバーまたはハイエンドコンピュータにアクセスできる専門家である可能性がありますが、クライアントは計算リソースの少ない病院やCPSセンサーである可能性があります。<span class="keyword">フェデレーテッドサーバー</span>の導入により、クライアントのローカル更新に対してFedAvgを実行できます。さらに、フェデレーテッドサーバーは、ネットワークトレーニングの各ラウンド後にクライアント側のグローバルモデルを最新の状態に保ちます。FedAvgは、フェデレーテッドサーバー上で非常に費用対効果の高いサービスであるように思われます[52]。実際に導入する場合、フェデレーテッドサーバーは地域の<span class="highlight">エッジ</span>に非常に簡単に配置できます。さらに、プライマリサーバー上のすべての手順を暗号化データ（準同型暗号ベースのクライアント側モデル集約）を使用して実装する場合、フェデレーテッドサーバーの責任を果たすことができます。</p>
+<p><strong>The workflow of SFL: (SFLのワークフロー)</strong></p>
+<p>すべてのクライアントは、その外乱層を含むクライアント側モデルをメインサーバーに伝播し、<span class="keyword">クラッシュデータ（smashed data）</span>を送信します。プライマリサーバーは、各クライアントのクラッシュデータと同期して順伝播と逆伝播を実行します。クライアントに逆伝播のためのクラッシュデータ勾配を送信します。サーバーは、各クライアントのクラッシュデータで逆伝播中に計算された重み付け勾配を平均化することによってモデルを更新します。クラッシュデータ勾配を収集すると、各クライアントはローカルクライアント側モデルで逆伝播を実行します。これらの勾配は、DP技術[53]を使用してフェデレーテッドサーバーに送信されます。FedAvgはフェデレーテッドサーバーによって実行され、参加しているすべてのクライアントに送信されます。</p>
+</div>
+<div class="info-card glass-card" style="margin-top: 20px;">
+<h5 style="color:var(--color-accent2);"><i class="fas fa-network-wired"></i>4) Decentralized Federated Learning (DFL): (分散型連合学習)</h5>
+<p>DFLは、個々のノードがトレーニングを制御する<span class="highlight">サーバーレス</span>のネットワーク設計です。代わりに、すべての参加者はAIモデルをトレーニングするためにピアツーピア（P2P）で相互接続されます。単一の通信サイクルでは、参加者は自身のローカルデータセットを使用して独自のトレーニングを実行します。その後、P2P情報交換を介して、参加者は近隣ノードによって更新されたモデルを収集し、グローバルアップデートについて合意に達します[54]。DFLのエッジコンピューティングネットワーク内には、<span class="keyword">ブロックチェーンベース連合学習（BFL: Blockchain-based Federated Learning）</span>と<span class="keyword">サーバーレス連合学習（Serverless FL）</span>という、よく研究されている2つの開発アプローチがあります。以下は、前述の新興アプローチの詳細な概要です。</p>
+<div class="framework-box" style="margin-top: 15px;">
+<p class="framework-title" style="color: var(--color-primary); border-bottom-color: var(--color-primary);"><i class="fab fa-bitcoin"></i>Blockchain-based federated learning (BFL):</p>
+<p>FLとブロックチェーン技術の研究は、コンピュータ業界の最先端で行われています[55][29]。ブロックチェーンベースのアプローチを標準的なFL設計と統合する利点は、広範囲に議論されてきました[19][56]。BFLの分散型で安全な性質の結果として、エッジコンピューティングネットワークは将来的に大幅な変革を遂げる可能性があります[57]。各BFLノードはクライアントとして機能するため、分散学習モデルへの完全なアクセス権を持ち、その継続的な改良と統合に参加できます。最初に、クライアントは独自の個別の学習設定とデータモデルを確立します。更新が生成された後、トランザクションとしてマイナーのネットワークに送信されます。一定期間後、マイナーはローカル変更を含むクライアント生成トランザクションをすべてコンパイルし、検証する前に単一のブロックにまとめます。新しいブロックが形成されると、台帳に追加され、関連するメッセージがすべてのピアに送信されます。各クライアントが更新されたブロックを取得すると、グローバルモデルは各クライアントによって行われた変更を反映するように更新されます。この手順は、グローバル損失関数が収束するか、許容可能な精度レベルが達成されるまで継続されます。</p>
+</div>
+<div class="framework-box" style="margin-top: 15px;">
+<p class="framework-title" style="color: var(--color-secondary); border-bottom-color: var(--color-secondary);"><i class="fas fa-ghost"></i>Serverless federated learning (Serverless FL):</p>
+<p>[58]、[59]に見られるように、サーバーレスはP2P FLを特徴づけるために使用されてきました。データが中央データセンターに収集される従来の設計とは対照的に、このP2P種類のシステムは広域ネットワーク（WAN）を介してモデルを収集します。初期段階では、ブロードキャスト/サブスクリプション[60]オーバーレイやピア検出[61]などの現在の技術を利用してネットワークが構築されます。P2P設定上にスパニングツリーを確立した後、更新はスパニングツリーを介してルーティングされ、データは各ノードで収集されます。オーバーレイを開発する代わりに、ゴシップに依存するブロードキャストアルゴリズムがゴシップベース学習[59]でモデルを更新および収集するために使用されます。これらの方法はスケーラブルでフォールトトレラントですが、欠点があります。ルーティング中にモデルをエンティティに追加で公開する、(1)鍵交換とモデルの複雑さの拡大に関して問題がある可能性のある準同型暗号（HE）[62]を利用する、または(2)ハイパーパラメータが慎重に調整されない場合にモデルの精度を低下させる差分プライバシー（DP）[63]を採用する、などです。</p>
+</div>
+</div>
+</div>
+<h4 class="subsection-title" style="font-size: 18px; color: var(--color-accent1); border-left-color: var(--color-accent1); margin-top: 30px;"><i class="fas fa-microchip"></i>FL Global Updates</h4>
+<div class="content-box" style="padding-left: 20px;">
+<p>この部分は、図4を参照しながら、CPSにおける典型的なFLモデルの全体アーキテクチャを説明することを意図していると思われます。しかし、本文中に図4の具体的な解説が直接記述されていません。代わりに、図4が提示されているため、その図に基づいて解説を行います。</p>
+</div>
+<img alt="CPSにおける典型的なFLモデルの全体アーキテクチャ (Fig. 4)" class="research-image" src="fl_architecture_in_cps.jpg"/>
+<div class="content-box" style="padding-left: 20px; margin-top: 10px;">
+<div class="bubble-box">
+<p><strong>図4の解説: CPSにおける典型的なFLモデルの全体アーキテクチャ</strong> 🏗️</p>
+<p>この図は、サイバーフィジカルシステム（CPS）環境における連合学習（FL）の階層的なアーキテクチャを示しています。主にクラウド層、エッジ層、そしてIoT/CPSデバイス層の3層構造で構成されています。</p>
+<ul>
+<li><strong>Cloud (クラウド層):</strong>
+<ul>
+<li>最上位に位置し、<span class="keyword">グローバルモデル (Global Model)</span> とそれを管理する<span class="keyword">サーバー (Server)</span> が存在します。</li>
+<li>エッジ層から集約されたローカルモデルの更新を受け取り、グローバルモデルを更新します。</li>
+<li>更新されたグローバルモデルをエッジ層に配信します。</li>
+<li>交通信号機のようなアイコンは、グローバルな視点での制御や意思決定を象徴している可能性があります。</li>
+</ul>
+</li>
+<li><strong>Edge (エッジ層):</strong>
+<ul>
+<li>クラウド層とデバイス層の中間に位置し、<span class="keyword">エッジコンピューティングデバイス (Edge Computing Device)</span> が存在します。図では工場や発電所のような施設が描かれており、それぞれの施設内にエッジデバイスが配置されています。</li>
+<li>これらのエッジデバイスは、配下のIoT/CPSデバイス群からローカルデータセットに基づくモデル更新を受け取り、<span class="highlight">ローカルモデル (Local model)</span> を集約・管理します。</li>
+<li>エッジ層で部分的なモデル集約を行うことで、クラウドへの通信負荷を軽減し、応答性を向上させることができます。また、特定の地域や施設に特化した中間的なモデルを形成することも可能です。</li>
+<li>エッジデバイスは、クラウドサーバーと双方向の通信（矢印）を行い、モデル情報を交換します。</li>
+</ul>
+</li>
+<li><strong>IoT/CPS Devices (IoT/CPSデバイス層):</strong>
+<ul>
+<li>最下層に位置し、実際のデータを収集・生成する多数の<span class="keyword">IoTデバイス</span>や<span class="keyword">CPSデバイス</span>が存在します。</li>
+<li>各デバイス（またはデバイスグループ）は、自身の<span class="highlight">ローカルデータセット (Local dataset)</span> を用いて学習を行います。</li>
+<li>学習モデルは、全デバイスで共通の知識を学習する<span class="keyword">グローバル共有レイヤー (Global-shared Layers)</span> と、各デバイス（ユーザー）固有のデータに合わせて調整される<span class="keyword">パーソナライズドレイヤー (Personalized Layers)</span> から構成されることがあります。これはパーソナライズドFL（PFL）の考え方を示唆しています。</li>
+<li>デバイスは、エッジコンピューティングデバイスと通信し、モデルの更新情報や学習結果を送信します。</li>
+</ul>
+</li>
+</ul>
+<p>この階層構造により、大規模なCPS環境においても、データのプライバシーを保護しながら効率的に機械学習モデルを訓練・更新することが可能になります。特に、エッジコンピューティングの活用は、リアルタイム性が求められるCPSアプリケーションにおいて重要な役割を果たします。</p>
+</div>
+</div>
+<h3 class="subsection-title" style="margin-top: 30px;"><i class="fas fa-handshake"></i>C. Core FL-CPS Integration Framework</h3>
+<div class="content-box">
+<p>このセクションでは、FLとCPSを統合するための中心的なフレームワークについて解説します。これには、統合のワークフローと、そのフレームワークを構成する主要なコンポーネントが含まれます。</p>
+<p>FLとCPSの統合は、分散型機械学習のワークフローを、CPSのリアルタイム制約と安全性が重視される性質と慎重に調和させる必要があります。この統合は、異種のCPS環境でのFL展開を可能にする主要コンポーネントによってサポートされる、5つの反復的なフェーズからなる標準的なワークフローを含みます。</p>
+</div>
+</div>
+<div class="section-card" id="III._FL-CPS_TAXONOMY_FRAMEWORK">
+<h2 class="section-title"><i class="fas fa-drafting-compass"></i> III. FL-CPS TAXONOMY FRAMEWORK</h2>
+<p>このセクションでは、連合学習（FL）とサイバーフィジカルシステム（CPS）を統合する際の複雑な課題、特に<span class="highlight">分散インテリジェンス</span>、<span class="highlight">リアルタイム応答性</span>、そして<span class="highlight">プライバシー保護</span>という3つの要素のバランスをどのように取るか、という点に焦点を当てています。これらの課題に取り組むため、論文では包括的な<strong class="keyword">タスクソノミー（分類体系）</strong>を提案しています。</p>
+<p>このタスクソノミーは、以下の2つの主要な軸で構成されています：</p>
+<ol class="unstyled-list">
+<li><i class="fas fa-list-alt"></i> <strong>分類次元 (Classification Dimensions)</strong>: システムアーキテクチャ、データ特性、学習パラダイム、プライバシー要件など、システムを分類するための基準。</li>
+<li><i class="fas fa-cogs"></i> <strong>実装フレームワーク (Implementation Frameworks)</strong>: 物理層・サイバー層・通信層の統合など、システムを実際に構築する上での枠組み。</li>
+</ol>
+<p>さらに、<span class="highlight">検証メトリクス</span>も考慮に含まれています。このタスクソノミーは、NIST（アメリカ国立標準技術研究所）のCPSフレームワーク、FLに関する実証研究、そして産業界におけるCPSのユースケースから得られた知見を統合し、FL-CPSシステムを設計・評価するための<strong class="keyword">体系的な構造</strong>を提供することを目的としています。</p>
+<img alt="FL-CPS taxonomy framework structure" class="section-image" src="fl_cps_taxonomy_framework.jpg"/>
+<p class="caption" style="text-align: center; font-style: italic;">Fig. 8: FL-CPS タスクソノミーフレームワーク構造</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> タスクソノミーとは？</p>
+<p>タスクソノミーとは、特定の領域における様々な要素を、その特性や関係性に基づいて階層的に分類・整理した体系のことです。これにより、複雑な概念やシステムを理解しやすくなり、設計や評価の指針となります。この論文では、FL-CPSという新しい技術領域を整理し、今後の研究開発の方向性を示すためにタスクソノミーを構築しています。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-sitemap"></i> A. Classification Dimensions</h3>
+<p>FL-CPSシステムを設計・評価する上で考慮すべき様々な側面を分類したものです。これにより、システムの特性を多角的に捉え、最適なアプローチを選択するための基盤となります。具体的には、アーキテクチャのタイプ、データの特性、学習のパラダイム、プライバシーの要件という4つの主要な次元で構成されています。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-building"></i> 1) Architecture Types (アーキテクチャタイプ)</h4>
+<p>FL-CPSアーキテクチャは、計算の階層構造と調整メカニズムに基づいて分類されます。これは、システム全体の構成や、各コンポーネントがどのように連携して学習処理を行うかを定義するものです。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-server"></i></div>
+<h5 class="subsubsection-title">a) Centralized FL-CPS (中央集権型 FL-CPS)</h5>
+<p>単一のクラウドまたはエッジに配置された<strong class="keyword">アグリゲータ</strong>（集約役）が、地理的に分散したCPSデバイス間のモデル学習を調整します。FedAvgのような<strong class="keyword">同期型集約メカニズム</strong>を利用して、エッジノード、センサー、アクチュエータからのローカルモデルの更新をグローバルモデルに統合します。</p>
+<p><strong class="keyword">中央集権型の信頼機関</strong>が、モデル検証、異常検出、セキュリティ施行などの重要な機能を監督し、連合操作の一貫性を保証します。このアーキテクチャは、特にスマートグリッドでリアルタイムエネルギー監視に位相計測ユニット（PMU）を使用するような、均一なハードウェア仕様、データ形式、運用目的を持つ<strong class="keyword">同種CPSネットワーク</strong>に適しています。</p>
+<p>例：電力系統の電圧調整では、クラウドサーバーが変電所のエッジノードから負荷予測モデルを集約し、生センサーデータを公開することなく系統全体の安定性を実現します [89]。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-check-circle"></i> 利点:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-shield-alt"></i> 厳格なコンプライアンスと均一性が求められるアプリケーション（重要インフラ監視など）に優れる。</li>
+<li><i class="fas fa-project-diagram"></i> 標準化されたモデルアーキテクチャとトレーニングプロトコルにより計算の非対称性を緩和。</li>
+</ul>
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-network-wired"></i> 多様なセンサーや相反する運用優先順位を持つシステムへの適応性が低い（例：振動センサーとサーマルカメラを組み合わせた産業用CPSでの特徴の不整合）。
+                                <br/><span class="badge blue">対策:</span> アグリゲータ層に軽量な異常検出モジュールを組み込み、カルバック・ライブラー（KL）ダイバージェンスのような統計的発散指標を用いて発散した更新を検出 [91]。</li>
+<li><i class="fas fa-user-secret"></i> プライバシー保護。
+                                <br/><span class="badge blue">対策:</span> 安全なマルチパーティ計算（SMPC）を適用し、アグリゲータも参加者も生の勾配にアクセスできないようにする [92]。</li>
+</ul>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-calculator"></i> FedAvg (Federated Averaging)</p>
+<p>連合学習で最も基本的な集約アルゴリズムの一つ。各参加デバイスがローカルデータでモデルを学習し、その更新（モデルパラメータや勾配）を中央サーバーに送信します。サーバーは受け取った更新を単純平均または加重平均してグローバルモデルを更新します。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bolt"></i> PMU (Phasor Measurement Unit)</p>
+<p>電力系統の電圧や電流の位相を高い精度で同期して測定する装置。広範囲に設置することで、電力系統の状態をリアルタイムで詳細に把握できます。</p>
+</div>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-layer-group"></i></div>
+<h5 class="subsubsection-title">b) Hierarchical FL-CPS (階層型 FL-CPS)</h5>
+<p>Fig. 4に示されるように、階層型FL-CPSアーキテクチャは、分散型サイバーフィジカル環境において、計算効率とプライバシー保護のバランスを取るために<strong class="keyword">多層集約</strong>を採用します。学習プロセスを2つの異なる層に分割します。</p>
+<img alt="Hierarchical FL Architecture" class="section-image" src="fl_architecture_in_cps.jpg"/>
+<p class="caption" style="text-align: center; font-style: italic;">Fig. 4: CPSにおける典型的なFLモデルの全体アーキテクチャ（階層型の概念を示唆）</p>
+<ul class="unstyled-list">
+<li><strong>Tier 1 (エッジ層での前処理):</strong> 地域の病院、工場、変電所などに配置されたエッジノードが、センサーノイズ削減のためのカルマンフィルタリングや、生センサーからの畳み込み特徴抽出など、リアルタイムデータ前処理を行います。これらのノードは、データの局所性を維持しつつ、地域患者集団のMRIシーケンスのようなドメイン固有のデータサブセットでローカライズモデルを学習します。</li>
+<li><strong>Tier 2 (クラウドベースの洗練):</strong> 前処理されたモデル更新は、Tier 2のグローバルアグリゲータに送信されます。グローバルアグリゲータは、<strong class="keyword">準同型暗号</strong>を適用して、機密性の高い入力を復号することなく勾配を統合し、HIPAAやGDPRのような規制への準拠を保証します [93]。</li>
+</ul>
+<p>この階層構造は、エッジ層が送信前に関連性の低い特徴をフィルタリングするため、フラットなアーキテクチャと比較して通信オーバーヘッドを<span class="highlight">10-20%削減</span>します [94]。また、階層化された信頼モデルは、侵害されたエッジノードがグローバルモデルを直接変更できないため、単一点障害のリスクを軽減します。</p>
+<p>典型例：プライバシーと診断精度が最重要視される連合病院ネットワークにおける医療画像連携。Tier 1のエッジサーバーは、個々の病院で独自のMRIデータセット上でローカライズモデルを学習し、特徴抽出中に勾配更新に<strong class="keyword">差分プライバシー</strong>を適用します。この層でのカルマンフィルタは、7T MRIスキャンにおける腫瘍境界検出を改善するために、動きアーチファクトノイズを低減します [95], [96]。Tier 2のグローバルアグリゲータは、Brakerski-Fan-Vercauteren (BFV) 暗号を用いてこれらの更新を準同型的に結合します。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-check-circle"></i> 利点:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-satellite-dish"></i> 通信オーバーヘッド削減。</li>
+<li><i class="fas fa-shield-virus"></i> 単一点障害リスクの軽減。</li>
+</ul>
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-hourglass-half"></i> 遅延のトレードオフ：エッジ層処理はスライスあたり12-18msですが、クラウド層での準同型集約はBFVの計算複雑性（暗号文乗算で\(O(n^3)\)）によりグローバルエポックあたり300-500msを要します。
+                                <br/><span class="badge blue">対策:</span> ハイブリッド暗号化方式を活用し、機密性の高いモデル重みにのみ部分的準同型性を適用し、機密性の低いバイアスは平文で集約する。</li>
+</ul>
+<p>BraTSデータセットでのベンチマークでは、階層型FL-CPSは中央集権型学習と同等の精度（差分 &lt; 0.9%）を達成しつつ、データ露出を97%削減しました [97]。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lock"></i> 準同型暗号 (Homomorphic Encryption)</p>
+<p>暗号化されたデータに対して、復号することなく演算（加算や乗算など）を行うことができる暗号技術です。これにより、データを秘匿化したまま分析や処理が可能となり、プライバシー保護に貢献します。BFV方式はその一種です。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-user-secret"></i> 差分プライバシー (Differential Privacy)</p>
+<p>データセットに個人の情報が含まれているかどうかを、クエリの結果から特定できないようにするためのプライバシー保護の概念です。データにノイズを加えるなどの処理を施すことで実現します。</p>
+</div>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-network-wired"></i></div>
+<h5 class="subsubsection-title">c) Decentralized FL-CPS (分散型 FL-CPS)</h5>
+<p>分散型FL-CPSアーキテクチャは、ブロックチェーンコンセンサスプロトコルやエピデミックゴシップアルゴリズムなどの<strong class="keyword">P2Pモデル共有メカニズム</strong>を採用することで、中央アグリゲータを排除します。CPSデバイス（自動運転車、ドローン、産業用ロボットなど）は、従来のサーバークライアント階層をバイパスし、信頼できない環境で隣接ノードと直接モデル更新を交換します。</p>
+<p>このアーキテクチャは、ブロックチェーンの<strong class="keyword">不変台帳</strong>を活用して勾配トランザクションを記録し、モデルポイズニングやデータ改ざんを試みる悪意のあるノードに対する<strong class="keyword">ビザンチン故障耐性</strong>を保証します [98]。V2X（Vehicle-to-Everything）ネットワークのような遅延に厳しいアプリケーションでは、ゴシッププロトコルがグローバルな調整ではなく局所的な「感染」を通じて更新を伝播させることで、超低遅延同期を可能にします。</p>
+<p>重要な革新は、連合学習と車両アドホックネットワーク（VANET）の統合にあり、自動運転車が路側インフラなしで交通予測モデルを共同で学習します。例：連合ゲート付きリカレントユニット（GRU）モデルが、隣接車両からのLiDARおよびレーダーデータを処理します [99]。</p>
+<p>典型例：自動運転車隊におけるリアルタイム交通予測。各車両はローカライズされたLiDARシーケンスでGRUモデルを学習し、IEEE 802.11p DSRCリンクを介してGEKS（Gossip Every k Seconds）プロトコル [100] を用いてパラメータを共有します。ブロックチェーンスマートコントラクトは、実用的なビザンチン故障耐性（pBFT）[101] を通じて更新を検証し、50ノードクラスタで120-180ms間隔でコンセンサスを達成します。この設定は、48ノードフリートで16台以下の敵対的車両を許容しつつ、歩行者軌道に対して94.7%の予測精度を示します。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-check-circle"></i> 利点:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-project-diagram"></i> 中央サーバーが不要。</li>
+<li><i class="fas fa-shield-alt"></i> ビザンチン故障耐性。</li>
+<li><i class="fas fa-tachometer-alt"></i> 超低遅延同期（ゴシッププロトコルの場合）。</li>
+</ul>
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-battery-quarter"></i> エネルギー消費量の増加：nuScenesデータセットでのベンチマークでは、中央集権型ベースラインと比較して衝突誤検知を41%削減するものの、車両あたりのエネルギー消費量が12-18%増加します [102]。
+                                <br/><span class="badge blue">対策:</span> 準同型ハッシュコミットメントとゼロ知識範囲証明を組み合わせることで、中央集権的な監視なしでプライバシーを保護する集約を可能にする新たな解決策が検討されています。</li>
+</ul>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-users-cog"></i> P2P (Peer-to-Peer)</p>
+<p>中央サーバーを介さずに、個々のコンピュータ（ピア）同士が直接通信し、データやリソースを共有するネットワークモデルです。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-user-shield"></i> ビザンチン故障耐性 (Byzantine Fault Tolerance)</p>
+<p>分散システムにおいて、一部のコンポーネントが故障したり、悪意のある振る舞いをしたりしても、システム全体が正常に機能し続ける能力のことです。</p>
+</div>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-random"></i></div>
+<h5 class="subsubsection-title">d) Hybrid FL-CPS (ハイブリッド型 FL-CPS)</h5>
+<p>ハイブリッドFL-CPSアーキテクチャは、中央集権型モードと分散型モードの間で<strong class="keyword">調整戦略を動的に適応</strong>させ、リソース割り当てと変動するネットワーク条件への応答性を最適化します。この適応能力は、帯域幅の可用性、ノードの信頼性、タスクの重要性などのリアルタイムメトリクスを監視する<strong class="keyword">監督制御層</strong>によって管理されます。</p>
+<p>エッジ中心の運用モードでは、産業用ロボットセルなどのローカライズされたサブシステムが、リアルタイム異常検出のために軽量CNNを採用します。例：自動車組立ラインのロボットアームは1D-CNNを使用します [103]。これらのエッジモデルは、ネットワーク混雑のピーク時に自律的に動作し、クラウド調整への依存を最小限に抑えます。逆に、オフピーク期間や安定した接続時には、アーキテクチャはクラウド中心モードに移行し、分散CPSノード間でグローバルモデルの再学習を可能にします。</p>
+<p>スマートグリッド展開では、エッジ層モデルが3層パーセプトロンを介して局所的な負荷変動を処理し、クラウド層のLSTMが低トラフィック間隔中にグローバル需要曲線を洗練し、帯域幅を節約するために<strong class="keyword">三値量子化</strong>を介して勾配更新を圧縮します [104]。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-check-circle"></i> 利点:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-exchange-alt"></i> ネットワーク状況に応じた柔軟な運用モード切り替え。</li>
+<li><i class="fas fa-cogs"></i> リソース割り当ての最適化。</li>
+</ul>
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-sync-alt"></i> モード移行時の同期課題：エッジモデルとクラウドモデル間の時間的な不整合により、切り替え後最初の30秒間で4-7%の予測誤差が発生する可能性があります [105]。
+                                <br/><span class="badge blue">対策:</span> バージョン管理されたモデルリポジトリとロールバックプロトコルを実装し、分散ノード間の一貫性を確保する。</li>
+<li><i class="fas fa-user-shield"></i> セキュリティ：適応型システムは攻撃対象領域が広くなるため、セキュリティが重要な懸念事項となります。
+                                <br/><span class="badge blue">対策:</span> ポリシー更新のための準同型暗号化とビザンチン耐性のある集約を統合する。</li>
+</ul>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-compress-arrows-alt"></i> 三値量子化 (Ternary Quantization)</p>
+<p>ニューラルネットワークの重みや活性化関数を、-1、0、+1 の3つの値のみで表現する量子化手法です。モデルサイズを大幅に削減し、計算効率を向上させることができますが、精度低下の可能性があります。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-database"></i> 2) Data Characteristics (データ特性)</h4>
+<p>FL-CPSシステムは、多様なCPSデータストリーム（Table V参照）に対応する必要があります。この表は、CPSデータの主要な特性と、それらがFLのパフォーマンスに与える影響、および潜在的な緩和戦略をまとめたものです。表では、<strong class="keyword">分布 (Distribution)</strong>、<strong class="keyword">量 (Volume)</strong>、<strong class="keyword">多様性 (Variety)</strong>、<strong class="keyword">速度 (Velocity)</strong> という4つの重要なデータ属性が強調されています。</p>
+<img alt="Table V: Characteristics of CPS Data and their Impact on FL" class="section-image" src="table5.png"/>
+<p class="caption" style="text-align: center; font-style: italic;">Table V: CPSデータの特性とFLへの影響</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>説明</th>
+<th>FLへの影響</th>
+<th>緩和戦略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="badge yellow">分布 (Non-IID)</span></td>
+<td>センサーデータの非独立同一分布性（例：ECGとLiDARセンサーの異なるパターン）</td>
+<td>モデルの分岐 (Model Divergence)</td>
+<td>パーソナライズドFL（デバイス固有のレイヤーをグローバルモデルに組み込む）</td>
+</tr>
+<tr>
+<td><span class="badge orange">量 (High-Frequency)</span></td>
+<td>CPSデバイスによって生成される高頻度データ量</td>
+<td>エッジデバイスの過負荷 (Edge Device Overload)</td>
+<td>スプリットラーニング（計算集約的なタスクをクラウドにオフロード）</td>
+</tr>
+<tr>
+<td><span class="badge purple">多様性 (Multi-Modal)</span></td>
+<td>CPSデータのマルチモーダル性（例：画像とCANバスログの組み合わせ）</td>
+<td>特徴の不整合 (Feature Misalignment)</td>
+<td>クロスモーダルアテンションネットワーク（多様なデータストリームを効果的に融合）</td>
+</tr>
+<tr>
+<td><span class="badge blue">速度 (Varying Velocity)</span></td>
+<td>リアルタイムのマイクロ秒レベルデータから時間単位のバッチ処理まで、さまざまなデータ速度</td>
+<td>古いモデルのデプロイ (Stale Model Deployment)</td>
+<td>オンラインFLと増分確率的勾配降下法（SGD）（継続的なモデル更新を可能にする）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>これらの特性と対応する緩和戦略は、CPS環境で効果的なFLを展開するための重要な考慮事項です。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-random"></i> Non-IID (Non-Independent and Identically Distributed)</p>
+<p>データが独立ではなく、また同一の確率分布に従わない状態を指します。連合学習では、各参加者のデータがNon-IIDであることが一般的であり、これが学習の難しさの一因となります。</p>
+</div>
+</div>
+</div>
+<h4 class="section-title"><i class="fas fa-brain"></i> 3) Learning Paradigms (学習パラダイム):</h4>
+<p>FL-CPSにおける学習パラダイムは、モデルの学習とデータ処理の焦点によって分類されます。主に、モデル中心FL、データ中心FL、そしてそれらを組み合わせたハイブリッド学習パラダイムが存在します。</p>
+<div class="info-grid">
+<div class="info-card">
+<h5 class="subsubsection-title">a) Model-Centric FL in CPS (モデル中心FL)</h5>
+<p><strong class="keyword">モデル中心FL</strong>は、パラメータ集約による<strong class="highlight">グローバルモデルの最適化</strong>を優先し、分散CPS間での協調学習を強調します。このパラダイムでは、FedAvg [52]やFedProx [85]のようなアルゴリズムが用いられ、ローカルアップデートを同期させて共有グローバルモデルを洗練します。</p>
+<p><strong class="keyword">FedProx</strong>は、産業用CPSにおける<strong class="highlight">ストラグラーノード</strong>（計算リソースが限られたロボットアームからの更新遅延など）に対処するため、損失関数に近接項を導入し、勾配の発散を減らし、FedAvgと比較して収束を15%高速化します。</p>
+<p><strong class="keyword">AES-256暗号化</strong> [106]のような安全な集約メカニズムは、モデル送信中の機密性を保証し、敵対的な盗聴が負荷予測モデルを危険にさらす可能性のあるスマートグリッド展開にとって重要です。例えば、電力系統CPSでは、暗号化されたFedAvgは、データ再構築攻撃を防ぎながら、翌日の需要に対して94.3%の予測精度を達成します [107]。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<p>モデル中心FLは、心臓病患者のECGデータと自動運転車のLiDARパターンのような極端な<strong class="highlight">Non-IID条件下では苦戦</strong>します。これらの制限は、参加者間でデータが均一であるという仮定に起因し、異種CPS環境では失敗します。</p>
+<p><span class="badge blue">対策:</span> 最近の研究では、グローバルモデルにパーソナライズドレイヤー（例：FedPer [108]）を統合し、協調学習の利点を維持しながらデバイス固有の適応を可能にしています。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-shoe-prints"></i> ストラグラーノード (Straggler Nodes)</p>
+<p>連合学習において、処理能力の低いデバイスやネットワーク状態の悪いデバイスなど、他のデバイスよりも学習や通信に時間がかかり、全体の学習プロセスを遅延させるノードのことです。</p>
+</div>
+</div>
+<div class="info-card">
+<h5 class="subsubsection-title">b) Data-Centric FL in CPS (データ中心FL)</h5>
+<p><strong class="keyword">データ中心FL</strong>は、前処理とプライバシー保護変換を通じて<strong class="highlight">ローカルデータの品質向上</strong>に焦点を移し、CPSデータセットに固有のバイアスや不均衡に対処します。</p>
+<p><strong class="keyword">SMOTE (Synthetic Minority Oversampling Technique)</strong> [109]は、医療CPSにおけるクラス不均衡を緩和し、肺結節のような稀な状態に対する合成サンプルを生成します。<strong class="keyword">差分プライバシー</strong>はさらに機密データを保護し、X線勾配更新に \(\epsilon = 2.0\) のガウスノイズを追加し [110]、メンバーシップ推論攻撃を防ぎながら80%の診断精度を達成します。この実用性とプライバシーのバランスは、HIPAAコンプライアンスが厳格な患者機密保持を義務付ける医療CPSにおいて重要です。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<ul class="unstyled-list">
+<li>[110]によると、DPはノイズによる精度低下（\(\epsilon &lt; 1.0\) の場合、最大12%）を引き起こすため、データ感度に基づいた適応的なノイズスケジューリングが必要です。</li>
+<li>自動車CPSでは、データ中心技術が対照学習を介してマルチモーダル特徴（例：LiDARとカメラストリーム）を整合させます。</li>
+<li>これらの利点にもかかわらず、データ中心FLはスケーラビリティの課題に直面します。SMOTEの計算オーバーヘッドは特徴次元に対して3次的に増加し、4D MRIボリュームを処理するエッジデバイスに負担をかけます。
+                        <br/><span class="badge blue">対策:</span> ハイブリッドアプローチはエッジ層の遅延を削減できます。</li>
+</ul>
+</div>
+<p>これらの戦略は、CPSデータの異種性に対処するパラダイムの多様性を示していますが、ウェアラブルセンサーのようなリソースに制約のあるデバイスをサポートするための軽量な前処理フレームワークの必要性を強調しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-balance-scale"></i> SMOTE (Synthetic Minority Oversampling Technique)</p>
+<p>不均衡データセットにおいて、少数派クラスのサンプル数が少ないために学習がうまくいかない問題を解決するための手法の一つです。少数派クラスの既存サンプル間に新しい合成サンプルを生成することで、クラス間のバランスを改善します。</p>
+</div>
+</div>
+<div class="info-card">
+<h5 class="subsubsection-title">c) Hybrid Learning Paradigms in Federated CPS (ハイブリッド学習パラダイム)</h5>
+<p><strong class="keyword">ハイブリッド学習アーキテクチャ</strong>は、モデル中心アプローチとデータ中心アプローチを組み合わせ、<strong class="highlight">スプリットラーニング</strong>と<strong class="highlight">メタラーニング</strong>を活用してCPSの複雑性に対処します。</p>
+<p><strong class="keyword">スプリットラーニング</strong>は、モデル学習を階層間で分割します。リソースに制約のあるデバイス（Tier 1）は軽量CNNを介して特徴を抽出し、エッジサーバー（Tier 2）が分類器を学習します。例えば、ゴミ分類システムでは、IoTゴミ箱にMobileNetV2を展開して特徴抽出し [111]、TrashNetで89%の精度を23msの推論遅延で達成します。</p>
+<p><strong class="keyword">メタラーニング</strong>は、<strong class="keyword">MAML (Model-Agnostic Meta-Learning)</strong> [112]のようなフレームワークを通じて適応性を強化し、新しいCPS構成への迅速な適応を可能にします。スマートグリッドでは、MAMLは新しいマイクログリッドトポロジに対して連合モデルを5ショットで微調整し、再学習時間を12時間から18分に短縮します。この能力は、再構成可能な産業ラインや災害復旧ネットワークのような動的なCPS環境にとって不可欠です。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-exclamation-triangle"></i> 課題と対策:</strong></p>
+<p>ハイブリッドアーキテクチャは同期の課題に直面します。</p>
+<p><span class="badge blue">対策:</span> 並列階層更新のためのパイプライン化スプリットラーニングや、モデルを4倍圧縮するための量子化対応メタトレーニングなどがあります。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-columns"></i> スプリットラーニング (Split Learning)</p>
+<p>ニューラルネットワークモデルを複数の部分に分割し、クライアントデバイスとサーバー（またはエッジデバイス）で分散して学習を行う手法です。クライアント側は計算負荷の軽い初期層を担当し、サーバー側が残りの層を担当することで、クライアントの計算リソース制約を緩和しつつ、プライバシーも保護できます。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-graduation-cap"></i> メタラーニング (Meta-Learning)</p>
+<p>「学習方法を学習する」アプローチです。少量のデータから新しいタスクに迅速に適応できるモデルを構築することを目指します。MAMLはその代表的な手法の一つです。</p>
+</div>
+</div>
+</div>
+<div class="info-card" style="margin-top: 20px;">
+<h4 class="subsection-title"><i class="fas fa-user-shield"></i> 4) Privacy Requirements (プライバシー要件)</h4>
+<p>FL-CPSに固有の多様な脅威モデルに対処するためには、セキュリティ保証と計算効率のバランスを取る<strong class="keyword">階層的プライバシーフレームワーク</strong>が不可欠です。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge blue">Basic Tier (基本層)</span></p>
+<p>AES-256暗号化と安全な集約プロトコルを組み合わせることで、モデル送信中の盗聴から保護し、最小限のオーバーヘッドで済みます。このアプローチは、特にスマートグリッド展開で効果的であり、安全な集約を採用した連合XGBoostモデルは、負荷予測において平均絶対誤差（MAE）を15%削減し [113]、PMUデータの敵対的傍受を防ぎます。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge orange">Enhanced Tier (強化層)</span></p>
+<p>\(\epsilon\)-差分プライバシーと準同型暗号（HE）を統合して、学習への個々の参加を推測することを目的とした<strong class="highlight">メンバーシップ推論攻撃</strong>に対抗します。HEは暗号文に対する計算を可能にすることでクラウドベースの集約中にプライバシーを保護しますが、その多項式の計算複雑性は医療画像処理に遅延を引き起こします。これは適応的ノイズスケジューリングによって緩和されます。例えば、医療CPSでは階層的戦略を実装し [114]、エッジノードがMRI勾配更新に \(\epsilon = 2.0\) のDPを適用し、クラウドサーバーが最終集約にHEを利用することで、生データ露出なしでHIPAA準拠の腫瘍検出を達成します。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge purple">Maximum Tier (最大層)</span></p>
+<p>安全なマルチパーティ計算（SMPC）とゼロ知識証明（ZKP）[115] を採用して<strong class="highlight">データ再構築攻撃</strong>を阻止し、単一のエンティティが完全な勾配情報にアクセスできないようにします。SMPCの秘密分散プロトコルは、ZKPベースの認証と組み合わせることで、軍事用ドローン群におけるプライバシー保護コラボレーションを可能にしますが、複数ラウンドの暗号検証により5倍高い計算コストが発生します。</p>
+</div>
+</div>
+<p>全ての階層で、フレームワークは<strong class="keyword">コンテキストに応じたプライバシーと実用性のトレードオフ</strong>を強調しています。そのため、機密性の高いモデルコンポーネントとそうでないものを分割するハイブリッド暗号化のような新しい解決策が登場しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-eye-slash"></i> メンバーシップ推論攻撃 (Membership Inference Attack)</p>
+<p>攻撃者が、特定のデータレコードが機械学習モデルの学習データセットに含まれていたかどうかを推測しようとするプライバシー攻撃の一種です。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-puzzle-piece"></i> データ再構築攻撃 (Data Reconstruction Attack)</p>
+<p>攻撃者が、学習済みモデルのパラメータや勾配情報などから、元の学習データを部分的にまたは完全に復元しようとする攻撃です。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-key"></i> ゼロ知識証明 (Zero-Knowledge Proofs - ZKPs)</p>
+<p>ある命題が真であることを、その命題に関する具体的な情報を一切明かすことなく証明できる暗号学的プロトコルです。例えば、パスワードを知っていることを、パスワード自体を教えずに証明できます。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-cogs"></i> B. Implementation Framework</h3>
+<p>FL-CPSシステムの実際の構築に関わる、物理層、サイバー層、通信層という3つの主要なレイヤーにおける統合について詳述します。これらのレイヤーは相互に連携し、FL-CPSシステム全体の機能と性能を実現します。</p>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-microchip"></i> 1) Physical Layer Integration (物理層統合)</h4>
+<p>FL-CPSにおける物理層統合は、エッジデバイス固有の厳しい<strong class="highlight">エネルギー制約</strong>を遵守しつつ、センサーとアクチュエータ間の信頼性の高い調整を保証します。</p>
+<p><strong>センサー・アクチュエータ同期:</strong></p>
+<ul class="unstyled-list">
+<li><i class="far fa-clock"></i> NIST準拠のタイミングプロトコル（例：IEEE 1588 Precision Time Protocol (PTP) [116]）から始まり、産業用ロボットでセンサーサンプリングとアクチュエータ応答を \(\leq 1 \mu s\) の精度で調整します。この時間的キャリブレーションは、閉ループFL制御システムにとって重要です（例：自動運転ドローンでのLiDAR-IMUデータ融合の遅延による軌道逸脱）。</li>
+<li><i class="fas fa-filter"></i> <strong class="keyword">連合カルマンフィルタ</strong> [117] は、ドローン群全体で分散センサーデータを同期させることでこれに対処し、コンセンサスベースの共分散集約を通じて3D姿勢推定で0.12m RMSEを達成します。</li>
+<li><i class="fas fa-check-double"></i> UPPAAL [118] のような形式的手法による<strong class="keyword">安全性認証</strong>は、FL制御ループ下のアクチュエータ応答を検証し、時間論理プロパティをモデル検査して動的環境での衝突回避を保証します。</li>
+</ul>
+<p><strong>エネルギー認識型展開戦略:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-leaf"></i> \(\leq 10\)Wの電力バジェットに制約されるエッジデバイス向けにFL操作を最適化します [119]。</li>
+<li><i class="fas fa-sliders-h"></i> <strong class="keyword">動的電圧周波数スケーリング (DVFS)</strong> [120] は、プロセッサのクロックレートを計算ワークロードに適応させ、スマートダストセンサーネットワークでFLトレーニングエネルギーを37%削減します。この最適化は、CPSにおけるワークロードの予測可能性（例：予知保全における定期的な振動分析）を活用し、電圧を0.8V（アイドル時）から1.2V（ピーク推論時）にスケーリングします。</li>
+<li><i class="fas fa-pause-circle"></i> しかし、変動するエネルギー可用性はFLの収束を複雑にし、低エネルギー状態時に重要でない更新を動的に一時停止する強化学習ベースのスケジューラが必要となります。</li>
+</ul>
+<p>これらの物理層の革新は、FL-CPSシステムが産業信頼性基準（IEC 61508 SIL-2 [121]）を満たし、リソースに制約のある環境での展開可能性のためのエネルギー効率を維持することを集合的に保証します。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tools"></i> 形式的手法 (Formal Methods)</p>
+<p>数学的な論理に基づいてシステムの仕様を記述し、その仕様が正しく実装されているかを検証する手法です。UPPAALは時間的制約を持つシステムのモデル検査ツールの一つです。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-tachometer-alt"></i> DVFS (Dynamic Voltage and Frequency Scaling)</p>
+<p>プロセッサの動作電圧とクロック周波数を、処理負荷に応じて動的に変更することで、消費電力を削減する技術です。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-laptop-code"></i> 2) Cyber Layer Integration (サイバー層統合)</h4>
+<p>FL-CPSにおけるサイバー層統合は、収束と堅牢性のための<strong class="highlight">形式的保証</strong>を強制しつつ、安全かつ効率的なモデル集約を調整します。</p>
+<p><strong class="keyword">階層的平均化メカニズム</strong>は、エッジ層（Tier 1）とクラウド（Tier 2）の更新を以下の加重集約式を通じて結合します：</p>
+<div class="formula">
+                $$ w_{global}(t+1) = \frac{1}{K} \sum_{k=1}^{K} (\alpha w_{edge,k}(t) + (1-\alpha)w_{cloud}(t)) $$
+            </div>
+<p>ここで、\(\alpha = 0.7\) は、クラウドベースの正則化を維持しながらNon-IIDデータに対応するために、医療CPSにおけるエッジの貢献を優先します。医療CPSの場合、この重み付けにより、連合モデルが病院固有の診断パターンを保持しつつ、外れ値機関への過学習を軽減します。</p>
+<p><strong class="keyword">ハイブリッド暗号化方式</strong>はさらに、AES-256で暗号化された機密パラメータ（例：患者のバイオマーカー）を、平文で送信される非機密性の重み（例：特徴抽出器）からセグメント化します [122]。</p>
+<p>IEC 61850準拠のスマートグリッドでのベンチマークでは、このサイバー層フレームワークが15%の敵対的参加下で99.4%のモデル精度を維持し、実行時検証が集約ラウンドごとに \(\leq 8\)msのオーバーヘッドを追加することが示されています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-circle"></i> 数式の解説: 階層的平均化</p>
+<p>\(w_{global}(t+1)\) は、次の時刻 \(t+1\) におけるグローバルモデルの重みです。</p>
+<p>\(K\) は、参加するエッジデバイス（またはローカルモデル）の総数です。</p>
+<p>\(w_{edge,k}(t)\) は、時刻 \(t\) における \(k\) 番目のエッジデバイスのローカルモデルの重みです。</p>
+<p>\(w_{cloud}(t)\) は、時刻 \(t\) におけるクラウド（または上位層）のモデルの重みです。これは、過去のグローバルモデルや、より広範な知識を持つモデルである可能性があります。</p>
+<p>\(\alpha\) は、エッジモデルの貢献度を調整する重み係数（0から1の間）です。この式では \(\alpha = 0.7\) となっており、エッジ側の更新をより重視することを示しています。</p>
+<p>この式は、各エッジデバイスのローカルな知見（\(w_{edge,k}(t)\)）と、より広範な（あるいは過去の）知見を持つクラウド側のモデル（\(w_{cloud}(t)\)）を、重み \(\alpha\) と \(1-\alpha\) を使ってバランスを取りながら統合し、新しいグローバルモデルを生成するプロセスを表しています。これにより、ローカルデータの特性を反映しつつ、システム全体の安定性や汎用性を保つことを目指します。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-broadcast-tower"></i> 3) Communication Layer Integration (通信層統合)</h4>
+<p>FL-CPSにおける通信層統合は、厳しい<strong class="highlight">遅延、帯域幅、エネルギー制約</strong>を満たすために、データ伝送プロトコルと圧縮技術を最適化します。</p>
+<p><strong>プロトコルと技術:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-industry"></i> 産業CPSでは、<strong class="keyword">Time-Sensitive Networking (TSN)</strong> プロトコル（IEEE 802.1Qbv）[123] がロボットアーム協調のための決定論的遅延を保証し、分散組立ライン全体で連合モデル更新を同期させます。TSNのタイムアウェアシェイパーは、勾配送信のために固定タイムスロットを割り当てます。</li>
+<li><i class="fas fa-city"></i> スマートシティ展開では、<strong class="keyword">MQTT-SN (Message Queuing Telemetry Transport for Sensor Networks)</strong> [124] のような帯域幅効率の良いプロトコルが、4:1モデルプルーニングを通じてデータペイロードを削減し、マグニチュードベースのフィルタリングにより冗長なパラメータを破棄します。交通管理システムでは、プルーニングされたResNet-50モデルが92%の車両検出精度を達成し、カメラからクラウドへの帯域幅を68%削減し、既存の4G/LTEインフラ上での都市規模のFL展開を可能にします。</li>
+</ul>
+<p><strong>適応的圧縮:</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-compress-alt"></i> <strong class="keyword">量子化勾配降下法 (QGD)</strong> [125] は、モデル更新を8ビット固定小数点精度（32ビット浮動小数点に対して）で表現し、精度の大幅な損失なしに（MNISTベンチマークで \(\leq 0.5\%\) の低下）、伝送コストを6倍削減します。この技術は、勾配を機密性の高いコンポーネントとそうでないコンポーネントに分割し、重要なパラメータ（例：医療FLにおける腫瘍検出層）の情報損失を最小限に抑えるために不均一な量子化を適用します。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-network-wired"></i> TSN (Time-Sensitive Networking)</p>
+<p>イーサネットをベースに、リアルタイム性が要求される産業制御システムなどに向けて、時間の同期や通信のスケジューリング、低遅延通信などを実現するための標準技術群です。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-paper-plane"></i> MQTT-SN (Message Queuing Telemetry Transport for Sensor Networks)</p>
+<p>MQTTプロトコルを、センサーネットワークのような非TCP/IPネットワークやリソース制約のあるデバイス向けに最適化した軽量なメッセージングプロトコルです。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-sort-numeric-down"></i> QGD (Quantized Gradient Descent)</p>
+<p>勾配情報を量子化（より少ないビット数で表現）してから送受信することで、通信量を削減する手法です。連合学習において通信コストは大きなボトルネックとなるため、QGDのような圧縮技術が重要となります。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="section-card" id="IV._FL-CPS_APPLICATIONS">
+<h2 class="section-title"><i class="fas fa-microchip"></i>IV. FL-CPS APPLICATIONS</h2>
+<div class="content-box">
+<p>このセクションでは、<span class="keyword">FL-CPS（連合学習サイバーフィジカルシステム）</span>が実際にどのような分野で応用されているのか、具体的な事例を交えながら詳しく見ていきます。特に、<span class="highlight">ヘルスケア</span>、<span class="highlight">スマートシティ</span>、<span class="highlight"> транспорт (Vehicular Systems)</span>、そして<span class="highlight">サイバーセキュリティ</span>といった重要な領域で、FL-CPSがどのように価値を生み出し、どのような課題に直面しているのかを明らかにします。✏️📌</p>
+<p>各応用分野におけるFL-CPSの可能性と、それに伴う技術的な挑戦について、大学院1年生の皆さんにも理解しやすいように、図や具体例をたくさん使って解説していきますね。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-heartbeat"></i>A. Healthcare cyber physical systems (HCPS)</h3>
+<div class="content-box">
+<p><span class="keyword">HCPS (Healthcare Cyber Physical Systems)</span> は、人々の命を救う可能性を秘めた、医療用物理機器が相互接続された不可欠なネットワークです。多くの病院が、患者に対して質の高い、途切れることのない治療を提供するために、これらのスマート統合システムを導入し始めています。</p>
+<p>しかし、効果的で安全な高度HCPSを実現するためには、<span class="highlight">インテリジェンスの信頼性向上</span>、<span class="highlight">セキュリティとプライバシーの確保</span>、<span class="highlight">システムソフトウェア</span>、<span class="highlight">自律性</span>、<span class="highlight">物理デバイスの安定性</span>、<span class="highlight">相互運用性</span>といった多くの課題が存在します [126]。</p>
+<p>このため、これらの課題に対処するべく、HCPSへのFLアプローチの適用に関する様々な研究論文が発表されています。本セクションでは、FLがHCPS内で利用されうる様々な領域、例えば<span class="badge blue">遠隔健康モニタリング</span>、<span class="badge blue">電子健康記録（EHR）管理</span>、<span class="badge blue">医療データ分析</span>、<span class="badge blue">医療画像</span>について探求します。また、これらの4つの応用についてまとめたTable VIとTable VIIを参照します。（注意：Tableの画像は提供されていないため、内容は本文の記述に基づいて解説します。）</p>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-network-wired"></i>1) Communication and Networking Architecture in FL-HCPS</div>
+<p>FLをHCPSに統合するには、CPSの特性と医療データの機密性に細心の注意を払って調整された、高度な通信・ネットワークフレームワークが必要です。</p>
+<p>FL-CPSでは、医療デバイスが重要な<span class="keyword">ノード</span>として機能し、この医療コンテキスト内のサイバー要素と物理要素の動的な相互作用を具現化する<span class="keyword">通信グラフ</span>を形成します。</p>
+<p>これらのノード間での反復的な更新によって特徴付けられるCPSにおけるFLの数学的表現は次のように示されます：</p>
+<div class="formula">
+<p>\( \theta \gets \theta - \eta \cdot \frac { 1 } { N } \sum _ { i = 1 } ^ { N } \nabla f _ { i } ( \theta _ { i } ) \)</p>
+</div>
+<div class="glass-card">
+<p>📝 <strong>数式の解説:</strong></p>
+<ul>
+<li>\( \theta \): グローバルモデルのパラメータ（学習を通じて最適化される値の集合）</li>
+<li>\( \eta \): <span class="keyword">学習率</span>（モデル更新のステップサイズを制御）</li>
+<li>\( N \): 参加しているヘルスケアデバイス（ノード）の総数</li>
+<li>\( \nabla f _ { i } ( \theta _ { i } ) \): 各デバイス \(i\) のローカル目的関数 \( f _ { i } ( \theta _ { i } ) \) の<span class="keyword">勾配</span>（ローカルデータに基づいてモデルをどの方向に更新すれば損失が減るかを示すベクトル）</li>
+</ul>
+<p>この数式は、各デバイスが自身のデータで計算した勾配の平均を用いて、中央のグローバルモデルを更新する反復的なプロセスを示しています。医療データ特有の性質（例：不均衡、非IID性）に合わせて学習率や目的関数が調整されます。</p>
+</div>
+<p>ノードとエッジを複雑に接続する通信グラフは、FL-CPSの協調的な性質を象徴しており、関連するコスト関数は通信コストとデバイス間のサイバーフィジカルな関係の両方を捉えます：</p>
+<div class="formula">
+<p>\( \mathrm { C o s t } ( \cal { G } , \theta _ { i } ) = \sum _ { ( i , j ) \in \cal { G } } c _ { i j } \cdot | | \theta _ { i } - \theta _ { j } | | \)</p>
+</div>
+<div class="glass-card">
+<p>📝 <strong>コスト関数の解説:</strong></p>
+<ul>
+<li>\( \mathrm { C o s t } ( \cal { G } , \theta _ { i } ) \): 通信グラフ \( \cal { G } \) と特定のデバイス \(i\) のモデルパラメータ \( \theta_i \) に関連する総コスト</li>
+<li>\( (i,j) \in \cal{G} \): グラフ \( \cal { G } \) 内の接続されたデバイスペア（エッジ）</li>
+<li>\( c_{ij} \): デバイス \(i\) と \(j\) 間の通信コスト係数</li>
+<li>\( || \theta_i - \theta_j || \): デバイス \(i\) と \(j\) のモデルパラメータ間の差（ノルムで測定）。これはモデルの類似性を示し、差異が大きいほど協調が難しいことを意味する場合があります。</li>
+</ul>
+<p>このコスト関数は、通信の効率性（コスト \(c_{ij}\)）と、連携するデバイス間のモデルの一致度（パラメータの差）のバランスを取ろうとするもので、CPSエコシステムの動態をより深く理解するのに役立ちます。</p>
+</div>
+<p>軽量な<span class="keyword">MQTT (Message Queuing Telemetry Transport)</span>やリソース効率の良い<span class="keyword">CoAP (Constrained Application Protocol)</span>のような特化した通信プロトコルは、効果的なFL-CPS運用に不可欠です。MQTTは医療デバイスと中央サーバー間の効率的なモデル更新伝送を容易にし、CoAPはリソースに制約のあるデバイスの帯域幅使用量を最小限に抑えます。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-comments icon-item"></i>
+<strong>MQTT</strong>
+<p>効率的なモデル更新伝送</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-compress-arrows-alt icon-item"></i>
+<strong>CoAP</strong>
+<p>最小限の帯域幅使用</p>
+</div>
+</div>
+<p>医療データの機密性を考慮すると、FL-CPSでは<span class="highlight">セキュリティとプライバシー</span>が最も重要です。暗号化メカニズムは通信チャネルを強化し、モデル更新の安全な伝送と厳格な医療プライバシー規制への準拠を保証します。FL-CPSの分散性は、ノードがエッジでローカルモデル更新とデータ前処理を行うことによってさらに強調されます。</p>
+<p>本質的に、HCPSにおけるFLは、サイバーフィジカルな医療環境のユニークな特性と調和する、カスタマイズされた通信・ネットワークフレームワークを必要とします。この統合により、多様なデバイス間でのモデルトレーニングが最適化され、複雑なCPSランドスケープ内での効果的な運用のために不可欠な適応性と応答性が向上します。</p>
+</div>
+<h4 class="section-title"><i class="fas fa-cogs"></i>2) Implementation Approaches:</h4>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-house-user"></i>a) Remote Health Monitoring</h5>
+<div class="content-box">
+<p>近年、即時対応が必要な重大な病状の在宅ケアのための革新的なソリューションへの関心が高まっています。FLは、中央サーバー（例：クラウドサーバー）に接続された地理的に分散した在宅医療デバイスからのデータを使用してグローバルモデルを構築することにより、そのような在宅健康モニタリングを可能にします。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">FedHome [127]</span></p>
+<p>ユーザーデータをデバイス上にローカライズすることで、FedHomeはデータプライバシーを強化し、中央集権的なデータ侵害のリスクを低減します。このフレームワークでは、各在宅医療センサー（例：スマートフォンやスマートウォッチ）が、クラスバランスの取れたデータセットとローカルデータを組み合わせることで、<span class="keyword">畳み込みニューラルネットワーク（CNN）</span>のような技術を用いてパーソナライズされたモデルを開発する可能性があります。モデルパラメータは、中央サーバーと分散デバイス間の同期通信を通じて反復的に洗練されます。その結果、個々の予測が改善され、非IIDデータや不均衡データによって生じる問題が解決されます。実際の人間行動データセットを用いた著者らの徹底的な測定により、この状況におけるFL戦略は<span class="highlight">95.45%のテスト精度</span>を達成でき、これは不均衡および均衡データの両シナリオにおいて、無視できる程度のオーバーヘッドで汎用CNNアプローチよりも<span class="highlight">7.49%の大幅な改善</span>です。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">肥満管理 [128]</span></p>
+<p>この研究では、肥満および関連疾患の表現型管理専用に設計されたFLベースのHCPSを提示しています。明確にするために、著者は連合型の2段階<span class="keyword">自然言語処理（NLP）</span>技術を提案し、データ交換を必要とせずに複数の医療機関からの患者記録を使用して共有医療データトレーニングを可能にします。各施設では、記録のテキストから医療共通手技コードを抽出するためにニューラルネットワーク（NN）をトレーニングする前に、患者表現モデルが開発されます。その後、疾患診断のための所望の属性について、複数の場所で共有トレーニングを実施するための臨床MLモデルが開発され、診断は不在、存在、または不確実性の3つのカテゴリのいずれかに行われます。10の病院施設とのFLコンテキストでの広範なモデリングは、非FLアプローチよりも高い再現率と精度を示しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">FedHealth [129]</span></p>
+<p>新しい遠隔医療モニタリングシステムです。ウェアラブル健康モニタリングの目的で、この方法は、スマートセンサー（例：スマートフォンやタブレット）が協調して、個人データのプライバシーを保護しながらジェスチャー検出のための分散CNN分類器を構築するように開発されました。設計されたデバイスとクラウド間でモデル分布が大幅に異なるため、<span class="keyword">転移学習（TL）</span>が採用され、トレーニングプロセスをより専門化し、個別化の追求に役立ちます。構築されたシステムの結果は、FTL法がベースラインアプローチよりもウェアラブル認識精度を<span class="highlight">さらに5.3%向上</span>させることを明らかにしています。このFTLアプローチの可能性は、疾患検出、転倒予測、健康状態モニタリングなど、数多くの魅力的なヘルスケアおよび医療ユースケースで大幅に拡大できます。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p>他にも、[130]では分散型病院ネットワークから収集されたデータに基づいて患者の治療への反応を評価するFLベースの遠隔医療ツールが開発されています。各医療センターは独自の「カスタム治療効果推定器」を開発します。また、[131]では、米国の34州にある99の医療施設（臨床検査室や病院を含む）からのグローバルヘルスケア保険データを活用して疾患を予測するためにFLが使用されています。糖尿病、精神疾患、心血管疾患などの疾患のEHRが含まれています。機密性と精度の点で、FL技術は中央集権型学習と協力関係のないローカルトレーニングの両方よりも優れています。[132]で言及されている<span class="keyword">連合ニューラルネットワーク（FNN）</span>は、FLの広範なフレームワーク内の特定の実装または応用です。FNNは、特にFL設定に最適化されたNNアーキテクチャを指します。屋外の様々な相互接続されたコンピューティングアクチュエータから収集された行動属性の多様なデータセットを利用して、登山、移動、着席、さらには立位のためのFNNがトレーニングされます。非IIDデータ環境では、データ分布とラベリングの違いにより、活動データはしばしばサイロ化されて保存されます。</p>
+</div>
+<p>FLはウェアラブルデバイスや在宅デバイスからのデータを用いたリアルタイムの健康モニタリングと予測を可能にする大きな可能性を示していますが、その応用はプライバシーとデータセキュリティが最も重要である電子健康記録（EHR）の領域にも及びます。次のセクションでは、EHR管理の文脈におけるこれらの課題に対処する上でのFLの役割を探ります。</p>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-file-medical-alt"></i>b) Electronic Health Records Management</h5>
+<div class="content-box">
+<p>このセクションでは、機密性の高いEHRデータに対するプライバシー保護分析とMLを可能にする上でのFLの重要な役割に焦点を当てます。セクションIV.A.2.a)のリアルタイム健康モニタリングとは対照的に、ここで議論されるアプリケーションは、FLが患者のプライバシーとデータセキュリティを維持しながら、共同研究と医療成果の改善をどのように促進できるかを示しています。</p>
+<p>近年、ヘルスケア業界では、<span class="keyword">深層学習（DL）</span>技術、特にFLの新興アプローチを広範囲に利用して、EHRから抽出されたデジタル患者情報を疾患の進行と健康問題に関する貴重な洞察に変換し、それによって患者に提供されるケアの質と医学研究の有効性を向上させています。医療データの分析を通じた機密情報の漏洩は、従来のAIアプローチとCPS統合が直面する最大の問題の1つでもあります。実際、ヘルスケアEHRデータは他の業界と比較して非常にプライベートで機密性が高いものです。保険会社や病院などの異なる当事者が、データ処理や分析を含む標準的な必要性の一部として共有医療データセットへのアクセスを取得する動的な臨床状況では、患者記録から抽出されたメタデータの除外は、プライバシー法を遵守するには著しく不十分です。</p>
+<p>実際のところ、FLは、医療提供者や患者などの様々な臨床エンドポイントの協力を通じて個人データを適切に保護しながら、AIソリューションを活用して臨床ケアを促進することにより、EHRからの効率的なデータ抽出のためのより信頼性の高いソリューションを提供します。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[133] の研究</span></p>
+<p>クラウドサーバーとさまざまな医療施設を含むEHR計算処理システムのための、リソース節約型でプライバシー対応の対話型FLベースの方法論を紹介しています。クラウドコンピューティングを利用して、各医療センターはEHRを使用してNNモデルを運用します。トレーニングプロセス中にモデルパラメータが記憶によって悪用されるのを防ぐために、ノイズデータを追加する軽量な<span class="keyword">データ摂動アプローチ</span>がトレーニングデータを混乱させるために検討されています。攻撃者が変更されたEHRデータにアクセスできたとしても、元のデータを取得または回復することも困難です。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[80] の研究</span></p>
+<p>患者の過去のEHRを利用して心臓病患者の増悪を予測するためのFLベースのアプローチを提案しています。特に、患者のポータブル医療機器と分離されたクリニックで構成されるEHRからの医療データは独立してトレーニングされます。その後、効率的な分類器を開発するために<span class="keyword">サポートベクターマシン（SVM）</span>を完全に活用するグローバルモデルを作成するために、サーバーはローカルモデルのトレーニングパラメータをコンパイルします。これは、機密データを明らかにすることなく、臨床リソース計画のために心臓病患者の増悪を分析および予測することを目的としています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[134] の研究</span></p>
+<p>FLを使用して複数の病院サイト間で分散型EHRデータ処理をシミュレートし、それによって攻撃者から患者のプライバシーを保護します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[53] の研究</span></p>
+<p><span class="keyword">差分プライバシー（DP）</span>ベースのシステムが実装されており、各地域の医療センターは、機密データを保護するためにサーバーにアップロードする前に、ローカルからの動的な変更をマスクするために人工ノイズを利用します。ロジスティック回帰、SVM、およびパーセプトロンを使用して、著者らはFLをトレーニングし、DPベースのFL技術が従来のFLモデルと比較して驚くべき全体的な精度を達成することを示しています。</p>
+</div>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-lightbulb"></i>その他のEHR管理におけるFL活用事例</div>
+<ul>
+<li><strong>[135] 統計的チャネルベースFL戦略:</strong> FLベースのスマートヘルスサービスにおけるEHRのトレーニング結果を向上させるために提案。参加病院からローカル勾配のごく一部をアップロードし、最も変動の大きいチャネルをランダムに選択。モデル集約のために、トレーニングループ中に大幅な変更があった神経チャネルのみが含まれます。死亡率予測は二項分類問題としてモデル化され、NNを使用して解決されます。トレーニングの収束率は、標準的なFLアプローチよりも大幅に高くなります。</li>
+<li><strong>[136] 連合EHR管理:</strong> 58の医療機関が共有データを利用して協力し、患者の死亡率を予測します。</li>
+<li><strong>[137] LoAdaBoost:</strong> 非IIDおよびIID分散処理の両方で連合MLの有効性を向上させるための適応型ブースティング戦略。EHRにおける死亡率予測用に設計されたFLアプリケーションの複雑さを軽減することに重点を置いています。</li>
+<li><strong>[138] RNNを用いた早産予測:</strong> 異質性のある組織化されたサンプルを用いて、3ヶ月での早産を予測するための再帰型ニューラルネットワーク（RNN）を備えた医療機関向けのFLベースモデルにおけるEHRのトレーニングを調査。この研究では42の機関が利用され、各機関がFL技術のローカライズされたパラメータとして機能するモデル改良を更新します。</li>
+<li><strong>[139], [140] 連合EHRフレームワーク:</strong> 現在の医療施設の信頼性が高く安全な運用を保証します。[140]の研究では、患者、医療提供者、医療施設を統合することで、医療データ分析の有効性を向上させる連合メカニズムがどのように導き出されるかを示しています。これは、EHRを共有する20の機関のグループを設立することによって達成されます。具体的には、FLはデータインタラクションとモデル更新のために<span class="keyword">ブロックチェーン</span>と連携され、トレーニングデータセットのプライバシーを保証します。</li>
+</ul>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-microscope"></i>c) Medical Imaging</h5>
+<div class="content-box">
+<p>複数の医療機関を単一の組織に統合することによるMLベースの医療データイメージング（MDI）の採用は望ましいものの、患者のプライバシーに関する懸念のために複雑です。図9に示すように、医療画像分析におけるFLの図はよく説明されており、FLは、直接通信なしに異なる物理アクチュエータのデータセットから学習する能力のために、大規模な医療画像分析の課題に対処するための既存の方法に代わる潜在的に有利な代替手段と考えられています。</p>
+<img alt="Fig. 9: An overview of FL in medical imaging." class="section-image" src="fl_medical_imaging.jpg"/>
+<div class="glass-card">
+<p>🖼️ <strong>図9の解説: FLによる医療画像解析の概要</strong></p>
+<p>この図は、連合学習（FL）が医療画像解析にどのように応用されるかを示しています。主な登場人物とプロセスは以下の通りです。</p>
+<ol>
+<li><strong>複数の病院 (Hospital A, B, C, D):</strong> 各病院は独自の患者画像データ（例: MRI、CTスキャンなど）と、それに対応するローカルな機械学習モデル（Client's Model）を保有しています。これらのデータは機密性が高いため、病院外に出すことはできません。</li>
+<li><strong>ローカルモデルの学習:</strong> 各病院は、自身のデータを使ってローカルモデルを学習・更新します。</li>
+<li><strong>モデルのアップロード (Uploading client's model):</strong> 学習されたローカルモデルのパラメータ（重みなど）のみが、中央サーバー病院（Central Server Hospital）に送信されます。実際の患者データは送信されません。矢印が緑色で示されています。</li>
+<li><strong>グローバルモデルの集約 (Global Model):</strong> 中央サーバー病院は、各病院から送られてきたローカルモデルのパラメータを集約し、より汎用的で高性能なグローバルモデルを構築します。この集約プロセスには、例えばFederated Averagingのようなアルゴリズムが用いられます。</li>
+<li><strong>モデルのダウンロード (Download client's model):</strong> 更新されたグローバルモデル、または新しい初期モデルが、再び各病院に送信されます。矢印が黒色で示されています。</li>
+<li><strong>サイクルの繰り返し:</strong> ステップ2から5のプロセスが繰り返され、グローバルモデルの精度が徐々に向上していきます。</li>
+</ol>
+<p>このように、FLを用いることで、各病院は機密性の高い患者データを共有することなく、共同でより優れた医療画像解析モデルを開発することができます。これにより、診断支援システムの精度向上などが期待されます。</p>
+</div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[141] の研究</span></p>
+<p>異なる臨床機関から生じるクライアント間の不一致に対処するための新しいFL技術を開発。このアプローチは、グローバルクラウド予測器を使用して、すべてのクライアントの画像を共通に使用される画像空間にマッピングします。各組織は、独自の<span class="keyword">敵対的生成ネットワーク（GAN）</span>を利用して合成視覚コレクションを生成し、前処理された画像をターゲット画像空間に変換することで、クライアントの異質性に関連するプライバシーの課題を効果的に克服します。多施設からの拡散係数画像コレクションを構築することで、機械分類の精度が向上する可能性がありますが、慢性前立腺炎の写真に関する実験での改善は<span class="highlight">0.13%</span>でした。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[16] の研究</span></p>
+<p>ローカル病院システム内のデータ機密性を確保しながら、共有グローバルモデルを集約するための洗練されたFLフレームワークを提案しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[142] の研究</span></p>
+<p>分散医療画像データセットを使用して疾患診断モデルをトレーニングするための綿密に作成されたスキームを提示し、FLプロセスにおけるモデルプロバイダー、サーバー、およびコンシューマーの役割を詳述しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[143] の研究</span></p>
+<p>プライバシーを維持しながら多様なデータセット間でモデルの汎化を強化するためにFedER戦略を導入しています。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p>✏️ <strong>医療画像におけるFLのさらなる応用例:</strong></p>
+<ul>
+<li><strong>[144] X線画像とFLによる急性神経症状の特定:</strong> 米国の多数の病院がDenseNet121モデルを使用して、北米放射線学会のX線画像データセットでトレーニング。この方法は、特徴の再利用と伝播を促進し、神経パラメータの数を削減します。</li>
+<li><strong>[145] ドーパミンベースDPのFL診断画像への実装:</strong> 患者はローカルクリニックのみを信頼するため、それらは信頼性が高く自律的でなければなりません。サーバーがデータ漏洩率の低い正確なグローバルモデルを構築するために、これらのクリニックは各ローカル更新サイクル中に患者が個人情報にアクセスできるようにする必要があります。これらのクリニックは、精度損失とプライバシーコストのバランスを取るために、プライバシー損失の計算にガウスノイズを組み込みます。これにより、各更新がグローバル分類器と同様にローカル学習速度に同じ影響を与えることが維持されます。実際の医療画像データセットに適用されたCNNベースのSqueezeNetモデルを使用したシミュレーションでは、分類精度が<span class="highlight">80%以上向上</span>しました[146]。</li>
+<li><strong>[147] FL-MR (FL-based Magnetic Reconstruction Imaging Reconstruction):</strong> 異なる大学の学生が参加する共同MRI変換。これは、まず多数の病院から中間潜在特徴の分布を学習し、次にこの分布をターゲットサイトの機密属性のパターンと照合することによって行うことができます。敵対的ドメイン識別子が利用されると、複数のローカルベースの再構成ネットワークの共同トレーニングのおかげで、ターゲットドメインの潜在変数をより均一に分散させることができます。</li>
+<li><strong>[148] 脳画像のためのFLモデル:</strong> <span class="keyword">深層ニューラルネットワーク（DNN）</span>を使用して脳腫瘍分類を支援することを目的としています。MRIスキャナーと同様に、各連合プロバイダーは、ローカルでアクセス可能な信頼性の高いデータと適切な処理能力から独自のDNNアーキテクチャを構築し、その重み更新を中央サーバーに送信し、そこでモデル平均化技術を使用して平均化されます。FLは、サーバー側のサンプル再構成トレーニングなどの危険にもかかわらず、ユーザーのプライバシーを保証します。したがって、モデル交換中のDPメソッドの実装は、計算を実行するすべてのデバイスのトレーニングプロセスを妨害し、重要な情報の送信を妨げ、更新を歪めるノイズをもたらします。脳腫瘍患者285人の多パラメトリックMRI画像の所定のセットを使用して、著者らは、分類結果が理想的な中央手法で得られたものとわずかに逸脱する場合でも、患者の匿名性が維持されることを示しています。</li>
+<li><strong>[149] ADMMによる反復削減:</strong> 連合環境での遅延をさらに最小限に抑えるために、<span class="keyword">交互方向乗数法（ADMM）</span>に基づく反復削減法を実装。さらに、著者らは脳MRIのための連合多施設共同研究を提案しています。10の異なる研究機関がNNモデルを使用して疑わしい異常について脳画像を積極的に分析しています。</li>
+<li><strong>[150] MRIデータを用いた連合脳イメージング:</strong> 複数サイトからのMRIデータを用いた連合脳イメージングの新しい技術を提示。FLモデルは、中央サーバーと医療機関をパートナーとして使用して、交絡因子補正、高次元特徴変動測定、およびデータ処理のための包括的なインフラストラクチャを再作成できます。軽度認知障害（MCI）患者181人、アルツハイマー病患者234人、パーキンソン病患者232人、重度MCI患者208人、健常者455人の診断、性別、年齢、その他の人口統計学的特徴が研究されています。</li>
+</ul>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-line"></i>d) Medical Data Analytics</h5>
+<div class="content-box">
+<p>医療データ分析のプライバシー中心のレビューの一環として、[151]の著者らは、不要なデータ注入の設定で予測プロセスを最適化するための堅牢なFLベースのフレームワークを提案しています。この計画は、匿名性を維持しながら有害な注入のリスクを軽減します。モデルポイズニング攻撃（標的型および偽情報注入とも呼ばれる）は、この研究における検出および除去手順の焦点です。これらのソリューションにより、データはデータ所有者の施設を離れる必要はありません。ブロックチェーン技術とファジー化された一方向ハッシュ[157]を利用して異常を認識することにより、この研究は、HCPS上のモデルのトレーニング中にデータセットの整合性を保護するための信頼性の高いアプローチを提案しています。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[152] FLベースEXAMモデル</span></p>
+<p>医療予測とデータ分析へのFL手法の実践のもう1つの注目すべき例です。この研究は、世界中の20施設からの胸部X線、検査データ、バイタルサインを使用してCOVID-19症状のある患者の酸素レベルを予測できるFLベースのEXAMモデルを構築します。その結果、データを送信する必要なく大規模なデータ研究で迅速なコラボレーションが可能になり、標準化されていないさまざまなソースからのデータを使用してCOVID19の医学的結果を決定するモデルが生成されます。救急治療室（ER）診断後24時間および72時間の転帰予測について、この方法の<span class="keyword">曲線下面積（AUC）</span>は0.92を超え、特にその場所のデータセットで単一の場所でトレーニングされたモデルと比較して、すべての協力機関全体でAUCを<span class="highlight">16%増加</span>させ、解釈可能性を<span class="highlight">38%向上</span>させます。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[153] ADR検出</span></p>
+<p>FLベースのソリューションと電子医療データを統合して、HCPS上の<span class="keyword">有害薬物反応（ADR）</span>を検出することについても議論されています。非定型ADRを特定するための集約データが不足しており、異なるエンティティからの膨大な量のデータをマージする際にリソースの制限があり、個人を特定できる情報からデータベースを開発する際にプライバシーの懸念があります。この効率的な方法は、全体的な改善された予測スキルを最大化するために、クラス不均衡および損失削減の問題を中心としたローカルモデル集約の2つの代替方法を提示しています。</p>
+</div>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-microchip"></i>関連研究</div>
+<ul>
+<li><strong>Schneble et al. [158]:</strong> HCPS専用の革新的な侵入検知システムを紹介し、高いセキュリティ基準を維持しながら通信コストと計算コストを最小限に抑えるためのFLの利用を強調しています。</li>
+<li><strong>Guo et al. [142]:</strong> 分散医療画像データを使用して疾患診断モデルをトレーニングするために調整された体系的なFLフレームワークを提案し、ヘルスケア環境におけるコラボレーションと効率を向上させる可能性を強調しています。</li>
+<li><strong>Tripathy et al. [159]:</strong> 多様なML技術を統合することによりモデルの精度を向上させることを目的としたハイブリッドFLアプローチを提示しています。</li>
+</ul>
+</div>
+<div class="bubble-box">
+<p>📝 <strong>がん治療におけるFLの活用:</strong></p>
+<p>多くの研究ががん治療におけるFLの使用を調査しており、研究者らはそれをより伝統的な統合データ分析手順と比較したり、そのハードルに対する新しいアプローチを提供したりしています。</p>
+<ul>
+<li><strong>[154] 低悪性度グリオーマのセグメンテーション:</strong> Kaggleの「脳MRIセグメンテーション」データセット（5つの「クライアント」場所に分割）を使用して、低悪性度グリオーマのセグメンテーションに成功しました。FLベースのコンテキストで適用された場合でも、ネットワークのグリオーマセグメンテーション問題における最先端のパフォーマンスは損なわれません。</li>
+<li><strong>[155] 脳腫瘍セグメンテーション:</strong> BraTSデータセット[160]を使用して2つの異なるFL環境をシミュレート。他の2つの共同学習形式と比較して、FLは両方のコンテキストで優れたパフォーマンスを発揮します。分散化なしでも、データセット全体でトレーニングされたモデルとほぼ同じ精度（<span class="highlight">99.1%</span>）です。</li>
+<li><strong>[156] 膵臓がん患者の膵頭十二指腸切除術におけるデータ分析:</strong> 膵臓がんは通常後期段階で診断され、死亡率が比較的高いため、現代技術を利用して膵臓がんを正確に特定することが最も重要です[161]。台湾と日本の医療施設から得られた2つのデータセットを使用して、ペアの医療アクチュエータとクラウドサーバーのためのFL環境を再構築します。データ分析におけるFLに裏打ちされた全体的な結果は、単一のデータセットのみでトレーニングされたモデルを上回り、両方のサンプルから膵臓症状を検出する上で他のモデルよりも優れていることを検証します。</li>
+<li><strong>[162] ClusterFL:</strong> パーキンソン病の高齢患者に有益な現在の<span class="keyword">人間活動認識（HAR）</span>ソフトウェアの問題に対処するためにFLフレームワークによって推進されています。このFLベースのシステムは、デジタル領域と物理領域の両方から膨大な量のデータを評価することにより、かなり正確な予測モデルを開発します。ClusterFLは、動的コンピューティングノード間の根本的なクラスタリングリンクを動的にキャプチャし、多数のトレーニングパターンによって引き起こされる実用的なトレーニング損失を減少させる最新のグループ化マルチタスクFLフレームワークです。ClusterFLは、現在の多くのFLアルゴリズムよりも正確であり、ネットワークコストを<span class="highlight">50%以上</span>節約できます。</li>
+</ul>
+</div>
+<p><strong>Table VI と Table VII (論文中の表)</strong> は、これらのインテリジェントHCPS向けFLベースソリューションの分類を示していますが、画像が提供されていないため、ここではテキストでの説明に留めます。これらの表は、各アプローチの技術、貢献、利点、欠点などをまとめたものと考えられます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-city"></i>B. Smart City-centric CPS</h3>
+<div class="content-box">
+<p>インテリジェント交通、スマートビルディング、<span class="keyword">スマートグリッド（SG）</span>、緊急対応技術およびサービスが結合されると、スマートシティが生成されます。「スマートシティ」やその他の広範なサイバーフィジカルシステムは、リアルタイムのオフラインおよびオンライン行動監視センサーに大きく依存しています[163]。これが実際に都市を強化できるエージェントに与える影響を分析することが不可欠です。急速な都市化は、住宅費や平均所得の上昇に見られるように、住民の増え続ける需要を満たすためにそのようなインフラストラクチャの創設を必要としています。スマートシティCPSの成長への期待に応えるために、ますます多くのAIベースのソリューションが適用されています。</p>
+<p>FLは、<span class="highlight">高い機密性</span>や<span class="highlight">低い伝送遅延</span>など、分散型スマートシティサービスに強化された機能を提供します。FLは、スマートシティにおける廃棄物管理、SG、データ管理、スマートパーキングを支援できます。したがって、以下のサブセクションでは、スマートシティ中心のCPSにおけるFLの適用に関する学術的分析を提供し、Table VIIIはスマートシティを中心とするCPSの文脈におけるFLの適用を対比するために設計されています。（注意：Table VIIIの画像は提供されていません。）</p>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-broadcast-tower"></i>1) Communication and Networking Architecture Smart City-centric CPS</div>
+<p>スマートシティ中心のCPSにおけるFLの通信とネットワーキングの調整は、数学的定式化と技術戦略を複雑にバランスさせます。デバイスの相互作用を表す通信グラフ \( G = (V, E) \) 内で、ネットワークトポロジ、グラフ理論、および通信コストの相互作用が極めて重要になります。このセクションでは、スマートシティCPSにおけるFLのダイナミクスに合わせて調整された特定の通信コスト式について詳しく説明します。洗練されたコスト関数は、この相互接続された環境でモデル更新を送信する微妙な側面をエレガントに捉えます。</p>
+<p>Table IXに要約されている式は、非類似性に関する多様な視点を提供し、通信ダイナミクスを最適化するための包括的なツールキットを提供します。（注意：Table IXの画像は提供されていませんが、通信コストに関する議論です。）スマートシティCPS内のFLフレームワークに固有の帯域幅最適化への取り組みは、これらの洗練されたコスト関数にカプセル化されています。<span class="keyword">エッジコンピューティング</span>の統合と分散型モデル更新を含む戦略は、リソースの効率的な利用に貢献し、動的な都市環境によってもたらされる課題に対処します。本質的に、この一連の通信コスト式は、スマートシティ中心のCPSにおけるFLの数学的議論に精度の層を追加します。それらは共同学習の複雑さを具現化し、通信とネットワーキングのフレームワークが効率的であるだけでなく、スマートシティのユニークなダイナミクスと整合していることを保証します。</p>
+</div>
+<h4 class="section-title"><i class="fas fa-cogs"></i>2) Implementation Approaches:</h4>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-recycle"></i>a) Waste Management Systems</h5>
+<div class="content-box">
+<p>廃棄物管理は、CPS接続されたスマートシティ環境制御システムの構成要素と見なされます。なぜなら、不適切な廃棄物処理は有害ガスを放出し、地球温暖化を加速させ、水供給を枯渇させるからです。この不可欠な資源に対するいかなる混乱も、壊滅的な影響を与える可能性があります。デリーの埋立地は、都市の廃棄物発生量の増加により、タージマハルよりも巨大になると予想されています[175]。</p>
+<p>FLは、複数のデバイスやシステムがデータを共有せずにモデルを共同でトレーニングできるため、物理コンポーネントとデジタルコンポーネントを統合するCPSにおける廃棄物分類の精度と効率を向上させるために使用できます。CPSにおける廃棄物管理に連合学習を利用することには、いくつかの潜在的な利点があります。例えば、データを1か所に保存・処理する必要がなくなり、プライバシーとセキュリティが向上します。FLはまた、センサー、カメラ、その他のデバイスなど、さまざまなソースからのデータの組み合わせを容易にし、より正確で効率的な廃棄物分類につながる可能性があります。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[164] の研究</span></p>
+<p>リサイクル可能なアイテムの写真を並べ替えるために<span class="keyword">Dual-branch Multi-output CNN</span>を使用することを提案し、上記の廃棄物分別問題を解決します。このCNNは、リサイクルとプラスチック識別のために特別に作成されています。提案されたアーキテクチャでは、それぞれが多様なデータセットで学習された2つの分類器が、リサイクル可能な材料に関する自己構築的な情報を保持します。具体的には、VGG16、RestNet50、Densenet121デザインが使用され、Trashnetデータセットのデータ改善とWaDaBaデータセットのデータ表現方法の変更が行われています。このアプローチは、データセットを混合することで、以前は不明だったラベルの組み合わせを特定できます。著者らの調査結果は、このアプローチが廃棄物を効率的に分別できることを示しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">Quan et al. [176]</span></p>
+<p>FLアーキテクチャを使用した廃棄物管理におけるプライバシー懸念に対処するため、リソースに制約のあるデバイスでの廃棄物分類のためのプライバシー保護フレームワークを提案しています。提案されたフレームワークは、スマート廃棄物管理システムでユーザーデータを保護しながら、正確な分類を可能にします。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[165] の研究</span></p>
+<p>各ユーザーからのラベルなしデータサンプルを利用して、2つの固有のアプリケーションドメインのモデルをトレーニングするためのFLフレームワークが提供されており、CPS接続された廃棄物管理システムの開発にFLをどのように利用できるかをさらに示しています。<span class="keyword">アクティブラーニング（AL）</span>技術を使用して、著者らは自然災害と廃棄物分別に関する研究でFLの使用を実証しました。具体的には、さまざまな機関（学校や病院など）のセンサーベースのアクチュエータがローカルモデルを更新し、ユーザーがゴミを捨てる方法のリアルタイム写真に基づいて予測を行います。最後に、更新されたローカルモデルをFLアグリゲータに送信し、グローバルモデルの重みを変更できるようにします。</p>
+</div>
+</div>
+<div class="note-box">
+<p>同様に、[177][178]では、<span class="keyword">SVM</span>が最小二乗法（LS）、DLベースのセグメンテーション（DLS）、ウェーブレット理論（WT）、およびFLベースのソリューションと統合され、CPS関連のスマートシティにおける病院および都市廃棄物の発生を予測しています。[179]および[180]の著者らは、CNN、人工ニューラルファジー推論システム（ANFIS）、および遺伝的アルゴリズム（GA）を備えた長短期記憶（LSTM）を使用して、都市固形廃棄物の発生を予測しました。</p>
+</div>
+<p><strong>Table VIII (論文中の表)</strong> は、スマートシティ中心のCPS向けFLベースソリューションの分類を示していますが、画像が提供されていないため、ここではテキストでの説明に留めます。この表は、廃棄物管理、スマートグリッド、都市データ管理、スマートパーキングなど、様々な応用におけるFL技術、貢献、利点、欠点をまとめたものと考えられます。</p>
+<p><strong>Table IX (論文中の表)</strong> は、スマートシティCPSにおけるFLの通信コスト関数についてまとめたものです。これも画像がないため詳細は不明ですが、通信効率、帯域幅、遅延などを考慮したコスト関数の定義や比較が含まれていると推測されます。</p>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-bolt"></i>b) Smart Grid Integration</h5>
+<div class="content-box">
+<p>CPSは、物理システムとデジタルシステムに相互作用メカニズムを組み込んでいます。サイバーシステムは物理デバイスからデータを収集し、それを分析し、さまざまな複雑なアルゴリズムを採用して効果的なリアルタイム制御アクションを駆動します。SG制御および監視システムは、多数の物理デバイスと中間通信ネットワークを利用するシステムの例です。</p>
+<p>スマートメータリング、監視、制御、再生可能エネルギー、およびその他の将来のニーズは、従来の電力網には組み込まれていません。SGは、発電、送電、配電、消費者、運用、市場などのコンポーネントを統合して、リアルタイムでその状態を監視および制御することにより、グリッドを柔軟なグリッドに変換します。典型的なサイバーフィジカルシステムベースのSGを図10に示します。さらに、SG-CPSは階層的な自動化プログラムとは異なり分散化を強調するため、CPSの観点からは自動化に基づく通常のアプリケーションピラミッドとは異なります[181][182]。</p>
+<img alt="Fig. 10: The application of FL for typical SG in CPS." class="section-image" src="fl_cps_smart_grid.jpg"/>
+<div class="glass-card">
+<p>🖼️ <strong>図10の解説: CPSにおける典型的なSGのためのFLの応用</strong></p>
+<p>この図は、スマートグリッド（SG）における連合学習（FL）の応用を示しており、サイバーシステムと物理システムがどのように連携するかを表しています。</p>
+<ul>
+<li><strong>物理システム (Physical System):</strong>
+<ul>
+<li><span class="keyword">消費者 (Consumer):</span> 住宅、商業施設など、電力を消費するエンドユーザー。ローカルデータを生成します。</li>
+<li><span class="keyword">配電 (Distribution):</span> 消費者に電力を供給する地域レベルのネットワーク。</li>
+<li><span class="keyword">送電 (Transmission):</span> 発電所から広範囲に高電圧で電力を送るための基幹ネットワーク。</li>
+<li><span class="keyword">発電 (Generation):</span> 再生可能エネルギー（太陽光、風力など）や非再生可能エネルギー（火力など）を含む電力の源。</li>
+</ul>
+                    これらの物理コンポーネントは相互に接続され、電力の流れ（赤い線）と情報の流れ（黄色い破線の稲妻マーク）が存在します。各コンポーネントはローカルな機械学習モデル（Local model updates）を持ち、FLに参加します。
+                </li>
+<li><strong>広域ネットワーク (Wide Area Network):</strong> 物理システムとサイバーシステムを接続する通信インフラ。ローカルモデルの更新（アップロード/ダウンロード、灰色の双方向矢印）がここを通じて行われます。</li>
+<li><strong>サイバーシステム (Cyber System):</strong>
+<ul>
+<li><span class="keyword">情報フロー (Information flow):</span> 物理システムから収集されたデータ（電力消費パターン、発電量など）がサイバーシステムに送られます。</li>
+<li><span class="keyword">FLアグリゲータ (FL aggregator):</span> 各物理コンポーネントからアップロードされたローカルモデルの更新を集約し、グローバルモデルを更新する中央サーバー。</li>
+<li><span class="keyword">グローバルモデル更新 (Global model updates):</span> FLアグリゲータによって更新されたグローバルモデル。これが再び各物理コンポーネントにダウンロードされ、ローカルモデルの改善に利用されます。</li>
+<li>監視・制御システム: オペレーターがシステム全体を監視し、分析結果に基づいて制御指示を出すためのインターフェースやツール。</li>
+</ul>
+</li>
+</ul>
+<p>FLを活用することで、各電力消費・発電地点のプライベートなデータを共有することなく、電力需要予測や系統安定化のための協調的な学習が可能になります。これにより、スマートグリッドの効率性、信頼性、安全性が向上します。</p>
+</div>
+<p>実用的な側面から見ると、SGにおけるDL、特にFLの応用についてはほとんど知られていません。[166]と[183]の両方におけるEVベースのエネルギー需要予測と電力負荷予測のためのFL実装は、水平方向のデータ分離のみを優先し、体系的な暗号化戦略を欠いています。電力トレースの漏洩はシステムの欠陥を露呈させ、地域経済と国家安全保障に脅威をもたらし、SGデータのプライバシー保護の重要性を浮き彫りにします。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[167] の研究</span></p>
+<p>SGにFLベースのシステムを提供し、多数の関係者の協調学習を通じて電力線の安全性を向上させる可能性があります。この研究は、通信遅延を考慮した多地域共同電力消費予測のための階層型連合学習サブフレームワーク、および2つの当事者からのデータセットに基づく共同電力消費予測を可能にする2つの分散型連合学習サブフレームワークを提案しています。<span class="keyword">垂直連合XGBoost（またはSecureBoost）</span>は予測を改善し、垂直線形回帰は信頼できる第三者によってデータを保護します。HFL（水平連合学習）およびVFL（垂直連合学習）サブフレームワークはデータと機密性を保護します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">FedDetect [168]</span></p>
+<p>CPS関連SGにおけるエネルギー盗難検出のためのFLフレームワークであり、消費者のプライバシーを保護し、消費者がプライバシーを維持しながらエネルギー使用状況データを利用できるようにします。このアーキテクチャは、多数の物理検出ステーション、制御センター（CC）、およびデータセンター（DC）を備えたFLシステムを考慮しています。各組み込みセンサーはローカルの消費者データにのみアクセスでき、これはローカルのDPスキームによって保護されています。安全なプロトコルを通じて、統合センサーは暗号化されたトレーニングパラメータをCCおよびDCに提供します。CCおよびDCは、<span class="keyword">準同型暗号化</span>を通じて集約パラメータを生成し、更新されたモデルパラメータを組み込み物理ビューに返してモデルトレーニングを行います。</p>
+</div>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-database"></i>c) Urban Data Management</h5>
+<div class="content-box">
+<p>利用可能なリソース（処理速度、電力など）と管理する必要のあるデータ量に応じて、CPSにはさまざまなデータ管理ニーズがあります。特定のCPSは計算集約的なタスクをデータセンターに送信し、ほぼリアルタイムで応答を受信できますが、他のCPSはオンボードデータ分析を必要とします。CPSデータは、<span class="highlight">認知バイアス</span>、<span class="highlight">データ品質</span>、<span class="highlight">プライバシーとセキュリティ</span>、およびCPSの機能的および非機能的基準を密接に満たすデータ管理システムの選択という4つの障害に直面しています。</p>
+<p>したがって、FLは、その分散型およびプライバシー強化機能のために、スマートシティの大規模なインテリジェントデータ管理システムに分散AI機能を提供するための手段として採用されています。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">FedSem [169]</span></p>
+<p>スマートシティにおけるFLの使用は、[169]で提示されているように、ラベルなしデータの処理を分散するように設計された半教師ありFLアプローチであるFedSemの導入に例示されています。FLの有効性は、スマートカーのプロトタイプを利用して評価され、各車両は交通標識画像データセットに依存するDNNモデルを学習しました。中央サーバーは、モデルを調整するために、各学習ラウンドの多数の参加者の選択を監督します。FL手法を再現するために、1000台から110台の車両を含むドイツの交通標識のデータセットが使用され、各反復を通じてモデルのトレーニングと更新のために30台の車両がランダムに選択されます。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[170] の研究</span></p>
+<p>スマート都市で使用できるビデオデータ管理プラットフォームを確立するためにFLの使用を提案しています。バスやその他の接続されたモバイル物理アクチュエータは、通りのライブ画像をキャプチャし、ネットワークの周辺のデバイスに送信できます。各コンピューティングセンサーは、回復されたビデオセグメントを使用して半教師あり学習アルゴリズムを実行し、収集されたデータに対してローカルビデオ分析を実行できます。著者らは、非IIDデータの問題を解決するために<span class="keyword">FedSwap操作</span>を提案しており、データ内の変動性を低減し、シミュレーションを通じて証明されたように、画像分類の精度を<span class="highlight">3.8%向上</span>させるという予測結果が得られています。これは、このスマートシティアプリケーションにおける非IIDデータ分布によってもたらされる課題を考慮すると、大幅な改善を表しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[171] の研究</span></p>
+<p>FLを利用して、FLクライアントとして機能し、データを外部に開示することなくローカルトレーニングに従事する普及型インタラクティブセンシングデバイスからのデータストリームを整理することにより、さまざまなアクチュエータやストリームにわたるスマートシティのデータの異質性とユーザーのプライバシー懸念に対処しています。</p>
+</div>
+</div>
+<p>既存のスマートシティパターンは、社会活動モニタリング、社会経済共有、グローバルな人々のつながり[184]、スマート都市通信などの新しい機能の開始によって大幅に変更されます。センサーベースのインテリジェントエンドポイントは、環境について学習し、この知識を適用して消費者により良いサービスを提供できます[185]。</p>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-parking"></i>d) Smart Parking Solutions</h5>
+<div class="content-box">
+<p>最先端で包括的なスマートパーキングシステムを成功裏に実装するには、CPS技術が必要です。CPSは、交通管理など、さまざまな目的に使用できます[186]。データは、物理コンポーネントのセンサーとアクチュエータによって収集された後、サイバーコンポーネントによって処理されます[187]。デジタルシステムと物理システムの両方がCPSの傘下で統合されます。さらに、エッジコンピューティングに基づくCPSアプリケーションには、インテリジェントなネットワーク化された自動車や駐車システムが含まれます。自動運転車には、ジェスチャーコントロール、音声認識、ナビゲーションおよび安全システム、視線追跡など、多数のハイテク機能とサービスが装備されています。<span class="keyword">スマートパーキング</span>、<span class="keyword">衝突回避</span>、<span class="keyword">交通制御</span>は、路側ユニット（RSU）および隣接する車との車両間（V2V）および車両対インフラ（V2I）接続によって可能になる協調的でスケーラブルなサービスの例です[188]。</p>
+<img alt="Fig. 11: A FL-based parking space estimation scheme." class="section-image" src="fl_based_parking_space_estimation.jpg"/>
+<div class="glass-card">
+<p>🖼️ <strong>図11の解説: FLベースの駐車スペース推定スキーム</strong></p>
+<p>この図は、連合学習（FL）を用いた駐車スペース推定システム「FedParking」の仕組みを示しています。</p>
+<ol>
+<li><strong>グローバルモデルのダウンロード (Global model downloading):</strong>
+<ul>
+<li><span class="keyword">アプリケーションプロバイダー (Application provider):</span> 駐車情報サービスなどを提供する主体。</li>
+<li><span class="keyword">駐車場運営者 (Parking lot operator):</span> 複数の駐車場を管理。アプリケーションプロバイダーから初期のグローバルモデル（例: LSTMモデル）をダウンロードします。</li>
+</ul>
+</li>
+<li><strong>ローカルモデルのトレーニング (Local model training):</strong>
+<ul>
+<li>各駐車場運営者は、自身の管理する駐車場のデータ（車両の入出庫情報など、図中の'P'マークの人物が集めているイメージ）を用いて、ダウンロードしたグローバルモデルを基にローカルモデルをトレーニングします。この際、生の駐車データは外部に共有されません。</li>
+</ul>
+</li>
+<li><strong>モデルパラメータの転送 (Model parameter transfer):</strong>
+<ul>
+<li>トレーニングされたローカルモデルのパラメータ（重みなど）が、アプリケーションプロバイダー（グローバルモデルを持つ中央サーバー）にアップロードされます。</li>
+</ul>
+</li>
+<li><strong>グローバルモデルの更新 (Global model updating):</strong>
+<ul>
+<li>アプリケーションプロバイダーは、各駐車場運営者から送られてきたローカルモデルのパラメータを集約し、グローバルモデルを更新します。これにより、より広範なデータに基づいた、精度の高い駐車スペース予測モデルが構築されます。</li>
+</ul>
+</li>
+</ol>
+<p><strong>追加要素:</strong></p>
+<ul>
+<li><strong>車両 (Vehicles):</strong> 駐車スペースを利用する主体。駐車場運営者は、駐車スペースの状況に基づいて報酬割り当て (Reward assignment and parking space) を行い、車両を誘導します。また、駐車中の車両の遊休コンピューティングリソースを共有 (Resource sharing during the parking time) して、エッジコンピューティング（PVEC: Parked Vehicle-assisted Edge Computing）サービスを提供することも構想されています。</li>
+</ul>
+<p>このようにFedParkingは、FLを活用して各駐車場運営者のデータをプライバシーを保ったまま集約し、より正確な駐車スペース予測を実現することを目指しています。</p>
+</div>
+<p>最近の研究努力は、予測プロセスおよび交通流中のデータプライバシー保護を確保しつつ、速度[189]などの交通情報を予測する我々の理解を向上させることを目的としています[190]。この作業は、CPS関連のスマートシティで駐車を管理する方法におけるFLアプリケーションの拡張に影響を与え、[172]で提案されているように、図11に示すFLベースの駐車スペース推定スキームである<span class="keyword">FedParking</span>の開発につながりました。FedParkingは、駐車車両支援エッジコンピューティング（PVEC）を使用したFLベースの駐車スペース推定を調査するために作成されました。駐車場運営者（PLO）は、生データを共有せずに駐車スペースの空き状況を予測するための単一のLSTMモデルをトレーニングする必要があります。したがって、各PLOには駐車スペースの制限が発行され、自動車を駐車スペースに満たすように動機付ける技術を考案し、生データを交換せずにPVECでサービスを提供するためにアイドル状態のコンピューティングリソースをプールするタスクが課されます。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[173] の研究</span></p>
+<p>FLが駐車管理におけるUAV（無人航空機）に利用される方法が提示されています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[174] の研究</span></p>
+<p>著者らは、小型物理センサーのバッテリー寿命の制限の問題を克服するために、FLベースのワイヤレスネットワークの長期的な実行可能性を確保するために、UAV対応のワイヤレス電力伝送を採用することを提案しています。モデルパラメータの継続的な再調整により、通信リンクが切断されたり、ノードが利用できなくなったりすると、FLのパフォーマンスが低下します。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-car"></i>C. Vehicular Cyber Physical Systems (VCPS)</h3>
+<div class="content-box">
+<p>車両サイバーフィジカルシステム（VCPS）の文脈では、FLを使用してVCPSの機能を強化するモデルをトレーニングできます。例えば、VCPSはFLを採用して交通パターンを予測し、車両ルーティングの効率を向上させるモデルをトレーニングしたり、FLを使用してメンテナンスの必要性を予測し、VCPSの信頼性を高めるモデルをトレーニングしたりする可能性があります。具体的には、以下のセクションでは、インテリジェント交通システム（ITS）、車両ネットワーキング、車両リソース管理、および車両交通計画におけるFLの使用について徹底的な調査を行います。さらに、Table Xを導入して、VCPSソリューションの文脈でFLを組み込むことの主要な利点と欠点の簡潔かつ包括的な要約を提示します。（注意：Table Xの画像は提供されていません。）</p>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-satellite-dish"></i>1) Communication and Networking Architecture in FL-VCPS</div>
+<p>車両VCPSにおけるFLの統合を検討するために、このセクションでは通信のメカニズムを綿密に分析します。我々の焦点は、車両ダイナミクスの管理を超えて広がっています。FL活動のシームレスな実行を保証するために、いくつかの側面を微調整しています。車両が互いに通信するメカニズム（V2V）、インフラストラクチャとの接続を確立するメカニズム（V2I）、および異なるドメイン間の通信を管理するメカニズムを探求します。これには、VCPSのペースの速い環境におけるFLジョブの特定の要件を満たすための通信の強化が含まれます。VCPS通信におけるFLの簡単で包括的な探求にご期待ください。</p>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent2);"><i class="fas fa-project-diagram"></i>a) Communication Architecture</h5>
+<div class="content-box">
+<p>通信アーキテクチャ \( (CA) \) については、FLの側面を動的重み付け関数 \( (\beta(t)) \) に組み込むことを検討します：</p>
+<div class="formula">
+<p>\( CA(t) = \beta(t) \cdot CA_{centralized} + (1 - \beta(t)) \cdot CA_{decentralized} + FL_{adaptation} \)</p>
+</div>
+<div class="glass-card">
+<p>📝 <strong>数式の解説:</strong></p>
+<ul>
+<li>\( CA(t) \): 時刻 \( t \) における通信アーキテクチャの状態。</li>
+<li>\( \beta(t) \): 中央集権型と分散型のアーキテクチャのバランスを動的に調整する重み付け関数（\(0 \le \beta(t) \le 1\)）。</li>
+<li>\( CA_{centralized} \): 中央集権型の通信アーキテクチャの要素。</li>
+<li>\( CA_{decentralized} \): 分散型の通信アーキテクチャの要素。</li>
+<li>\( FL_{adaptation} \): FLタスクの進捗と要件に基づく適応項。</li>
+</ul>
+<p>この追加により、通信アーキテクチャは車両のダイナミクスだけでなく、FLモデルトレーニングの進化する要求にも適応することが保証されます。</p>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent2);"><i class="fas fa-wifi"></i>b) Communication Protocols</h5>
+<div class="content-box">
+<p>FL関連パラメータを統合することにより、V2V通信モデルを強化します。FLタスクに参加する車両の可用性の影響を受けるFL接続確率 \( (P_{FL}) \) を検討します：</p>
+<div class="formula">
+<p>\( P_{V2V,FL}(d,t) = P_{V2V}(d,t) \cdot P_{FL}(t) \)</p>
+</div>
+<div class="glass-card">
+<p>📝 <strong>数式の解説:</strong></p>
+<ul>
+<li>\( P_{V2V,FL}(d,t) \): 距離 \( d \)、時刻 \( t \) におけるFLを考慮したV2V通信の接続確率。</li>
+<li>\( P_{V2V}(d,t) \): 従来のV2V通信の接続確率。</li>
+<li>\( P_{FL}(t) \): 時刻 \( t \) において車両がFL協力に利用可能である確率。</li>
+</ul>
+<p>これにより、接続モデルにFLの側面が追加されます。V2I通信では、FL関連のデータ送信の影響を考慮して信頼性モデルを改良します：</p>
+</div>
+<div class="formula">
+<p>\( R_{V2I,FL}(t) = R_{V2I}(t) + \delta \cdot FL_{data}(t) \)</p>
+</div>
+<div class="glass-card">
+<p>📝 <strong>数式の解説:</strong></p>
+<ul>
+<li>\( R_{V2I,FL}(t) \): 時刻 \( t \) におけるFLを考慮したV2I通信の信頼性。</li>
+<li>\( R_{V2I}(t) \): 従来のV2I通信の信頼性。</li>
+<li>\( \delta \cdot FL_{data}(t) \): FL関連データが通信信頼性に与える影響を表す項。\(FL_{data}(t)\) はFL関連データの量や重要性を示し、\(\delta\) はその影響度合いを調整する係数。</li>
+</ul>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent2);"><i class="fas fa-globe-americas"></i>c) Cross-Domain Communication</h5>
+<div class="content-box">
+<p>FL関連の優先順位を反映するために、クロスドメイン通信のユーティリティ関数を拡張します：</p>
+<div class="formula">
+<p>\( U_{FL}(T_{ij}, \rho_{ij}, FL_{priority}) = \frac{1}{T_{ij} + \epsilon} \cdot \left(1 + \frac{\rho_{ij}}{\rho_{max}}\right)^{-\delta} + FL_{priority} \)</p>
+</div>
+<div class="glass-card">
+<p>📝 <strong>数式の解説:</strong></p>
+<ul>
+<li>\( U_{FL}(T_{ij}, \rho_{ij}, FL_{priority}) \): FLを考慮したクロスドメイン通信のユーティリティ（有用性）。</li>
+<li>\( T_{ij} \): ドメイン \(i\) と \(j\) 間の通信遅延。</li>
+<li>\( \rho_{ij} \): ドメイン \(i\) と \(j\) 間の通信信頼性（または帯域幅など）。</li>
+<li>\( \rho_{max} \): 通信信頼性の最大値。</li>
+<li>\( \epsilon, \delta \): それぞれ遅延と信頼性の影響を調整する小さな正の定数と指数。</li>
+<li>\( FL_{priority} \): FL関連の通信タスクに割り当てられた優先度。</li>
+</ul>
+<p>この拡張されたユーティリティ関数は、従来の交通懸念とFL関連のデータ交換との間の最適化目標のバランスを取ります。</p>
+</div>
+<p>これらのFL固有の詳細を通信フレームワークに明確に組み込むことで、アーキテクチャ、プロトコル、およびクロスドメイン通信が車両のダイナミクスに適応するだけでなく、CPSにおけるFLの要件とニュアンスに戦略的に整合することを保証します。</p>
+</div>
+</div>
+<h4 class="section-title"><i class="fas fa-cogs"></i>2) Implementation Approaches:</h4>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-road"></i>a) Vehicular Traffic Planning</h5>
+<div class="content-box">
+<p>ITSのより広範な文脈において、車両交通計画は交通ネットワーク内の車両の移動と流れを最適化する上で重要な役割を果たします。このセクションでは、交通流予測、ルート最適化、およびその他の交通管理側面に関連する課題に対処する上でのFLの特定の応用に焦点を当てます。</p>
+<p>現実の世界では、CPS車両交通計画は、交通ネットワーク内の自動車の移動と流れを最適化するために、計算リソースと物理リソースを採用しています。センサー、GPS、ワイヤレス接続、MLなどのCPS技術を利用することにより、リアルタイムの交通データを収集および分析して、交通流を改善し、渋滞を緩和することが可能です。この文脈では、FLを使用して、交通流を最適化し、輸送効率を向上させるMLモデルをトレーニングできます。交通当局などの複数の利害関係者が協力して、交通予測とネットワークボトルネック検出のための連合MLモデルをトレーニングできます。このモデルは、交通信号のタイミングとルーティング決定を最適化して交通流を強化するために利用される可能性があります（例：[202]）。これらのモデルは、個々の車両または交通管理システムに展開して、各当事者のデータと目標に基づいて交通最適化の決定を行うことができます（例：[203]）。FLはまた、物理エッジセンサー（例：路側ユニット（RSU））に展開できるモデルをトレーニングして、VCPSにおける交通計画の効率と有効性を向上させるためにも使用できます（例：[204]）。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[190] の研究</span></p>
+<p>CPSにおけるプライバシーを保護する交通流予測（TFP）へのMLアプローチであるFLについて説明しています。DLモデルはTFPで可能性を示していますが、個人を特定できる情報を含む可能性のある膨大なデータセットへの依存はプライバシー懸念を引き起こします。この問題は、生の入力ではなく安全なパラメータ集約を介して普遍的な学習モデルを更新するFLによって解決できます。TFPをスケーリングするために、ゲート付き再帰型ユニットNNアルゴリズム（<span class="keyword">FedGRU</span>）と共同アナウンスが提案されています。FedGRUの前に、アンサンブルクラスタリングを利用して、TFPによってビジネスを分類します。プライバシー懸念は、データ収集およびモデルトレーニングプロセスにおけるVCPSでのFLの利用を強化します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[200] の研究</span></p>
+<p>FLを利用して、独立したサービスとしてのドローン（DaaS）プロバイダーのプライバシーを保護しながら共同MLを可能にし、車両インターネット（IoV）アプリケーションを開発することを提案しています。多次元契約とゲール-シャプレーアルゴリズムを使用して、ドローン所有者とモデル所有者間の情報非対称性とインセンティブの不一致を緩和するために、各サブリージョンに最も費用効果の高い相互作用コンポーネントをリンクします。シミュレーション結果に基づくと、この技術はインセンティブ互換性があり効率的であり、モデル所有者の収益を最大化します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[201] の研究</span></p>
+<p>VCPSの文脈でプライバシーを保護するために、リアルタイムデータとエッジコンピューティングを使用してオンライン交通流を予測するためのブロックチェーンベースのFL手法を提供しています。図12に示す7つのフェーズからなるBFLを適用するための標準的な手順があります。</p>
+</div>
+</div>
+<img alt="Fig. 12: Blockchain-based FL for vehicular CPS." class="section-image" src="blockchain_based_fl_for_vcps.jpg"/>
+<div class="glass-card">
+<p>🖼️ <strong>図12の解説: 車両CPS向けブロックチェーンベースFL</strong></p>
+<p>この図は、ブロックチェーン技術と連合学習（FL）を組み合わせた、車両サイバーフィジカルシステム（VCPS）における交通流予測のフレームワークを示しています。主なステップは以下の通りです。</p>
+<ol>
+<li><strong>初期グローバルモデルの配布 (Give the delegated miner group the first global model):</strong>
+<ul>
+<li><span class="keyword">タスク発行者 (Task Publisher):</span> 交通流予測などのタスクを開始し、初期のグローバルモデル（機械学習モデル）をマイナーグループに提供します。</li>
+<li><span class="keyword">マイナーグループ (Miner Group):</span> ブロックチェーンネットワークの検証者たち。</li>
+</ul>
+</li>
+<li><strong>委任マイナーのリーダー選出 (The delegated miners take turns leading):</strong>
+<ul>
+<li>マイナーグループの中から、特定の期間、リーダーマイナー（Leader miners）が選出されます。</li>
+</ul>
+</li>
+<li><strong>ローカルモデルのトレーニング (Training the local model):</strong>
+<ul>
+<li><span class="keyword">車両 (Vehicles):</span> 各車両は、自身のセンサーデータ（ローカルデータベース, Local Database）と、配布されたグローバルモデル（新しいグローバルモデル, New Global Model）を使用して、ローカルモデル（Local Model Training）をトレーニングし、ローカルモデルの更新（Local Model Update）を生成します。</li>
+</ul>
+</li>
+<li><strong>ローカルモデルのアップロード (Upload local model):</strong>
+<ul>
+<li>各車両は、トレーニングしたローカルモデルの更新をリーダーマイナーに送信します。</li>
+</ul>
+</li>
+<li><strong>ローカルモデル更新の検証 (The leader miner verifies local model updates sent by delegated miners):</strong>
+<ul>
+<li>リーダーマイナーは、各車両から送られてきたローカルモデルの更新を検証します（例：品質、正当性）。検証に合格した更新（Qualified Local Model Update）のみが次のステップに進みます。</li>
+</ul>
+</li>
+<li><strong>新しいブロックでのブロードキャスト (The leader miner broadcasts the newest local model updates to all vehicles in a new block):</strong>
+<ul>
+<li>リーダーマイナーは、検証済みのローカルモデル更新を新しいブロックデータ（New Block Data）としてまとめ、ブロックチェーンネットワーク内の全車両にブロードキャストします。これにより、全車両が最新のローカルモデル更新情報にアクセスできるようになります。これが次のトレーニング反復（The next training iteration）の基盤となります。</li>
+</ul>
+</li>
+<li><strong>修正グローバルモデルの送信 (The leader miner sends the task publisher the modified global model):</strong>
+<ul>
+<li>リーダーマイナーは、集約・検証された更新に基づいて修正されたグローバルモデルをタスク発行者に送信します。タスク発行者はこれを受け、システム全体のパフォーマンスを評価したり、次のグローバルモデルの配布に利用したりします。</li>
+</ul>
+</li>
+</ol>
+<p>このBFL（Blockchain-based Federated Learning）アプローチにより、各車両のプライバシーを保護しつつ（生データは共有しない）、分散型で信頼性の高い（ブロックチェーンによる検証）交通流予測モデルの共同学習が可能になります。Hyperledger Fabric上に実装され、提案されたソリューションは連合GRUおよびLSTMモデルを採用し、車両に搭載された組み込みコンピューティングコントロールでの分散型モデルトレーニングを可能にします。動的に取得された幹線交通データのシャードを用いた実験は、提案手法が中央集権型モデルを上回り、プライバシーを保護する分散型リアルタイム交通流予測に適していることを示しています。</p>
+</div>
+<p><strong>Table X (論文中の表)</strong> は、スマート車両CPS向けFLベースソリューションの分類を示していますが、画像が提供されていないため、ここではテキストでの説明に留めます。この表は、ITS、車両ネットワーキング、リソース管理、交通計画など、VCPSの様々な側面におけるFL技術、貢献、利点、欠点をまとめたものと考えられます。</p>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-traffic-light"></i>b) Intelligent Transportation Systems (ITS)</h5>
+<div class="content-box">
+<p>FLは、CPSにおけるITSの文脈で、輸送システムの効率と安全性を向上させるMLモデルのトレーニング戦略として利用できます。例えば、交通パターンの予測（セクションIV-C2aで詳述）、事故の可能性予測[205]、ルーティングアルゴリズムの最適化[206]などです。FLを使用すると、複数のデバイスで収集されたデータからMLモデルを構築でき、その情報を中央集権化する必要がありません。これにより、モデルに含めるためにデータが検査されている個人の匿名性が確保され、すべてのシステムユーザーの集合的な専門知識を活用することで、より信頼性の高い予測モデルの開発が促進されます。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">Block4Forensic [191]</span></p>
+<p>現実には、現代の自動車に組み込まれたセンサーがなければ、自動運転車は存在しません。これらの車両からのデータは幅広い個人によって利用されますが、交通事故の法医学的調査は不可欠なアプリケーションです。Block4Forensicアーキテクチャは、信頼性がなく、追跡可能で、プライベートな事故後分析のために車両関連データを保持および分析するための、車両公開鍵基盤と断片化された台帳を備えたブロックチェーンベースのFLフレームワークを提供します。このフレームワークは、自動車事故の調査および評価時にも有益である可能性があります。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">FedRD [192]</span></p>
+<p>道路劣化検出および警告システムは安全性にとって重要です。クラウドベースのデータ処理はユーザーへの警告を遅らせます。ネットワークのエッジに近いコンピューティングは遅延を削減しますが、通信範囲を制限し、プライバシーを侵害する可能性があります。FedRDは、エッジクラウドコンピューティングとFLを通じて道路劣化を診断します。階層的特徴融合、適応型FL、およびピクセル化を通じてプライバシーを保護します。シミュレーションは、FedRDが潜在的に危険な道路劣化を検出し、一部の道路エッジのデータがほとんどない場合でも、プライバシーを損なうことなくタイムリーで正確な警告を提供できることを示しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[193] の研究</span></p>
+<p>クラウドコンピューティングは、共有メモリモデルを使用し、データセンターでのみ展開できるGoogleマップなどのデータ集約型スマートシティアプリケーションの展開を可能にしました。したがって、著者らは、FLとCPSを活用して、中央データセンターではなくネットワークのエッジでのリアルタイムデータ処理と意思決定を可能にすることにより、サービス速度と信頼性を向上させるプライベートフォグネットワーク向けの分散型ルート計画技術を提示しています。米国の平均的な規模のコミュニティのシミュレーションを使用して、この技術をテストします。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[207] の研究</span></p>
+<p>ITSにおけるルーティングアルゴリズムを最適化する別の例として、この研究は、トレーニング遅延とクラウドトラフィックおよび処理オーバーヘッドを大幅に削減するFL向けの分散型エッジネットワークアーキテクチャを提示しています。インネットワークコンピューティングフレームワーク（INC）は、ユーザースケジューリングシステム、インネットワーク集約手順、およびFLトレーニング遅延を最大5.6倍削減できるネットワークルーティングアルゴリズムで構成されています。中央集権型データセンターに依存する代わりに、INCアーキテクチャをCPSと接続して、ネットワークのエッジでリアルタイムデータ処理と意思決定を可能にすることができます。これにより、FLサービスのパフォーマンスと信頼性が向上し、スマートシティアプリケーションやその他のデータ集約型システムの作成が簡素化されます。</p>
+</div>
+</div>
+<p>FLはさまざまなITSアプリケーションでその可能性を実証していますが、車両交通計画を最適化する上でのその特定の役割はさらなる探求が必要です。セクションIV-C2aでは、交通流の強化、渋滞の緩和、および全体的な輸送効率の向上に対するFL技術の適用について詳しく説明します。</p>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-network-wired"></i>c) Vehicular Networking</h5>
+<div class="content-box">
+<p>CPSにおける車両ネットワーキングは、新しい輸送サービスと技術の重要な実現要因であり、輸送システムのパフォーマンスと効率を劇的に向上させる能力を持っていますが、FLはCPSにおける車両ネットワーキングのパフォーマンスと効率を大幅に向上させる可能性があります。車両ネットワーキングには、車両間通信（V2V）、車両対インフラストラクチャ（V2I）、および車両と他のデバイスとの通信（V2X：vehicle-to-everything communication）が含まれ、FLはこれらのプロトコルとともに使用して、車両が通信ネットワークのさまざまな部分を最適化する方法についてスマートな決定を下す能力を与えることができます。これにより、ネットワークはより安全で効率的になり、エネルギー消費が少なくなります。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[194] の研究</span></p>
+<p>効率的でプライバシーを意識した車両通信ネットワークのための自律型BFL設計を提案しています。これは、ブロックチェーンコンセンサスがVCPSの文脈でローカルの車載MLモデル更新の分散型交換と検証を可能にすることを示しています。システムパフォーマンスに対するネットワークとBFLパラメータの影響を評価するための数学的手法も提供されています。BFLによるエンドツーエンドの遅延を計算し、この知識を使用して、車載MLシステムのダイナミクスを研究することにより、通信とコンセンサスの遅延を考慮して最適なブロック到着率を決定します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[195] の研究</span></p>
+<p>ブロックチェーン技術を使用してプロビジョニングおよび制御コンポーネントを分散化し、信頼性と整合性を維持するため、BFLアプローチは、周囲の環境とネットワークの制約に応じて正確で最新のサービスプロビジョニングを保証するためにエッジでも使用されます。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">C-FL (Consensus-driven FL) [196]</span></p>
+<p>[196]で現実的なV2Xネットワーク上に構築および研究されている同様のアプローチです。C-FLを装備した車は、NNパラメータを共有することで活動を調整できます。V2X接続の構築を容易にするために、基本的な交通シミュレータを使用してルート情報が収集されます。この論文では、V2X接続性がFLのコンセンサスプロセス、収束時間、および損失/精度のトレードオフに与える影響を調査し、さまざまな交通密度下でのFLのパフォーマンスを評価します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[174] の研究</span></p>
+<p>車両ネットワーキングにおけるFLアプリケーションの長期的な実行可能性を保証する手法として、ドローンベースのワイヤレスデバイス再充電を提示しています。反復的なUAVSFLアプローチを適用し、送信時間、電力、帯域幅、および位置を変更することにより、UAVの電力効率を向上させることができます。シミュレーション結果は、設計されたUAV搭載FLワイヤレスネットワークが優れているだけでなく、より持続可能であることを示しています。</p>
+</div>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-tasks"></i>d) Vehicular Resource Management</h5>
+<div class="content-box">
+<p>都市化と豊かさの向上により、道路を走る車両の数が増加しています。技術の進歩に伴い、CPSベースの自動運転車の普及が進んでいます。車両エッジコンピューティング（VEC）は、自動車が認知タスクを試みる際に通常直面するリソース制約の解決策として開発されました。しかし、自動車活動の性質は、情報の配信を定期的に妨げる可能性があります。FLは、移動時間と燃料消費を削減することによりリソースの遅延を削減し、それによって輸送システムの有効性の向上に貢献できます。ただし、各車両の能力とデータ品質も異なり、モデルトレーニングのパフォーマンスに影響を与える可能性があります。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[197] の研究</span></p>
+<p>最悪の場合のシナリオでFLコストを最小限に抑えるために、オンボード計算能力、送信電力、およびローカルモデルの精度を最適化するための最小最大最適化問題を提示しています。さらに、画質の良い車両を認識するための欲張りアルゴリズムと、最適化のためのヒューリスティック検索手法を提示しています。シミュレーション結果は、提案されたアルゴリズムが効率的であり、公平性とコストのバランスを取ることを示しています。非線形計画法の最適化は2つのサブ問題で構成されます。ラグランジュ双対問題、劣勾配射影法、およびヒューリスティック検索のための適応調和アルゴリズムが、それぞれリソース割り当てとローカルモデル精度の課題に対処します。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">FLOR [198]</span></p>
+<p>CPSにおける低遅延オフロードとリソース管理のために提案されています。FLORフレームワークは、V2X、DSRC（専用狭域通信）、5Gミリ波、および6G V2Vに焦点を当てて、異種ネットワーク全体でCPSリソースを効率的に管理します。確率的ネットワーク計算は、異種通信の最大遅延と、計算ワークロードを最適なネットワークにオフロードする確率を計算します。CPSリソースの割り当てと使用を強化し、リソースコストの増加を削減するために、FLORはe-RRM（効果的な無線リソース管理）と呼ばれる連合Q学習フレームワークを提供します。シミュレーションによると、FLORは、CPSの代替案よりも20.69%優れた効率的なリソース割り当てで、異種ネットワーク間で計算をオフロードします。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[199] の研究</span></p>
+<p>データ交換の信頼性と効率を高めるために、CPSの一種であるマルチUAVネットワークを研究しています。<span class="keyword">非同期連合学習（AFL）</span>は、機密データをUAVサーバーサイトに送信せずにローカルモデルをトレーニングし、プライバシーの問題を解決します。シミュレーションは、デバイス選択とリソース管理のためのA3Cベースのアーキテクチャとアルゴリズムが、連合収束速度と精度を向上させることを示しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">DPAFL [208]</span></p>
+<p>自動車ネットワークにおける安全でプライベートなリソース共有のために、<span class="keyword">差分プライベートAFL（DPAFL）</span>を使用することを提案しています。ローカルDP、FL、およびランダム分散更新アプローチは、中央集権的なキュレーターから更新されたローカルモデルを保護し、更新検証と加重集約は収束を向上させます。実際のデータセットは、DPAFLの精度、効率、およびデータ機密性を示しています。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-shield-alt"></i>D. Core Cybersecurity Services</h3>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-search-location"></i>1) Attack Detection</h5>
+<div class="content-box">
+<p>5G/6GやAIなどの高度なネットワーキングおよびコンピューティング技術と従来の産業インフラストラクチャとの統合により、産業用CPSのサイバー攻撃に対する脆弱性が大幅に増大しています。攻撃の詳細な事例が不足しているため、これらの巨大で複雑かつ多様なCPSをこれらのリスクから保護することは困難でした。FLベースのCPSは、5Gを超えるワイヤレスシステムに共通する新たな脅威にも脆弱です[209]。したがって、FLを使用して、CPS攻撃検出の分野で使用するモデルをトレーニングし、異常や悪意のあるシステム動作を発見するのに役立てることができます。モデルは、データを中央集権化または共有する必要なく、CPS内のいくつかのデバイスまたはシステムからのデータを利用してトレーニングされます。機密データの侵害を回避するために、個々のデバイスとシステムのプライバシーを保護することが不可欠です。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[210] の研究</span></p>
+<p>現実世界のケースでは、CPSは膨大な量の多様なデータを生成するため、<span class="keyword">偽データ注入攻撃（FDIA）</span>の対象となります。CPSベースのエネルギーシステムなどの動的で分散したシナリオでは、中央集権型のFDIA検出アルゴリズムはデータプライバシーを侵害し、役に立たなくなるリスクがあります。この論文では、解決策として深層FLと慎重な集約を備えた分散型FDIA検出方法を提案しています。すべてのシステムノードは、ステルスFDIAを同時にかつ正確に特定でき、システムクライアントは秘密裏に共有モデルをトレーニングできます。分散設定では、提案されたアプローチは、検出精度、計算の複雑さ、およびデータプライバシーの点で最先端を上回っています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[211] の研究</span></p>
+<p>FLは、CPSの誤動作につながる可能性のあるデータポイズニングの試みなどの敵対的攻撃を軽減することにより、CPSデータのセキュリティを強化する可能性があります。ハイパーパラメータの選択は、敵対的攻撃に耐えることができる成功したFLモデルを構築する上で同様に重要です。敵対的攻撃に対応して、著者らは最適化された量子ベースの連合学習（<span class="keyword">QFL</span>）フレームワークについて説明しており、これは粒子群の量子動作最適化を採用して自動運転車のパラメータを微調整します。この新しい技術は、サイバーセキュリティアーキテクチャでCPSにFLを統合する際の悪意のある攻撃と戦うことができます。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[212] の研究</span></p>
+<p>CPSにおけるサイバー攻撃を検出するために、Fed-Trust分散型FLを備えたブロックチェーンベースのエッジインテリジェンス（BoEI）アーキテクチャを提供しています。Fed-Trustは、時間的畳み込み生成ネットワークを使用して、半ラベル付きデータを使用して半教師ありデータ学習を実行します。BoEIは、評判ベースのブロックチェーンを使用してトランザクションを記録および検証し、データプライバシーを保護します。ブロックマイニングをアクチュエータに転送することにより、フォグコンピューティングは通信とFed処理の信頼性を向上させます。2つの公開データセットを使用したシミュレーションは、現在の攻撃戦術に対するFed-Trustの優位性を示しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[213] の研究</span></p>
+<p>CPS通信サービスを侵入から保護することが重要です。POI（Points Of Interest）マイクロサービスを保護するための現在の方法は、欠点があるにもかかわらず、通常、匿名性とDP技術を含みます。この研究は、CPSにおけるPOIマイクロサービスを保護するためのFLベースの戦略を提示しています。システム設計は、クラウドデータセンターとエッジノード上のユーザーデータとの間のトレーニングメカニズムを採用しています。エッジノードはユーザーにDLモデルを提供し、クラウドサーバーはこれらのモデルに対するFL変更を処理します。クラウドの境界とその中心との間の分離と接続性は、それぞれFLとデータセキュリティを可能にし、強化します。</p>
+</div>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-user-check"></i>2) Authentication Systems</h5>
+<div class="content-box">
+<p>FLは、CPSにおけるユーザーまたはデバイスのIDを検証するための効果的な方法です。CPSでは、認証が必要な多数のデバイスまたはシステムが存在する可能性があり、プライバシーまたはセキュリティに関する懸念のためにデータストレージの中央集権化または共有が実行不可能である可能性があります。FLは、複数のデバイスまたはシステムからのデータを使用してトレーニングされるグローバル認証モデルの開発を可能にすると同時に、それらのプライバシーと独立性を保護します。これにより、CPSにおける認証プロセスの精度と強度が向上し、進化するニーズや要件により柔軟に対応できるようになります。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">[214] の研究</span></p>
+<p>例えば、CPSにおけるドローンの普及の増加は、著者らにこれらのデバイスのための完璧な識別システムを確立することの重要性を評価するよう促しました。これらの各ドローンから放出される信号の独特な特性を理解するために、著者らはFLドローンのための認証モデルを開発しています。この方法により、システムはRF信号を送信する複数のドローンの信頼性を検証できます。<span class="keyword">準同型暗号化（HE）</span>と安全な集約がこのモデルに組み込まれており、SGDを使用してドローン上でローカルに最適化および実行されます。実験結果は、提案されたアプローチがMLを使用してドローンを認証するための以前の技術よりも効果的であることを示しています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[215] の研究</span></p>
+<p>CPSにおける認証のためのFLの別の応用について説明しています。この研究は、回転機械の一般的なコンポーネントである転がり軸受の問題を特定するためのFLベースのアプローチを提示しています。これらの軸受が問題となる理由はいくつかあります。提案された方法は、動的認証メカニズムと教師なし学習戦略を組み合わせることにより、グローバルモデルを誤った入力に対してより耐性のあるものにするという目的を達成します。検証セットでモデルがどの程度うまく機能するかを調べた後、FLフレームワークで使用される動的検証アプローチを使用して、検証パフォーマンスの高いモデルのみが集約されます。2つの異なるデータセットで、提案された方法は評価され、プライベートな分散学習の方法論として効果的であることが示されています。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[216] の研究</span></p>
+<p>リンクされた自動車やRSUなどの分散エッジデバイスを利用してモデルをトレーニングする協調検証システムが提示されています。このシステムの連合設計により、セキュリティとプライバシーの両方を維持しながら、中央サーバーが必要とするリソースの量が削減されます。集約アプローチは、トレーニングモデルを保存および配布するために使用されるブロックチェーン技術の使用の結果として、安全性のレベルが向上することから恩恵を受けます。提案されたシステムは、車両の集合的なプライバシーを保護し、通信とコンピューティングのコストを削減し、一般的なリスクに耐えることができることが実証されています。</p>
+</div>
+</div>
+</div>
+<h5 class="section-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-user-secret"></i>3) Intrusion Detection</h5>
+<div class="content-box">
+<p>CPSにおける異常侵入とは、侵入またはサイバー攻撃を示唆する可能性のある、通常のCPS活動からの異常または逸脱の発生を指します。これらの異常は、機器やソフトウェアの誤動作、人的ミス、悪意のある行動など、さまざまな状況の結果である可能性があります。場合によっては、異常は微妙であったり、特定が困難であったりし、時間の経過とともに、またはさらなる異常と組み合わせてのみ現れることがあります。これらの異常をタイムリーかつ正確に発見および認識できるAIベースの侵入検知システムの展開が必要です。これを考慮して、最近の研究では、ローカルデータを利用してモデルトレーニングを可能にし、不正アクセスのリスクにさらすことなくFLベースの戦略の有効性に焦点が当てられています。これは、CPSへのサイバー侵入の影響を軽減または制限し、システムの継続的な運用と信頼性を確保するのに役立ちます。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p><span class="badge orange">DeepFed [217]</span></p>
+<p>異常侵入からCPSを保護するための最もよく知られた戦略の1つです。この連合DL技術は、産業用CPSにおけるサイバーハザードを分析するために[217]の著者らによって作成されました。DeepFedは、CNNとゲート付き再帰型ユニットを利用して侵入検知モデルを作成し、FLアーキテクチャにより、複数のCPSがユーザーの匿名性を維持しながら完全なモデルを組み立てることができます。DeepFedがモデルをトレーニングしている間、機密パラメータはPaillierベースの安全な通信プロトコルを介して送信されます。実際のCPSデータセットに適用すると、最先端のアプローチを上回ります。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[38] の研究</span></p>
+<p>CPS侵入検知を調査するための追加のユニークなFL研究です。この論文は、複数のデバイスまたはシステムが協力してサイバー脅威に対する単一のローカルモデルの有効性を向上させることを可能にするCPSにおける侵入検知のためのFL技術を提示しています。提案された技術は、広範なグローバル検出モデルを生成し、ローカル検出モデルを個々の特性に適応させることを可能にします。これは、Federated Execution &amp; Evaluation Dual（<span class="keyword">EEFED</span>）アーキテクチャによって実現されます。カスタマイズされた更新技術と効率的なバックトラッキングパラメータ置換メカニズムにより、データ非対称性と非iid分布に対するFLの悪影響が軽減されます。ネットワークデータセットでの広範なテストにより、提案された戦略がモデルの安定性を向上させ、さまざまなサイバー状況で単一モデルおよび最先端のソリューションを上回ることが明らかになりました。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">[218] の研究</span></p>
+<p>接続されたFLシステムにおける侵入攻撃を発見する方法が提示されています。解決策は、許可型ブロックチェーンベースのFLアプローチを実装することであり、異常検出MLモデルへの更新は分散型台帳に接続されます。そうすることで、MLモデルはトレーニングデータを統合することなく監査でき、FLの効率にわずかな（<span class="highlight">5～15%</span>）影響を与えるだけで済みます。この方法は、より広範なNNアーキテクチャおよび実用的なコンテキストで使用できます。</p>
+</div>
+<div class="info-card glass-card">
+<p><span class="badge orange">FLDID [219]</span></p>
+<p>スマート製造企業向けに、[219]の著者らは、サイバー脅威を特定するためのFederated Learning-enabled Deep Intrusion Detection（FLDID）アーキテクチャを提供しています。Paillierベースの暗号化を利用して、FLDIDアーキテクチャのエッジデバイスとサーバー間で転送されるモデル勾配の機密性を保護し、多くのセクターがリスク検出のための共有モデルを構築できるようにします。侵入検知のためのDLベースのハイブリッドモデルを採用する提案されたアプローチは、公開されているデータセットでテストすることにより、スマートセクターにおけるサイバー脅威の特定に成功していることが実証されており、最先端の技術と比較されています。</p>
+</div>
+</div>
+<p><strong>Table XI (論文中の表)</strong> は、CPSにおけるサイバーセキュリティとプライバシー向けFLベースソリューションの分類を示していますが、画像が提供されていないため、ここではテキストでの説明に留めます。この表は、攻撃検知、認証システム、侵入検知などのサービスにおけるFL技術、貢献、利点、欠点をまとめたものと考えられます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-book-reader"></i>E. Lessons Learned</h3>
+<div class="content-box">
+<p>FL-CPSアプリケーションは、多様なドメインで大きな可能性を示していますが、Table VI、VII、VIII、X、XIに要約されているように、主要な課題と制限も浮き彫りにしています。（注意：これらの表の画像は提供されていません。）</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-hospital"></i>ヘルスケア分野の教訓</div>
+<ul>
+<li>FLは高精度な遠隔モニタリング、改善されたジェスチャー検出、活動認識の遅延削減を可能にします。</li>
+<li><strong>課題:</strong> 非IIDデータでの収束確保、ハイブリッドアーキテクチャでの高い通信コスト、分散設定での攻撃への脆弱性、より強力なプライバシー証明の必要性。</li>
+<li>FLは、摂動、ブロックチェーン統合、特殊レイヤーなどの技術により、プライバシーを保護するEHR管理を促進します。</li>
+<li><strong>制限:</strong> DP制約下での精度低下、ブロックチェーンベース設定での高いエネルギーコスト、複雑な同期。</li>
+<li>医療画像では、FLはクライアント間の分散削減、低リソース展開、COVID-19診断で有望ですが、データバイアス、DP下での精度劣化、異種デバイスでの限定的な検証という課題に直面しています。</li>
+</ul>
+</div>
+<div class="challenge-box" style="border-left: 3px solid var(--color-accent1);">
+<div class="challenge-title" style="color: var(--color-accent1);"><i class="fas fa-city"></i>スマートシティ分野の教訓</div>
+<ul>
+<li>スマートシティアプリケーションは、廃棄物分類、スマートグリッドでの負荷予測、都市データ管理、スマートパーキングソリューションにFLを活用します。</li>
+<li><strong>制限:</strong> リアルタイムエッジ展開の必要性、断続的な接続性の最適化、ユーザー固有のモデル分散、攻撃への脆弱性。</li>
+</ul>
+</div>
+<div class="challenge-box" style="border-left: 3px solid var(--color-accent2);">
+<div class="challenge-title" style="color: var(--color-accent2);"><i class="fas fa-car-side"></i>車両応用分野の教訓</div>
+<ul>
+<li>車両アプリケーションでは、FLはインテリジェント交通システム、車両ネットワーキング、リソース管理、交通計画を強化します。</li>
+<li><strong>課題:</strong> セキュリティ、高い計算負荷、通信コスト。</li>
+</ul>
+</div>
+<div class="challenge-box" style="border-left: 3px solid var(--color-accent3);">
+<div class="challenge-title" style="color: var(--color-accent3);"><i class="fas fa-user-shield"></i>サイバーセキュリティとプライバシー分野の教訓</div>
+<ul>
+<li>サイバーセキュリティとプライバシーアプリケーションは、攻撃検出、認証、侵入検出にFLを利用します。</li>
+<li><strong>制限:</strong> TEE（信頼できる実行環境）に関連する制限、精度低下、エネルギー消費。</li>
+</ul>
+</div>
+<p>全体として、FL-CPSはさまざまなドメインで有望な貢献を示していますが、データの異質性、プライバシー、セキュリティ、通信コスト、および計算オーバーヘッドに関連する主要な制限も明らかにしています。詳細については、研究課題と将来の研究については次のセクションで詳しく説明します。</p>
+</div>
+</div>
+<div class="section-card" id="V._RESEARCH_CHALLENGES_AND_FUTURE_DIRECTIONS">
+<h2 class="section-title"><i class="fas fa-rocket"></i> V. RESEARCH CHALLENGES AND FUTURE DIRECTIONS</h2>
+<div class="content-box">
+<p>このセクションでは、サイバーフィジカルシステム（CPS）における連合学習（FL）の応用と実装がますます注目されている現状を踏まえ、その大きな可能性にもかかわらず、FLをCPSで効果的に展開するために克服すべき重要な<span class="keyword">研究課題</span>と、それらに対する将来の有望な<span class="keyword">研究方向</span>について詳細に掘り下げていきます。</p>
+<p>FLは、デバイスのネットワーク全体で機械学習（ML）モデルを分散訓練することを可能にし、CPSが困難なタスクを実行する際にローカルデータを使用できるようにします。しかし、FLが大きな可能性を秘めているにもかかわらず、CPSで効果的に展開される前に克服しなければならないいくつかの実質的な研究上のハードルがあります。CPSネットワークにおける主なハードルは以下の通りです。</p>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fas fa-shield-alt fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>セキュリティ問題</strong></p>
+<p>プライバシー侵害や攻撃からの保護</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-accent2);"></i>
+<p><strong>リソース管理</strong></p>
+<p>計算能力やエネルギーの効率的利用</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-scroll fa-2x" style="color: var(--color-accent3);"></i>
+<p><strong>標準仕様</strong></p>
+<p>相互運用性や比較可能性のための基準</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-puzzle-piece fa-2x" style="color: var(--color-secondary);"></i>
+<p><strong>システムとデータの異質性</strong></p>
+<p>多様なデバイスやデータへの対応</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-network-wired fa-2x" style="color: var(--color-primary);"></i>
+<p><strong>通信コスト</strong></p>
+<p>データ伝送量の削減と効率化</p>
+</div>
+</div>
+<p>これらの課題に対処するための潜在的な研究の方向性についても、このセクションで説明します。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-user-secret"></i> A. Security Issues in FL-based CPS</h3>
+<div class="content-box">
+<p>連合学習（FL）は、複数の分散デバイスからのアクチュエータ間で暗号化されたデータを送信できるようにすることで、CPSのセキュリティを向上させる可能性があります。これにより、データ侵害や中央集権システムへの攻撃の可能性が減少します。しかし、FLをCPS環境に導入する際には、いくつかのセキュリティ上の懸念に対処する必要があります。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> FLにおける汚染攻撃</div>
+<p>FLは様々な方法で汚染される可能性が指摘されています [220]。これらの攻撃は、その<span class="keyword">目的</span>と攻撃者の<span class="keyword">スキル</span>によって分類されます。</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<h4><i class="fas fa-bullseye"></i> 攻撃の目的による分類</h4>
+<ul>
+<li>📝 <strong>非ターゲット型ポイズニング攻撃 (Untargeted poisoning assaults)</strong> [221][222]: <br/>すべてのテスト入力に対してグローバルモデルの精度を低下させます。FLにとっては、グローバルモデル全体を破壊する可能性があるため、より大きな脅威となります。</li>
+<li>🎯 <strong>ターゲット型ポイズニング攻撃 (Targeted poisoning attacks)</strong> [223]: <br/>特定のテスト入力の精度を低下させつつ、他の入力に対する高い精度は維持します。</li>
+<li>🚪 <strong>バックドア攻撃 (Backdoor assaults)</strong> [224]: <br/>攻撃者の意図した特定の入力（トリガー）に対してのみ、モデルが誤った振る舞いをするように、秘密裏に攻撃を仕込みます。</li>
+</ul>
+</div>
+<div class="info-card">
+<h4><i class="fas fa-user-ninja"></i> 攻撃者のスキルによる分類（ポイズニング攻撃の種類）</h4>
+<ul>
+<li> M <strong>モデルポイズニング攻撃 (Model poisoning attacks)</strong> [225]: <br/>感染したデバイス上で、勾配（モデルの更新情報）がサーバーに送信される前に改ざんします。FLに対して即座に影響を与えます。</li>
+<li> D <strong>データポイズニング攻撃 (Data poisoning attacks)</strong> [226]: <br/>デバイスの訓練データを操作することで、結果的に勾配を改ざんします。しかし、データポイズニング攻撃では、モデルポイズニング攻撃のような破壊的な勾配を任意に生成することはできません。</li>
+</ul>
+<p class="note-box"><i class="fas fa-lightbulb"></i> FLがポイズニングされる可能性を評価するためには、より深刻な<span class="highlight">非ターゲット型のモデルポイズニング攻撃</span>に焦点を当てる必要があります。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-users"></i> <strong>シビル攻撃 (Sybil attacks) とプライバシー</strong> [227]</p>
+<p>FLの設定ではデータが各クライアントにローカル保存されるため、攻撃者が<span class="keyword">シビル（偽のIDを多数生成する）</span>を利用して攻撃の効果を最大化しようとする誘因があります。結果として、グローバルアップデートがローカル訓練データからより多くの個人情報を露呈させ、ユーザーのプライバシーを侵害する可能性があります。</p>
+<p><i class="fas fa-database"></i> CPSネットワークでは、ユーザーの嗜好や自宅住所のような機密データを保存する必要があるため、FLにおけるプライバシーとセキュリティのリスクは、適切な保護策なしに協調的なデータ訓練を行うことを妨げます。</p>
+</div>
+<p>一般的に、CPSにおけるサイバーコンポーネントと物理コンポーネントの統合は新たなセキュリティ懸念を生じさせます。これらのシステムで採用されるFLシステムのセキュリティは最大限の重要性を持ちます。これらの問題に対する潜在的な解決策としていくつかのアプローチが提示されていますが、CPSにおけるFLシステムのセキュリティと信頼性を保証するためには、さらなる研究開発が必要です。</p>
+<h4 class="subsection-title"><i class="fas fa-microchip"></i> 提案されている対策アプローチ</h4>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-cut"></i> Federated Neuron Pruning (連合ニューロンプルーニング) [228]</h5>
+<p>CPSにおけるFLバックドア攻撃のリスクに対抗する手法です。この戦略は、FLシステムのモデルトポロジーを縮小しつつ、所定のタスクにおけるパフォーマンスを維持することで、攻撃者がモデルに悪意のあるパターンをエンコードすることをより困難にします。</p>
+<p>攻撃設定（バックドア設計の種類、クライアント間のデータ分布、攻撃の目的など）の影響も調査されています。</p>
+<div class="challenge-box">
+<p><i class="fas fa-exclamation-circle"></i> 課題点:</p>
+<ul>
+<li>FLサーバーは訓練データや検証データセットを持たないため、クライアントの調整を迅速に更新できない可能性があります。</li>
+<li>モデルの変更は確率的で予測不可能なプロセスであり、単純化されたモデルでは大きな差異が生じる可能性があります。</li>
+</ul>
+</div>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-user-shield"></i> FoolsGold [229]</h5>
+<p>CPSにおけるFL攻撃から保護するための別の手法です。この技術は、クライアントの入力とグローバルモデルの類似性に基づいてクライアントの学習率を調整することにより、FLにおける<span class="keyword">シビル攻撃</span>を特定し対抗することを目指します。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-robot"></i> GANsによる監査 [230]</h5>
+<p>CPSに組み込まれたFLシステムに対する<span class="keyword">ラベル反転ポイズニング攻撃</span>を検出・防止する手法です。敵対的生成ネットワーク（GANs）を使用して、FLサーバー上で参加者モデルを監査します。</p>
+<p>参加者モデルの精度が特定の閾値を下回った場合、そのモデルパラメータを訓練セットから除外します。悪意のあるプレイヤーのモデルパラメータを排除することで、ラベル反転ポイズニング攻撃を軽減します。</p>
+</div>
+</div>
+<img alt="Table XI: Taxonomy of FL-based Solutions for Cybersecurity and Privacy in CPS" src="table11.png"/>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-table"></i> 表XIの解説</div>
+<p>この表XIは「CPSにおけるサイバーセキュリティとプライバシーのためのFLベースのソリューションの分類」を示しています。具体的には、特定されたセキュリティ上の課題、それらの課題に対処するために提案されている様々なアプローチや具体的な技術、そしてそれらに関連する参考文献が整理されています。このような分類は、研究者が既存の解決策の全体像を把握し、それぞれの長所・短所を比較検討する上で役立ち、さらには未解決の問題点や新たな研究の方向性を見出すための重要な基盤となります。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-battery-three-quarters"></i> B. Resource Management Issues in FL-based CPS</h3>
+<div class="content-box">
+<p>FLベースのソリューションがCPSの様々な用途で実現可能であることは以前から認識されていますが、多様な計算能力を持つデバイスを用いたタイムリーなモデル訓練を保証するというFL固有の困難性は、研究分野で明らかです。</p>
+<div class="bubble-box">
+<p><i class="fas fa-bullseye"></i> <strong>CPSにおけるFLの目的</strong> [231]</p>
+<p>できるだけ多くのCPSクライアント（センサー、アクチュエータ、組み込みシステム等を備え、物理的な測定値を収集しデータ分析に基づいて行動を起こせるデバイス）が、<span class="keyword">グローバルイテレーションの期限前</span>にローカルモデルを提出できるようにすることです。</p>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-sliders-h"></i> クライアント選択とエネルギー消費のジレンマ</div>
+<p>より多くのクライアントを選択すると、エネルギー消費が増加する可能性があります [232]。一方で、初期のラウンドではクライアント数を少なくし、後のラウンドで多くすることで、訓練損失とモデル精度の両方を改善できるというアプローチもあります [233]。FLサーバーは、<span class="highlight">選択クライアント数を最大化</span>しつつ、<span class="highlight">エネルギー消費を最小化</span>するという、相反する目的のバランスを取る必要があります。この最適なバランスを見つけることは、サイバーフィジカルシステムにおいては非常に難しい問題です。</p>
+<p>総エネルギー消費量は、選択されたデバイスの数と、各デバイスのエネルギー消費量の関数となります。このため、望ましいバランスを達成することは困難です。デバイスのエネルギー消費において、リソース管理は重要な役割を果たします。例えば、計算リソースの使用量を減らしたり、データアップロード中の送信電力を低減したりするとエネルギー消費は減少しますが [234]、逆の行動はエネルギー消費を増加させます。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-users-cog"></i> クライアント選択に関する研究</h4>
+<p>クライアント選択は重要な関心事として、様々な学術的研究の対象となってきました。</p>
+<div class="info-grid">
+<div class="info-card">
+<h5>代表的なサンプルによるアプローチ [231]</h5>
+<p>ローカルモデルのタイムリーな配信を、代表的なサンプルによって支援するシステムを作成することを目的としています。</p>
+<p class="note-box"><i class="fas fa-exclamation-circle"></i> 欠点: クライアントの待機時間を考慮していないため、グローバルイテレーションの実行に過大な遅延が生じる可能性があります。</p>
+</div>
+<div class="info-card">
+<h5>クライアント選択と帯域幅配分の最適化 [235]</h5>
+<p>訓練遅延を削減するために、クライアント選択と帯域幅配分を最適化しようとしました。選択されたクライアントのサンプルサイズに基づいて、グローバルイテレーションの総数が決定されました。</p>
+</div>
+<div class="info-card">
+<h5>ビームフォーミングとクライアント選択の組み合わせ [236]</h5>
+<p>各グローバルイテレーション中に平均二乗誤差基準を満たすことができるクライアントの数を改善することを目的としています。</p>
+</div>
+<div class="info-card">
+<h5>動的クライアントサンプリング [233]</h5>
+<p>最大クライアント数を可変とする顧客の動的サンプリングを提案しました。この手法では、初期のグローバルイテレーション（顧客数が学習性能にほとんど影響しない時期）では少ない顧客を選択し、後のグローバルイテレーション（顧客数が学習効率に大きな影響を与える可能性のある時期）では多くの顧客を選択します。</p>
+<p><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> 利点: エネルギー消費を最小限に抑えつつ、訓練損失とモデル精度を向上させます。</p>
+</div>
+<div class="info-card">
+<h5>計算・無線送信電力リソースの最適化 [237]</h5>
+<p>エネルギー消費と学習率のトレードオフを図るために、計算リソースと無線送信電力リソースをどのように最適化するかを示しています。</p>
+</div>
+<div class="info-card">
+<h5>ローカルモデル精度の考慮 [238]</h5>
+<p>選択されたクライアントのローカルモデル精度も考慮に入れています。</p>
+</div>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-cogs"></i> C. Standard Specifications for Federated CPS Deployment</h3>
+<div class="content-box">
+<p>近年の学術研究は、デジタル世界と物理世界の間の複雑な相互作用に焦点を当てています。サイバーフィジカルシステム（CPS）は、これらの相互依存関係を定義する目的で開発されました。通信、コンピュータ、物理基板とアクチュエータやセンサーを統合することで、CPSはオープンで適応性のあるシステム・オブ・システムアーキテクチャの開発を可能にします。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-balance-scale-left"></i> 標準アプローチの欠如</div>
+<p>複数の研究がCPSサービスにおけるFLの潜在的な利点を示していますが、同じ疾患に対する様々な治療法の有効性を比較するための<span class="keyword">標準的なアプローチが存在しません</span>。</p>
+<p>中央集権型サーバーへの依存を減らし、ローカルデバイス更新の整合性を確保するために、いくつかの<span class="keyword">ブロックチェーンベースのフレームワーク</span>がFLシステム向けに提案されています[239]。しかし、これらはすべて異なるCPSユースケースのために開発され、異なるネットワーク設定とデータでテストされたため、<span class="highlight">直接的な比較が困難</span>です。</p>
+<p>さらに、通信プロトコル、デバイスハードウェア、展開状況、集約方法論の<span class="keyword">統一されたセットの欠如</span>は、大きな障害となっています。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-file-alt"></i> 既存の標準と今後の課題</h4>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-award"></i> IEEE Std 3652.1-2020 [240]</h5>
+<p>最新のIEEE Std 3652.1-2020規格は、FLの<span class="keyword">アーキテクチャおよび設計要件</span>を定義しています。この文書はまた、FLシステムにとって重要な問題、例えばプライバシー、セキュリティ、パフォーマンス効率、経済的実行可能性、評価スキーム、およびパフォーマンス測定についても取り上げています。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-industry"></i> 産業オートメーションシステムにおける標準</h5>
+<p>産業オートメーションシステムを構築する際には、国際的に認知された標準である<span class="keyword">IEC 61131</span> [242] に準拠することが一般的です。IEC 61131は、複雑な産業オートメーションシステムによって表明された問題に対処するためにバージョン2.0に改訂され、<span class="keyword">IEC 61499</span>が後継標準として作成されました。</p>
+<p class="note-box"><i class="fas fa-lightbulb"></i> しかし、この新しい技術が広く実装される前に、<span class="highlight">標準化される必要</span>があります [31]。</p>
+</div>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-stream"></i> 連合CPSの要素に関する研究</div>
+<p>データ集約と分解[241]、コンプライアンス[242]、プロセス統合と標準化、品質基準など、連合CPSの様々な要素が多数の論文の主題となっています。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-random"></i> D. Systems and Data Heterogeneity</h3>
+<div class="content-box">
+<p>FL-CPSの文脈において、システムの異質性とデータの異質性は重要な課題です。</p>
+<div class="two-column">
+<div class="column">
+<div class="glass-card" style="padding: 15px; border-left: 5px solid var(--color-accent1);">
+<h4><i class="fas fa-laptop-code" style="color: var(--color-accent1);"></i> システムの異質性 (System Heterogeneity)</h4>
+<p>クライアントの計算能力および通信能力（例：ハードウェア、ソフトウェア、ネットワーク状況）のばらつきを指します。</p>
+<p><strong><i class="fas fa-exclamation-triangle"></i> 影響:</strong></p>
+<ul>
+<li>処理能力や通信能力が限られたクライアントは、グローバルモデルの収束を遅らせる可能性があります。これはFLアプローチの<span class="keyword">スケーラビリティを制限</span>します。</li>
+<li>計算が遅いクライアント（<span class="keyword">ストラグラー (stragglers)</span> と呼ばれる）は、FLアルゴリズム全体を遅くする可能性があります。</li>
+</ul>
+</div>
+</div>
+<div class="column">
+<div class="glass-card" style="padding: 15px; border-left: 5px solid var(--color-accent2);">
+<h4><i class="fas fa-database" style="color: var(--color-accent2);"></i> データの異質性 (Data Heterogeneity)</h4>
+<p>消費者データの分布と特性のばらつきを指します。</p>
+<p><strong><i class="fas fa-exclamation-triangle"></i> 影響:</strong></p>
+<ul>
+<li>データの不均衡や制御の欠如を引き起こし、母集団全体に適用可能なモデルの訓練を困難にする可能性があります。</li>
+<li>FLモデルが<span class="keyword">バックドア攻撃</span>に対して脆弱になる可能性を高めます。バックドア攻撃は、データ分布の不一致を利用して悪意のある振る舞いを追加します。</li>
+</ul>
+</div>
+</div>
+</div>
+<h4 class="subsection-title"><i class="fas fa-tools"></i> 異質性に対処するための提案手法</h4>
+<p>研究者たちは、データとシステムの異質性に直面してもFLの機能性を向上させるためのいくつかの手法を提案しています。</p>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-link"></i> 堅牢な集約 (Robust Aggregation) [243][244][245]</h5>
+<p>FLの学習プロセスにおける堅牢な集約のためのアプローチが提案されています。これらの方法は、<span class="keyword">幾何中央値ベースの堅牢な集約オラクル</span>を採用しており、非堅牢な平均化オラクルを繰り返し使用することで堅牢な集約を構築します。</p>
+<p><i class="fas fa-user-shield" style="color: var(--color-accent1);"></i> この堅牢な集約オラクルは、基になっている非堅牢な安全平均オラクルと同様にプライバシーを保護します。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-network-wired"></i> ACFL (Adaptive Communication for Federated Learning) [246]</h5>
+<p>動的な帯域幅の多様性や不安定なネットワークから生じるFLの通信問題に対する解決策として提案されました。ACFLのCeciliaクラウドエッジクライアントFL設計は、ネットワーク状況に基づいて共有データの圧縮を変更することができます。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-cogs"></i> 勾配降下法ベースのモデルへの対応 [247]</h5>
+<p>勾配降下法によって訓練される広範なFLモデルに焦点を当てています。この技術は、クラウドソーシングがCPSで大量のデータを生成することによって引き起こされる問題に対処してきました。</p>
+</div>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-broadcast-tower"></i> E. Communication Costs in FL-based CPS</h3>
+<div class="content-box">
+<p>FLでは、各クライアントがローカルデータでモデルを訓練し、モデルの変更（例：勾配）を中央サーバーに通信します。中央サーバーはこれらの更新を集約し、グローバルモデルの新しいバージョンを計算してクライアントに返します。このプロセスは収束するまで繰り返されます。</p>
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-satellite-dish"></i> 通信チャネルの役割</div>
+<p>クライアントと中央サーバーは、<span class="keyword">フィードバック付きブロードキャストチャネル</span>を介して通信します。このチャネルは、クライアント側のモデル更新をサーバーへ、サーバー側のグローバルモデルバージョンをクライアントへ伝送します。チャネルの<span class="keyword">フィードバック機能</span>により、クライアントは送信の問題や遅延を中央サーバーに報告できます。</p>
+</div>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-signal"></i> チャネル品質の影響</div>
+<p>フィードバック付きブロードキャストチャネルの品質は、FLアルゴリズムの効率に大きな影響を与える可能性があります。チャネルの容量が限られていたり、遅延が過度であったりすると、モデル更新の遅延や不正確さを引き起こし、アルゴリズムの収束を遅らせ、モデルのパフォーマンス低下につながる可能性があります。</p>
+</div>
+<h4 class="subsection-title"><i class="fas fa-sliders-h"></i> ブロードキャストチャネル利用率向上のための戦略</h4>
+<p>フィードバックを利用して、ブロードキャストチャネルの利用率を向上させるための様々な戦略が用いられます。これには以下のようなものがあります。</p>
+<ul class="unstyled-list">
+<li class="process-step">
+<span class="step-number">1</span>
+<div class="step-content">モデル更新の<span class="keyword">圧縮</span></div>
+</li>
+<li class="process-step">
+<span class="step-number">2</span>
+<div class="step-content">モデルへの貢献度に応じたクライアントの<span class="keyword">優先順位付け</span></div>
+</li>
+<li class="process-step">
+<span class="step-number">3</span>
+<div class="step-content">チャネルの入力に基づいて通信ラウンドを<span class="keyword">適応的に構成</span>する</div>
+</li>
+</ul>
+<div class="info-grid">
+<div class="info-card">
+<h5><i class="fas fa-wave-square"></i> 線形フィードバックスキーム [248]</h5>
+<p>ノイズのないフィードバックを伴う2ユーザーガウスブロードキャストチャネルに対して、より有望な代替手法として提案されています。これは、元の研究[249]で使用されたメモリレス推定技術の代わりに、<span class="keyword">メモリを持つ推定技術</span>を採用しています。</p>
+<p>この研究では、提案された予測モデルによって達成される平均二乗誤差の再帰的記述と、拡張されたスキームの可能なレートを特徴付けるための固定点の存在証明が提供されています。</p>
+</div>
+<div class="info-card">
+<h5><i class="fas fa-project-diagram"></i> 対称加法性白色ガウスノイズブロードキャストチャネル向け線形フィードバックフレームワーク [250]</h5>
+<p>ノイズのあるフィードバックを伴う対称加法性白色ガウスノイズブロードキャストチャネルのための新しい線形フィードバックフレームワークを導入しました。これは、フィードバックなしの合計容量を超える合計レートを達成するために最適化された連結符号化スキームの内部符号として採用されました。</p>
+</div>
+</div>
+<div class="note-box">
+<div class="note-title"><i class="fas fa-check-double"></i> 結論</div>
+<p>FLアルゴリズムは、前述のフィードバック技術を用いてブロードキャストチャネルの有効性と信頼性を向上させることにより、<span class="highlight">より速い収束</span>と<span class="highlight">改善されたモデル精度</span>を提供します。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="VI._CONCLUSION">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i>VI. CONCLUSION</h2>
+<div class="definition-box" style="margin-bottom: 25px;">
+<div class="definition-title" style="font-family: 'Yomogi', cursive; display: flex; align-items: center;">
+<i class="fas fa-scroll" style="margin-right: 10px; color: var(--color-primary);"></i>この論文の結論：FLCPSの未来を拓く
+        </div>
+<p style="font-size: 14px; line-height: 1.6;">
+            この「CONCLUSION」セクションでは、本サーベイ論文で展開してきた<span class="keyword">連合学習（FL）</span>と<span class="keyword">サイバーフィジカルシステム（CPS）</span>の統合に関する広範な調査と分析の結果を総括しています。FLとCPSが融合した<span class="highlight">FLCPS</span>というエキサイティングな分野が、私たちの社会の様々な側面にどれほど大きな変革をもたらす可能性を秘めているか、そしてその実現に向けてどのような課題があり、今後どのような方向に進むべきかを示しています。
+        </p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary); display: flex; align-items: center; border-bottom: 2px dashed var(--color-secondary); padding-bottom: 8px; margin-bottom: 15px;">
+<i class="fas fa-search-plus" style="margin-right: 8px;"></i>探求の全貌：FLとCPSの融合
+            </h4>
+<p>この包括的なサーベイ論文では、<span class="keyword">連合学習（FL）</span>と<span class="keyword">サイバーフィジカルシステム（CPS）</span>の統合、すなわち<strong style="color: var(--color-primary);">FLCPS</strong>について深く探求しました。 <i class="fas fa-brain" style="color: var(--color-accent1);"></i> (FL) + <i class="fas fa-cogs" style="color: var(--color-accent2);"></i> (CPS) <i class="fas fa-equals" style="color: var(--color-dark);"></i> <span class="badge blue">FLCPS</span></p>
+<p>具体的には、以下の点に焦点を当てています：</p>
+<ul style="list-style: none; padding-left: 0;">
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent3); margin-right: 8px; margin-top: 4px;"></i>
+<span><span class="highlight">最近の技術進歩</span>や<span class="highlight">重要な概念</span>の詳細な分析。</span>
+</li>
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<i class="fas fa-project-diagram" style="color: var(--color-accent1); margin-right: 8px; margin-top: 4px;"></i>
+<span>FLCPSアプリケーションが持つ<span class="highlight">広大な潜在能力</span>。これが様々な分野で期待されています。</span>
+</li>
+</ul>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top:15px;">
+<div class="feature-item" style="padding: 8px; background-color: rgba(74, 111, 165, 0.05);">
+<i class="fas fa-heartbeat fa-2x" style="color: var(--color-secondary); margin-bottom: 5px;"></i>
+<p style="font-size: 13px; margin-bottom: 0;">ヘルスケア</p>
+</div>
+<div class="feature-item" style="padding: 8px; background-color: rgba(92, 184, 92, 0.05);">
+<i class="fas fa-city fa-2x" style="color: var(--color-accent1); margin-bottom: 5px;"></i>
+<p style="font-size: 13px; margin-bottom: 0;">スマートシティ</p>
+</div>
+<div class="feature-item" style="padding: 8px; background-color: rgba(255, 213, 79, 0.05);">
+<i class="fas fa-car-side fa-2x" style="color: var(--color-accent3); margin-bottom: 5px;"></i>
+<p style="font-size: 13px; margin-bottom: 0;">インテリジェント交通</p>
+</div>
+</div>
+</div>
+<div class="info-card">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary); display: flex; align-items: center; border-bottom: 2px dashed var(--color-secondary); padding-bottom: 8px; margin-bottom: 15px;">
+<i class="fas fa-cogs" style="margin-right: 8px;"></i>技術的深掘りと克服すべき課題
+            </h4>
+<p>FLCPSの実現には、コアとなる技術要素の理解が不可欠です。本論文では、以下の複雑な側面を掘り下げました：</p>
+<ul style="list-style: none; padding-left: 0;">
+<li style="margin-bottom: 10px;"><i class="fas fa-microchip" style="color: var(--color-primary); margin-right: 5px;"></i><span class="keyword">FLアルゴリズム</span>の intricacies（複雑さ、詳細）</li>
+<li style="margin-bottom: 10px;"><i class="fas fa-sitemap" style="color: var(--color-accent1); margin-right: 5px;"></i><span class="keyword">CPSアーキテクチャ</span>の intricacies</li>
+<li style="margin-bottom: 10px;"><i class="fas fa-broadcast-tower" style="color: var(--color-accent2); margin-right: 5px;"></i><span class="keyword">通信プロトコル</span>の intricacies</li>
+</ul>
+<p>これらの技術が協力し合うことで生まれる<span class="highlight">大きな可能性</span>を強調するとともに、解決すべき重要な課題にも光を当てています：</p>
+<div class="tag-list" style="margin-top:10px; margin-bottom:15px;">
+<span class="tag" style="background-color: rgba(255, 126, 95, 0.2); border-color: var(--color-secondary); color: var(--color-secondary);"><i class="fas fa-user-secret" style="margin-right: 5px;"></i>プライバシー</span>
+<span class="tag" style="background-color: rgba(149, 117, 205, 0.2); border-color: var(--color-accent2); color: var(--color-accent2);"><i class="fas fa-shield-alt" style="margin-right: 5px;"></i>セキュリティ</span>
+<span class="tag" style="background-color: rgba(255, 213, 79, 0.3); border-color: var(--color-accent3); color: var(--color-dark);"><i class="fas fa-cubes" style="margin-right: 5px;"></i>データ異質性</span>
+</div>
+<div class="bubble-box" style="margin-top: 15px; border-color: var(--color-accent1); background-color: rgba(92,184,92,0.05);">
+<p style="font-family: 'Yomogi', cursive; font-size: 15px; color: var(--color-accent1); margin-top:0; margin-bottom: 5px;"><i class="fas fa-hands-helping"></i> 協調の力と課題への挑戦</p>
+<p style="font-size:13px; margin-bottom:0;">FLとCPSの各技術が<span class="keyword">協力</span>することで相乗効果が生まれますが、プライバシーなどの<span class="keyword">課題</span>を乗り越えることが成功の鍵です。</p>
+</div>
+</div>
+<div class="info-card">
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary); display: flex; align-items: center; border-bottom: 2px dashed var(--color-secondary); padding-bottom: 8px; margin-bottom: 15px;">
+<i class="fas fa-road" style="margin-right: 8px;"></i>フレームワーク、研究の空白、そして未来へ
+            </h4>
+<p>私たちの研究は、<span class="keyword">一般化されたFL-CPS統合フレームワーク</span>の重要性を強調しています。これは、研究者や実務家にとって、FLCPSシステムを設計・実装するための<span class="highlight">構造化されたアプローチ</span>を提供するものです。 <i class="fas fa-drafting-compass" style="color: var(--color-primary);"></i></p>
+<div class="note-box" style="margin-top: 15px; margin-bottom:15px; border-left-color: var(--color-accent2); background-color: rgba(149,117,205,0.05);">
+<div class="note-title" style="color: var(--color-accent2);"><i class="fas fa-search-location"></i>研究の道しるべ</div>
+<p style="font-size:13px; margin-bottom:0;">重要な<span class="keyword">研究ギャップ</span>（まだ解明されていない領域 <i class="fas fa-puzzle-piece" style="color: var(--color-gray);"></i>）を明らかにし、<span class="keyword">将来の研究方向性</span> <i class="fas fa-route" style="color: var(--color-gray);"></i> を示すことで、この急速に進化する分野でのさらなる<span class="highlight">イノベーション</span> <i class="fas fa-rocket" style="color: var(--color-secondary);"></i> と<span class="highlight">探求</span>を促進することを目指しました。</p>
+</div>
+<p style="font-weight: bold; text-align: center; color: var(--color-primary); margin-top: 20px; font-family: 'Kaisei Decol', serif;">
+<i class="fas fa-bullseye" style="margin-right: 8px;"></i>最終的な目標:
+            </p>
+<p style="text-align: center; font-size: 15px; background-color: rgba(74,111,165,0.1); padding:10px; border-radius: 8px;">
+                より<span class="highlight">インテリジェント</span> <i class="fas fa-brain" style="color: var(--color-accent1);"></i>で、
+                <span class="highlight">効率的</span> <i class="fas fa-tachometer-alt" style="color: var(--color-accent2);"></i>かつ、
+                <span class="highlight">安全な</span> <i class="fas fa-lock" style="color: var(--color-accent3);"></i> CPSソリューションの開発に貢献することです。
+            </p>
+</div>
+</div>
+<div style="margin-top: 30px; padding: 15px; background: linear-gradient(135deg, rgba(74, 111, 165, 0.1), rgba(255, 126, 95, 0.1)); border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+<p style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-dark); margin:0;">
+<i class="fas fa-paper-plane" style="margin-right: 10px; color: var(--color-primary);"></i>FLCPSの探求は、より良い未来技術への確かな一歩です！
+        </p>
+</div>
+</div>
+</div>
+</body>
+</html>

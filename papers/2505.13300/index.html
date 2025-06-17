@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DD-Ranking: Rethinking the Evaluation of Dataset Distillation解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">DD-Ranking: Rethinking the Evaluation of Dataset Distillation</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="DD-Ranking_Team∗">
+<h2 class="section-title"><i class="fas fa-project-diagram"></i> DD-Ranking Team∗</h2>
+<div class="content-box">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 16px;">
+            このセクションでは、論文で提案されている<strong>DD-Ranking</strong>プロジェクトに関連する重要なリソースへのリンクがまとめられています。<br/>
+            これらのリンクを通じて、DD-Rankingフレームワークの<span class="keyword">ソースコードの確認</span>、<span class="keyword">プロジェクトの詳細情報</span>、そして<span class="keyword">インタラクティブなデモ</span>にアクセスすることができます。✏️
+        </p>
+<p style="text-align: center; font-size: 14px; color: var(--color-gray);">
+<em>論文の文脈上、このセクション名は通常貢献者リストを指しますが、ここではプロジェクトリソースへのポータルとして機能しています。実際のチームメンバーリストは論文のAppendix Aに記載されています。</em>
+</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center; margin-bottom: 10px;">
+<i class="fab fa-github fa-2x" style="color: var(--color-primary);"></i>
+</div>
+<h3 class="subsection-title" style="justify-content: center; border-left: none; padding-left: 0;"><i class="fas fa-code-branch"></i> GitHubリポジトリ</h3>
+<div class="content-box">
+<p>DD-Rankingの<span class="highlight">公式GitHubリポジトリ</span>です。ここには、論文で提案された評価フレームワークの<strong>ソースコード</strong>がすべて公開されています。研究者や開発者は、このリポジトリを通じて以下のことが可能です：</p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '🛠️ '; margin-bottom: 15px;">
+<li>ソースコードの詳細な確認</li>
+<li>ローカル環境でのフレームワークの実行</li>
+<li>実験の再現やカスタマイズ</li>
+<li>プロジェクトへの貢献（Issue報告やPull Request）</li>
+</ul>
+<p>リポジトリ名: <code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px;">NUS-HPC-AI-Lab/DD-Ranking.git</code></p>
+<div style="text-align: center; margin-top: 20px;">
+<a class="badge blue" href="https://github.com/NUS-HPC-AI-Lab/DD-Ranking.git" style="font-family: 'Yomogi', cursive; font-size: 16px; padding: 10px 15px; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" target="_blank">
+<i class="fas fa-external-link-alt"></i> GitHubへアクセス
+                    </a>
+</div>
+</div>
+<div class="note-box" style="margin-top: 20px; background-color: rgba(74, 111, 165, 0.05); border-left-color: var(--color-primary);">
+<p style="font-size: 13px; color: var(--color-dark); font-family: 'Zen Kurenaido', sans-serif;"><i class="fas fa-paperclip" style="color: var(--color-primary); margin-right: 5px;"></i><strong>リンク:</strong> <a href="https://github.com/NUS-HPC-AI-Lab/DD-Ranking.git" style="color: var(--color-primary); text-decoration: underline;" target="_blank">https://github.com/NUS-HPC-AI-Lab/DD-Ranking.git</a></p>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center; margin-bottom: 10px;">
+<i class="fas fa-globe fa-2x" style="color: var(--color-secondary);"></i>
+</div>
+<h3 class="subsection-title" style="justify-content: center; color: var(--color-secondary); border-left-color: var(--color-secondary); border-left-style:none; padding-left: 0;"><i class="fas fa-desktop"></i> プロジェクトウェブサイト</h3>
+<div class="content-box">
+<p>DD-Rankingプロジェクトの<span class="highlight">公式ウェブサイト</span>です。このサイトでは、論文の概要、DD-Rankingフレームワークの<span class="keyword">詳細な解説</span>、<span class="keyword">リーダーボード</span>（様々なデータセット蒸留手法の評価結果ランキング）、および関連する<span class="keyword">ドキュメント</span>などが提供されています。</p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '🌐 ';  margin-bottom: 15px;">
+<li>プロジェクトの目的と背景の理解</li>
+<li>最新の評価結果の確認</li>
+<li>フレームワークの使用方法の学習</li>
+<li>関連研究やニュースの取得</li>
+</ul>
+<p>このウェブサイトは、DD-Rankingに関する包括的な情報源となります。</p>
+<div style="text-align: center; margin-top: 20px;">
+<a class="badge orange" href="https://nus-hpc-ai-lab.github.io/DD-Ranking/" style="font-family: 'Yomogi', cursive; font-size: 16px; padding: 10px 15px; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" target="_blank">
+<i class="fas fa-external-link-alt"></i> ウェブサイトへアクセス
+                    </a>
+</div>
+</div>
+<div class="note-box" style="margin-top: 20px; background-color: rgba(255, 126, 95, 0.05); border-left-color: var(--color-secondary);">
+<p style="font-size: 13px; color: var(--color-dark); font-family: 'Zen Kurenaido', sans-serif;"><i class="fas fa-paperclip" style="color: var(--color-secondary); margin-right: 5px;"></i><strong>リンク:</strong> <a href="https://nus-hpc-ai-lab.github.io/DD-Ranking/" style="color: var(--color-secondary); text-decoration: underline;" target="_blank">https://nus-hpc-ai-lab.github.io/DD-Ranking/</a></p>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center; margin-bottom: 10px;">
+<img alt="Hugging Face Logo" src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" style="width: 30px; height: 30px; display: inline-block; vertical-align: middle;"/>
+</div>
+<h3 class="subsection-title" style="justify-content: center; color: var(--color-accent2); border-left-color: var(--color-accent2); border-left-style:none; padding-left: 0;"><i class="fas fa-rocket"></i> Hugging Face Space</h3>
+<div class="content-box">
+<p>DD-Rankingの<span class="highlight">インタラクティブなデモ</span>が、Hugging Face Spaces上で公開されています。このデモを利用することで、ユーザーは実際にDD-Rankingフレームワークを<span class="keyword">ブラウザ上で体験</span>し、その機能を試すことができます。</p>
+<ul class="unstyled-list" style="padding-left: 20px; list-style-type: '🚀 '; margin-bottom: 15px;">
+<li>コードをセットアップせずに機能を試用</li>
+<li>様々な設定での評価をインタラクティブに実行</li>
+<li>フレームワークの挙動を視覚的に理解</li>
+</ul>
+<p>Hugging Face Space名: <code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px;">logits/DD-Ranking</code></p>
+<div style="text-align: center; margin-top: 20px;">
+<a class="badge purple" href="https://huggingface.co/spaces/logits/DD-Ranking" style="font-family: 'Yomogi', cursive; font-size: 16px; padding: 10px 15px; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" target="_blank">
+<i class="fas fa-external-link-alt"></i> Spaceへアクセス
+                    </a>
+</div>
+</div>
+<div class="note-box" style="margin-top: 20px; background-color: rgba(149, 117, 205, 0.05); border-left-color: var(--color-accent2);">
+<p style="font-size: 13px; color: var(--color-dark); font-family: 'Zen Kurenaido', sans-serif;"><i class="fas fa-paperclip" style="color: var(--color-accent2); margin-right: 5px;"></i><strong>リンク:</strong> <a href="https://huggingface.co/spaces/logits/DD-Ranking" style="color: var(--color-accent2); text-decoration: underline;" target="_blank">https://huggingface.co/spaces/logits/DD-Ranking</a></p>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="margin-top: 40px; border-color: var(--color-accent1);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; color: var(--color-dark);"><i class="fas fa-lightbulb" style="color: var(--color-accent1); margin-right: 8px;"></i><strong>活用のヒント:</strong></p>
+<p style="font-size: 14px;">これらのリソースは、DD-Rankingの<span class="highlight">理解を深める</span>ため、また<span class="highlight">実際に利用する</span>上で非常に価値があります。特に、データセット蒸留 (Dataset Distillation) の研究に取り組んでいる方や、機械学習モデルの評価手法、データ中心AI (Data-Centric AI) に興味を持つ大学院生の皆さんにとって、これらのプラットフォームは貴重な学びの場となるでしょう。ぜひ、各リンクを訪れて、DD-Rankingの世界を探求してみてください！ 🧐📊</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-scroll"></i>Abstract 要旨</h2>
+<div class="content-box" style="text-align: center; margin-bottom: 20px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-primary);">
+<i class="fas fa-bullhorn"></i> この論文のAbstract(要旨)では、<span class="keyword">データセット蒸留 (Dataset Distillation, DD)</span> の評価における現在の問題点を指摘し、その解決策として新しい評価フレームワーク <span class="keyword">「DD-Ranking」</span> を提案します。
+        </p>
+<p>
+            従来の評価方法では、<span class="highlight">合成データセットの真の品質</span>が見えにくくなっていました。DD-Rankingは、より公正で包括的な評価を目指し、今後の研究の発展に貢献することを目指しています。
+        </p>
+</div>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-database"></i>データセット蒸留とは？</h3>
+<p>近年、<span class="keyword">データセット蒸留 (Dataset Distillation, DD)</span> は、データ圧縮のための信頼できる解決策として注目されています。これは、オリジナルの大規模データセットから、ごく少数の<span class="keyword">合成データセット (synthetic datasets)</span> を生成する技術です。</p>
+<div style="text-align: center; margin: 15px 0;">
+<i class="fas fa-database fa-2x" style="color: var(--color-primary);"></i>
+<span style="font-size: 20px; margin: 0 10px; color: var(--color-secondary;">➔</span>
+<i class="fas fa-magic fa-2x" style="color: var(--color-accent1);"></i>
+<span style="font-size: 20px; margin: 0 10px; color: var(--color-secondary;">➔</span>
+<i class="fas fa-cubes fa-2x" style="color: var(--color-primary);"></i>
+</div>
+<p>驚くべきことに、この小さな合成データセットで訓練されたモデルは、元の巨大なデータセットで訓練されたモデルと<span class="highlight">同等の性能</span>を達成することができます。これにより、計算コストやストレージの削減が期待できます。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説: データセット蒸留 (Dataset Distillation, DD)</p>
+<p>大規模な元データセットの本質的な情報を保持したまま、はるかに小さな「蒸留された」合成データセットを作成する技術。これにより、モデルの訓練時間や必要な計算リソースを大幅に削減しつつ、元のデータセットで学習した場合と同等の性能を達成することを目指します。</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説: 合成データセット (Synthetic Datasets)</p>
+<p>DDプロセスによって生成される、人工的に作られた小さなデータセット。必ずしも元のデータサンプルを含むわけではありませんが、元のデータセットの重要な特徴や分布を捉えるように設計されます。</p>
+</div>
+</div>
+<div class="info-card glass-card">
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i>DD分野の進展</h3>
+<p>合成データセットの性能をさらに向上させるために、様々な<span class="keyword">訓練パイプライン (training pipelines)</span>や<span class="keyword">最適化目標 (optimization objectives)</span>が提案され、データセット蒸留の分野は大きく進歩してきました。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item" style="border: 2px dashed var(--color-accent1); padding: 10px;">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-accent1);"></i>
+<p>訓練パイプラインの改良</p>
+</div>
+<div class="feature-item" style="border: 2px dashed var(--color-accent2); padding: 10px;">
+<i class="fas fa-bullseye fa-2x" style="color: var(--color-accent2);"></i>
+<p>最適化目標の多様化</p>
+</div>
+</div>
+<p>これにより、より高品質な合成データセットの生成が可能になりつつあります。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="challenge-box" style="border-left: 3px solid var(--color-secondary); padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; background-color: rgba(255, 126, 95, 0.05);">
+<h3 class="subsection-title" style="color: var(--color-secondary); border-left: none; padding-left: 0;"><i class="fas fa-exclamation-triangle"></i>評価における新たな疑問</h3>
+<p>最近の<span class="keyword">分離型データセット蒸留 (decoupled dataset distillation methods)</span> 手法は、評価後の段階 (post-evaluation phase) で<span class="keyword">ソフトラベル (soft labels)</span>やより強力な<span class="keyword">データ拡張 (data augmentation)</span>を導入しています。</p>
+<div class="two-column">
+<div class="column note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-tags"></i>ソフトラベル</p>
+<p>従来の0か1かの「硬い」ラベルではなく、各クラスに属する確率分布で表現されるラベル。教師モデルの知識をより豊富に伝えることができます。</p>
+</div>
+<div class="column note-box" style="background-color: rgba(149, 117, 205, 0.1); border-left-color: var(--color-accent2);">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-expand-arrows-alt"></i>データ拡張</p>
+<p>画像の回転、反転、明るさ調整などを行い、学習データの多様性を増やす技術。</p>
+</div>
+</div>
+<p>これらの技術により、データセット蒸留は<span class="keyword">ImageNet-1K</span>のような大規模データセットにも適用可能になってきました。</p>
+<p style="font-family: 'Yomogi', cursive; font-size: 16px; text-align: center; margin-top: 15px; padding: 10px; background-color: rgba(255,224,130,0.3); border-radius: 8px;">
+<i class="fas fa-question-circle fa-lg" style="color: var(--color-secondary);"></i> しかし、ここで疑問が湧きます： <br>
+<span class="highlight">「精度 (accuracy) は、依然としてデータセット蒸留手法を公正に評価するための信頼できる指標なのでしょうか？」</span>
+</br></p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説: 分離型データセット蒸留 (Decoupled Dataset Distillation)</p>
+<p>データセット蒸留のプロセスを、データ合成フェーズとラベル割り当て/評価フェーズのように、複数の独立した段階に分離するアプローチ。これにより、各フェーズの最適化が容易になり、スケーラビリティが向上することがあります。</p>
+</div>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 用語解説: ImageNet-1K</p>
+<p>1000カテゴリ、約120万枚の画像からなる大規模な画像認識用データセット。多くのコンピュータビジョン研究でベンチマークとして利用されます。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="section-card" style="background-color: rgba(255,255,255,0.9); border: 2px dashed var(--color-primary);">
+<h3 class="subsection-title"><i class="fas fa-microscope"></i>経験的な発見と問題点</h3>
+<p>私たちの経験的な調査によると、これらの手法の性能向上は、しばしば<span class="highlight">画像自体の本質的な品質向上</span>よりも、ソフトラベルやデータ拡張といった<span class="keyword">追加の技術 (additional techniques)</span>に起因していることが示唆されます。</p>
+<div style="text-align: center; margin: 20px 0;">
+<div style="display: inline-block; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; margin-right: 10px;">
+<i class="fas fa-image fa-2x" style="color: var(--color-gray);"></i>
+<p style="font-size: 12px;">画像自体の質</p>
+</div>
+<span style="font-size: 24px; color: var(--color-secondary; vertical-align: middle;">≠</span>
+<div style="display: inline-block; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: #f9f9f9; margin-left: 10px;">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-accent1);"></i> + 
+                <i class="fas fa-tags fa-2x" style="color: var(--color-accent2);"></i>
+<p style="font-size: 12px;">追加技術(拡張、ソフトラベル)</p>
+</div>
+</div>
+<p>驚くべきことに、<span class="keyword highlight">ランダムにサンプリングされた画像</span>でさえ、これらの追加技術を適用することで優れた結果を達成する場合があります。</p>
+<div class="bubble-box" style="margin-top: 20px; border-color: var(--color-secondary);">
+<p style="font-weight: bold; color: var(--color-secondary);"><i class="fas fa-lightbulb"></i>重要なポイント</p>
+<p>これは、報告されている性能向上が、必ずしも蒸留された画像データそのものの質の高さを示しているわけではない、ということを意味します。</p>
+</div>
+<p>このような<span class="keyword">不整合な評価設定 (misaligned evaluation settings)</span>は、データセット蒸留 (DD) の健全な発展を著しく妨げていると私たちは考えています。研究者が真に効果的なデータ圧縮技術ではなく、評価設定のハックに注力してしまう可能性があるためです。</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box" style="border: 2px solid var(--color-accent2); background-color: rgba(149, 117, 205, 0.05);">
+<h3 class="subsection-title" style="color: var(--color-accent2);"><i class="fas fa-balance-scale"></i>提案: DD-Ranking</h3>
+<p>そこで私たちは、<span class="keyword">DD-Ranking</span>という<span class="highlight">統一された評価フレームワーク (unified evaluation framework)</span>と、それに伴う新しい<span class="keyword">一般的な評価指標 (general evaluation metrics)</span>を提案します。</p>
+<div style="text-align: center; margin: 20px 0;">
+<span style="font-family: 'Yomogi', cursive; font-size: 28px; color: var(--color-accent2); padding: 10px; border: 2px dashed var(--color-accent2); border-radius: 10px;">
+                DD-Ranking <i class="fas fa-trophy"></i>
+</span>
+</div>
+<p>このフレームワークと指標の目的は、異なるデータセット蒸留手法によって達成された<span class="highlight">真の性能向上</span>を明らかにすることです。</p>
+<ul class="unstyled-list" style="margin-top: 15px;">
+<li style="margin-bottom: 10px;"><span class="badge purple"><i class="fas fa-check"></i></span> 統一された評価基準の提供</li>
+<li style="margin-bottom: 10px;"><span class="badge purple"><i class="fas fa-check"></i></span> 追加技術の影響を分離</li>
+<li style="margin-bottom: 10px;"><span class="badge purple"><i class="fas fa-check"></i></span> 合成データの情報量の評価</li>
+</ul>
+</div>
+<div class="arrow-connector"></div>
+<div class="info-card glass-card" style="border-top: 5px solid var(--color-primary);">
+<h3 class="subsection-title"><i class="fas fa-glasses"></i>DD-Rankingの焦点と目指す未来</h3>
+<p>DD-Rankingは、蒸留されたデータセットの<span class="keyword">実際の情報強化 (actual information enhancement)</span>に再び焦点を当てることを目指します。</p>
+<div style="text-align: center; margin: 20px 0;">
+<i class="fas fa-search-plus fa-3x" style="color: var(--color-primary);"></i>
+<p style="font-family: 'Kaisei Decol', serif; color: var(--color-primary); margin-top: 5px;">データの本質的価値を見抜く</p>
+</div>
+<p>これにより、データセット蒸留の研究が、単なる評価指標上のスコア競争ではなく、より<span class="highlight">情報量の多い、質の高い合成データセット</span>を生成する方向へと進むことを促します。</p>
+<p>最終的に、DD-Rankingは、将来の研究進展のための、より<span class="keyword">包括的で公正な評価標準 (comprehensive and fair evaluation standard)</span>を提供することを目指しています。</p>
+<div class="note-box" style="background-color: rgba(74, 111, 165, 0.05); border-left-color: var(--color-primary);">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-flag-checkered"></i>ゴール</p>
+<p>DD分野の持続的な発展のため、より信頼性の高い評価基盤を構築する。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-microscope"></i>1 Introduction</h2>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bullseye"></i>このセクションの目的と概要</p>
+<p>この「はじめに」のセクションでは、まず深層学習の発展に伴うデータセットの課題を提示し、その解決策として登場した<span class="keyword">データセット蒸留（Dataset Distillation, DD）</span>を紹介します。しかし、DDの研究が進むにつれて、その評価方法に<span class="highlight">不公平さ</span>や<span class="highlight">信頼性の問題</span>が生じていることを指摘します。特に、<span class="keyword">ソフトラベル</span>や<span class="keyword">データ拡張</span>の扱いです。これらの問題を解決するために、本論文では<span class="keyword">DD-Ranking</span>という新しい評価フレームワークと指標を提案し、DD研究の健全な発展を目指すことを宣言します。</p>
+</div>
+<div class="content-box">
+<p><span class="badge blue">背景</span> 近年、<span class="keyword">深層学習（Deep Learning）</span>は目覚ましい進歩を遂げ、画像認識 [20, 9] や自然言語処理 [8, 1] といった様々な分野で、大規模データセットを用いてより複雑なモデルを訓練することが標準的なアプローチとなっています。これにより、驚くべき性能が達成されています。</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-brain"></i></div>
+<p><strong>深層学習モデル</strong><br/>複雑化・大規模化</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-database"></i></div>
+<p><strong>大規模データセット</strong><br/>訓練に不可欠</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-chart-line"></i></div>
+<p><strong>高性能達成</strong><br/>各分野で目覚ましい成果</p>
+</div>
+</div>
+<p>しかし、このプロセスはしばしば膨大な<span class="highlight">計算コスト</span>と<span class="highlight">ストレージ要求</span>を伴い、多様なシナリオでの実用的な展開を大きく妨げています。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i>課題：コストと要求の増大</p>
+<ul>
+<li>💻 計算資源の大量消費</li>
+<li>💾 ストレージ容量の圧迫</li>
+<li>🌍 実環境への導入障壁</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector" style="height: 50px;">
+<span style="font-size: 30px; color: var(--color-primary);">💡</span>
+</div>
+<div class="content-box">
+<p><span class="badge green">解決策の登場</span> このような課題に対処するための有望な解決策として、<span class="keyword">データセット蒸留（Dataset Distillation, DD）</span>[54] が登場しました。これはデータセット圧縮に関する新しいアプローチです。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：データセット蒸留 (Dataset Distillation, DD)</p>
+<p>データセット蒸留とは、元の大きなデータセットから、その本質的な情報を保持した小さな合成データセット（凝縮データセットとも呼ばれる）を生成する技術です。この小さな合成データセットでモデルを訓練しても、元の大きなデータセットで訓練したのと同等の性能を達成することを目指します。これにより、訓練時間や計算資源を大幅に削減できます。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 16px;">元の巨大データセット <i class="fas fa-arrow-right" style="color: var(--color-accent1);"></i> 小さな合成データセット</span><br/>
+<i class="fas fa-server fa-2x" style="color: var(--color-primary); margin: 5px;"></i> <i class="fas fa-exchange-alt fa-2x" style="color: var(--color-accent1); margin: 5px;"></i> <i class="fas fa-compact-disc fa-2x" style="color: var(--color-secondary); margin: 5px;"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 12px;">(情報を凝縮！)</p>
+</div>
+</div>
+<p>近年では、多様な<span class="highlight">訓練パイプライン</span> [21, 7, 64, 15, 59] や<span class="highlight">最適化目標</span> [67, 63, 2] が提案され、データセット蒸留の分野は急速な進展を遂げています。</p>
+</div>
+<div class="subsection-title" id="1_Introduction_SoftLabels"><i class="fas fa-tags"></i>ソフトラベル導入と評価の課題</div>
+<div class="content-box">
+<p>合成データセットで訓練されたモデルのテスト精度を（評価後フェーズで）さらに向上させるため、最近の研究では<span class="keyword">ソフトラベル（soft labels）</span>のような一般的な性能向上技術を評価プロセスに組み込んでいます。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：ソフトラベル (Soft Labels)</p>
+<p>通常のラベル（ハードラベル）が「犬」「猫」のように一つの正解クラスを示すのに対し、ソフトラベルは各クラスに属する確率分布で表現されます（例：犬70%, 猫20%, 他10%）。これは、事前学習済みの強力なモデル（教師モデル）の出力（ロジット）から得られることが多く、より豊富な情報を含んでいます。知識蒸留などで用いられます。</p>
+<div style="text-align: center; margin-top:10px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 14px;"><strong>ハードラベル:</strong> <i class="fas fa-dog" style="color:var(--color-primary)"></i> (100% 犬)</span><br/>
+<span style="font-family: 'Yomogi', cursive; font-size: 14px; margin-top:5px;"><strong>ソフトラベル:</strong> [<i class="fas fa-dog" style="color:var(--color-primary)"></i> 0.7, <i class="fas fa-cat" style="color:var(--color-secondary)"></i> 0.2, ... ]</span>
+</div>
+</div>
+<p>一部の手法 [18, 31] は、生成された画像とそれに対応するユニークなソフトラベルを<span class="highlight">共同で最適化</span>します。一方で、<span class="keyword">デカップルドデータセット蒸留（decoupled dataset distillation methods）</span>[59, 41, 46, 48, 37] と呼ばれる手法群は、評価後フェーズにおいて、事前学習済みの<span class="highlight">教師モデル（teacher models）</span>によって提供されるエポックごとのソフトラベルを利用します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i>用語解説：デカップルドデータセット蒸留</p>
+<p>データセット蒸留のプロセスを複数の独立したステージに「分離（decouple）」するアプローチです。例えば、まず合成画像を生成し、その後に別のプロセスでソフトラベルを割り当てるなどします。これにより、特に大規模データセットへのスケーラビリティが向上する場合があります。</p>
+</div>
+<p>これらの研究は、ソフトラベルが検証モデルのテスト精度を大幅に向上させることを成功裏に示していますが、そのソフトラベルの実装戦略は手法によって<span class="highlight">大きく異なり</span>、従来手法との性能比較では、ソフトラベルに起因する性能向上分が<span class="highlight">考慮されていない</span>ことがしばしばあります。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-balance-scale-left"></i>ソフトラベル評価の不公平性</p>
+<ul>
+<li>📝 実装戦略がバラバラ (手法ごとに異なるソフトラベルの使い方)</li>
+<li>📈 ソフトラベルによる性能向上分が未考慮での比較</li>
+<li>🤔 真のデータセット品質が見えにくい</li>
+</ul>
+</div>
+</div>
+<img alt="Table 1: Evaluation configurations of various dataset distillation methods." class="figure-image" src="table1.png" style="width: 80%; margin-bottom: 10px;"/>
+<div class="note-box" style="background-color: rgba(255, 248, 225, 0.7); border-left-color: #FFC107;">
+<p class="note-title" style="color: #FF8F00;"><i class="fas fa-table"></i>表1の解説：様々なデータセット蒸留手法の評価設定</p>
+<p>この表は、既存のデータセット蒸留手法が、評価を行う際にどのような設定を用いているかを示しています。重要なのは、これらの設定が<span class="keyword">手法ごとにバラバラである</span>という点です。</p>
+<ul>
+<li><span class="badge yellow">上段</span>: エージェントモデル（合成データセットで訓練されるモデル）の訓練ハイパーパラメータ（例：学習率、バッチサイズなど）</li>
+<li><span class="badge yellow">下段</span>: データ拡張（例：画像の回転、反転、色の変更など）</li>
+</ul>
+<p><span class="highlight">各行で異なる色が使われている部分</span>は、それぞれの評価設定における<span class="keyword">違い</span>を明確に示しています。例えば、ある手法は特定のデータ拡張を使い、別の手法は使わない、あるいは異なる種類の拡張を使う、といった具合です。</p>
+<p><strong><i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> この表からわかること：</strong> データセット蒸留手法の性能を比較する際、統一された基準がないため、単純なテスト精度だけでは「どの手法が本当に優れているのか」を判断するのが難しいという問題を示唆しています。</p>
+</div>
+<div class="subsection-title" id="1_Introduction_InconsistentSettings"><i class="fas fa-cogs"></i>データ拡張と評価設定の不統一</div>
+<div class="content-box">
+<p>さらに、後続の研究では、モデルの性能を最大化するために、評価時に<span class="highlight">より強力なデータ拡張</span>、<span class="highlight">優れたオプティマイザ</span>、そして<span class="highlight">洗練された訓練ハイパーパラメータ</span> [43, 4] を頻繁に採用しています。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-magic fa-2x"></i></div>
+<h4 style="text-align: center; font-family: 'Yomogi', cursive;">強力なデータ拡張</h4>
+<p style="font-size: 13px;">より多くの種類の変換、より積極的なパラメータ設定など。</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-rocket fa-2x"></i></div>
+<h4 style="text-align: center; font-family: 'Yomogi', cursive;">優れたオプティマイザ</h4>
+<p style="font-size: 13px;">AdamWなど、より高度な最適化アルゴリズムの採用。</p>
+</div>
+<div class="info-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-sliders-h fa-2x"></i></div>
+<h4 style="text-align: center; font-family: 'Yomogi', cursive;">洗練されたハイパーパラメータ</h4>
+<p style="font-size: 13px;">学習率スケジュール、エポック数など、細かく調整された設定。</p>
+</div>
+</div>
+<p>驚くべきことに、より良い評価設定の下では、<span class="keyword">ランダムにサンプリングされた画像でさえ、優れた結果を達成する</span>ことがあります。この事実は、評価設定自体が結果に大きな影響を与えることを示しています。</p>
+<p>このような慣行は、データセットの質の<span class="highlight">真の改善</span>と、一貫性のない評価設定によって引き起こされる<span class="highlight">性能の変動</span>とを<span class="keyword">混同</span>させてしまいます。これはデータセット蒸留分野の進歩を著しく妨げ、後続の改善努力を<span class="highlight">最適ではない方向</span>へ導いてしまう可能性があります。</p>
+<div class="bubble-box" style="border-color: var(--color-secondary); margin-top: 25px;">
+<p style="font-family: 'Yomogi', cursive; font-size:16px; color: var(--color-secondary); text-align:center;"><strong><i class="fas fa-exclamation-circle"></i>重要な警告！<i class="fas fa-exclamation-circle"></i></strong></p>
+<p>データセット蒸留の分野が成長している現在、検証モデルの<span class="keyword">テスト精度のみ</span>を合成データセットの品質を評価する唯一の基準として頼ることは、異なる設定間で適用される場合、<span class="highlight">著しく信頼性が低く、不公平である</span>ことを強調しなければなりません。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="framework-box" style="border-color: var(--color-accent1);">
+<p class="framework-title" style="color: var(--color-accent1); border-bottom-color: var(--color-accent1);"><i class="fas fa-award"></i>提案：DD-Ranking フレームワーク</p>
+<p>これらの問題に対処するために、本論文では <span class="keyword">DD-Ranking</span> という<span class="highlight">統一された評価フレームワーク</span>を提案します。さらに、データセット蒸留の本来の目的（＝データセットから効率的に情報を凝縮すること）に立ち返るため、<span class="highlight">新しく公正かつ一般化可能な評価指標</span>を導入します。</p>
+<h4 class="subsection-title" style="font-size:16px; color: var(--color-primary); border-left-color: var(--color-primary); padding-left:10px; margin-top:15px;"><i class="fas fa-tasks"></i>DD-Rankingの具体的なアプローチ</h4>
+<div class="pipeline">
+<div class="pipeline-step">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">1</div>
+<div class="step-content">
+<strong>ベースライン性能の確立:</strong><br/>
+                        様々な蒸留手法の評価設定下で、<span class="highlight">ランダムにサンプリングされた画像</span>を使って評価モデルをテストし、各設定におけるベースライン性能を確立します。
+                        <div style="text-align:center; margin-top:5px;">
+<i class="fas fa-random fa-lg" style="color:var(--color-accent2);"></i> <i class="fas fa-arrow-right fa-sm"></i> <span style="font-family: 'Yomogi', cursive;">モデル訓練</span> <i class="fas fa-arrow-right fa-sm"></i> 📊 <span style="font-family: 'Yomogi', cursive;">ベースライン精度</span>
+</div>
+</div>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">2</div>
+<div class="step-content">
+<strong>生成画像の性能較正:</strong><br/>
+                        （ステップ1で得た）ベースラインとの差を計算することで、<span class="highlight">生成された（蒸留された）画像の性能を較正</span>します。これにより、評価設定の違いによる影響を低減します。
+                        <div style="text-align:center; margin-top:5px;">
+<span style="font-family: 'Yomogi', cursive;">蒸留画像精度</span> <i class="fas fa-minus fa-sm"></i> <span style="font-family: 'Yomogi', cursive;">ベースライン精度</span> <i class="fas fa-arrow-right fa-sm"></i> ✨ <span style="font-family: 'Yomogi', cursive;">較正済み性能</span>
+</div>
+</div>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">3</div>
+<div class="step-content">
+<strong>ハードラベル下での性能差計算:</strong><br/>
+<span class="keyword">ハードラベル設定</span>（ソフトラベルを使わない、従来的なラベル設定）における合成データセットの性能と、元の全データセットを用いた場合に達成可能な最大性能との差を計算します。
+                        <div style="text-align:center; margin-top:5px;">
+<span style="font-family: 'Yomogi', cursive;">全データ精度 (ハード)</span> <i class="fas fa-minus fa-sm"></i> <span style="font-family: 'Yomogi', cursive;">蒸留画像精度 (ハード)</span> <i class="fas fa-arrow-right fa-sm"></i> <span style="font-family: 'Yomogi', cursive;">性能ギャップ</span>
+</div>
+</div>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">4</div>
+<div class="step-content">
+<strong>新しい性能指標の導出:</strong><br/>
+                        上記2つの適応的な指標（ステップ2とステップ3で得られるもの）を組み合わせて既存の蒸留手法を評価し、手法間の<span class="highlight">蒸留能力の真の違い</span>を明らかにする新しい性能指標を導き出します。
+                    </div>
+</div>
+</div>
+<div class="pipeline-step" style="margin-bottom:0;">
+<div class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">5</div>
+<div class="step-content">
+<strong>追加提案と検証:</strong><br/>
+                        これらに基づき、<span class="keyword">データ拡張を評価するための新しい指標</span>も提案します。さらに、導入されたこれらの指標が、多様な応用シナリオでどれだけ<span class="highlight">頑健性（ロバストネス）</span>を持つかを検証します。
+                    </div>
+</div>
+</div>
+</div>
+</div>
+<div class="subsection-title" id="1_Introduction_Contributions"><i class="fas fa-gifts"></i>DD-Rankingの貢献</div>
+<div class="content-box">
+<p>DD-Rankingは、既存のデータセット蒸留評価プロトコルに存在する<span class="highlight">不整合性</span>に対処し、様々な手法を<span class="keyword">公正かつ標準化された評価フレームワーク</span>の下で統一します。これにより、しっかりとした<span class="highlight">ベースラインを確立</span>し、将来の研究に対して<span class="highlight">価値ある洞察</span>を提供します。</p>
+<p>このベンチマーク（DD-Ranking）の貢献は、主に以下の3点です：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-balance-scale fa-2x" style="color: var(--color-accent1);"></i></div>
+<h4 class="framework-title" style="text-align: center; font-family: 'Kaisei Decol', serif; font-size:18px;">貢献 1：評価指標の標準化</h4>
+<p>データセット蒸留のための評価指標を標準化し、異なる手法間でテスト精度を比較する際の<span class="keyword">長年の不公平性の問題</span>を解決します。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="tag">公平性向上</span> <span class="tag">比較可能</span>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-search-dollar fa-2x" style="color: var(--color-accent2);"></i></div>
+<h4 class="framework-title" style="text-align: center; font-family: 'Kaisei Decol', serif; font-size:18px;">貢献 2：真の改善点の明確化</h4>
+<p>DD-Rankingによる実験的観察から、従来の性能向上は、蒸留データセット自体の質よりも、むしろ<span class="highlight">強化されたモデル訓練技術</span>（例：ソフトラベル、強力なデータ拡張）に起因することが多いことを示します。これにより、コミュニティが将来の努力を<span class="keyword">合成データの情報性向上</span>に向けることを奨励します。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="tag">本質的改善</span> <span class="tag">情報性重視</span>
+</div>
+</div>
+<div class="info-card glass-card">
+<div class="icon-item" style="text-align: center;"><i class="fas fa-globe-americas fa-2x" style="color: var(--color-secondary);"></i></div>
+<h4 class="framework-title" style="text-align: center; font-family: 'Kaisei Decol', serif; font-size:18px;">貢献 3：汎用的な新指標の導入</h4>
+<p>データセット蒸留の時代を踏まえ、<span class="keyword">データ中心のAI（Data-Centric AI）</span>タスク全般にわたってより広範な適用可能性を持つ、<span class="highlight">一般的で頑健な新しい評価指標</span>を導入します。</p>
+<div style="text-align:center; margin-top:10px;">
+<span class="tag">汎用性</span> <span class="tag">頑健性</span> <span class="tag">新基準</span>
+</div>
+</div>
+</div>
+</div>
+<div class="note-box" style="background-color: rgba(232, 245, 233, 0.7); border-left-color: var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-paper-plane"></i>まとめ</p>
+<p>Introductionセクションでは、データセット蒸留の重要性と現状の評価方法における課題を明確にし、それらを解決するための新しいフレームワーク <span class="keyword">DD-Ranking</span> を提案する動機と概要、そして期待される貢献が述べられています。この後のセクションで、DD-Rankingの具体的な仕組みや実験結果が詳述されることになります。</p>
+</div>
+</div>
+<div class="section-card" id="2_Motivation">
+<h2 class="section-title"><i class="fas fa-lightbulb"></i>2 Motivation</h2>
+<div class="content-box">
+<p>このセクションでは、現在のデータセット蒸留（Dataset Distillation, DD）手法の評価方法に潜む問題点を明らかにし、なぜ新しい評価フレームワーク <span class="keyword">DD-Ranking</span> が必要なのか、その動機を説明します。</p>
+<p>主な論点は、<span class="highlight">現在の評価指標であるテスト精度だけでは、各DD手法の真の性能を公正に比較できない</span>というものです。この背景には、評価設定の不統一性があり、特に「ソフトラベルの使用」と「データ拡張技術の適用」が評価結果に大きな影響を与えていることを指摘します。</p>
+<div class="bubble-box">
+<p style="text-align: center; font-size: 16px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-question-circle" style="color: var(--color-primary);"></i> <strong>今の評価方法、本当に大丈夫？</strong> <i class="fas fa-question-circle" style="color: var(--color-primary);"></i><br/>
+                テスト精度だけでDD手法を評価するのは、リンゴとオレンジを重さだけで比べているようなものかもしれません！<br/>
+<span style="font-family: 'Zen Kurenaido', sans-serif;">このセクションでは、その「なぜ？」を深掘りします。</span>
+</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-balance-scale-left"></i>2.1 Overview of Unfairness</h3>
+<div class="content-box">
+<p>データセット蒸留手法を評価する伝統的なアプローチは、蒸留によって生成された小さな合成データセット（<span class="keyword">distilled dataset</span>）で学習させたエージェントモデル（<span class="keyword">agent model</span>）のテスト精度を測定することです<sup>2</sup>。しかし、この評価方法には大きな<span class="highlight">不公平性</span>が存在することがわかってきました。その主な原因は、エージェントモデルの学習設定が手法ごとに<span class="highlight">著しく一貫性がない</span>ことです。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-book-open"></i> 用語解説</div>
+<ul class="unstyled-list">
+<li><strong><i class="fas fa-robot"></i> Agent Model (エージェントモデル):</strong> 蒸留されたデータセットを使って学習・評価されるモデルのこと。このモデルの性能が、蒸留データセットの品質指標とされることが多いです。</li>
+<li><strong><i class="fas fa-database"></i> Distilled Dataset (蒸留データセット):</strong> 元の大きなデータセットから、重要な情報だけを抽出して作られた、小さなサイズの合成データセット。</li>
+</ul>
+</div>
+<p>論文中の<span class="keyword">Table 1</span> (論文内ではTable <sup>1</sup>と参照) は、同じターゲットデータセットに対して、様々なデータセット蒸留手法が用いている学習パラメータやデータ拡張を比較しています。下の図はTable 1のコンセプトを表しています。</p>
+<div class="glass-card" style="margin-top: 20px; margin-bottom: 20px;">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-dark);">
+<i class="fas fa-table" style="color: var(--color-primary);"></i> Table 1 のイメージ <i class="fas fa-palette" style="color: var(--color-accent2);"></i>
+</p>
+<p style="text-align: center; font-size: 14px; margin-bottom: 15px;">異なる色 <span style="background-color: #FFB3BA;">■</span> <span style="background-color: #BAFFC9;">■</span> <span style="background-color: #FFFFBA;">■</span> <span style="background-color: #BAE1FF;">■</span> は、評価設定の違いを示しています。</p>
+<div style="display: flex; justify-content: space-around; text-align: center; font-family: 'Zen Kurenaido', sans-serif;">
+<div>
+<p><strong style="color: var(--color-primary);">手法 A</strong></p>
+<p><span style="background-color: #FFB3BA; padding: 3px 5px; border-radius: 3px;">設定1a</span></p>
+<p><span style="background-color: #BAFFC9; padding: 3px 5px; border-radius: 3px;">設定2a</span></p>
+<p><span style="background-color: #FFFFBA; padding: 3px 5px; border-radius: 3px;">設定3a</span></p>
+</div>
+<div>
+<p><strong style="color: var(--color-secondary);">手法 B</strong></p>
+<p><span style="background-color: #BAE1FF; padding: 3px 5px; border-radius: 3px;">設定1b</span></p>
+<p><span style="background-color: #FFB3BA; padding: 3px 5px; border-radius: 3px;">設定2b</span></p>
+<p><span style="background-color: #BAFFC9; padding: 3px 5px; border-radius: 3px;">設定3b</span></p>
+</div>
+<div>
+<p><strong style="color: var(--color-accent1);">手法 C</strong></p>
+<p><span style="background-color: #FFFFBA; padding: 3px 5px; border-radius: 3px;">設定1c</span></p>
+<p><span style="background-color: #BAE1FF; padding: 3px 5px; border-radius: 3px;">設定2c</span></p>
+<p><span style="background-color: #FFB3BA; padding: 3px 5px; border-radius: 3px;">設定3c</span></p>
+</div>
+</div>
+<p style="text-align: center; font-size: 12px; margin-top: 15px; color: var(--color-gray);">
+<i class="fas fa-exclamation-triangle"></i> このように設定がバラバラだと、どの手法が本当に優れているのか判断が難しいのです。
+            </p>
+</div>
+<p>研究者たちは、<span class="highlight">統一された標準的なベンチマークなしでの性能評価は、公正な比較には信頼できない</span>と考えています。これらの不整合の中でも、特に以下の2つの要因が現在の評価プロトコルの公平性を著しく損ねています：</p>
+<div class="info-grid">
+<div class="info-card">
+<p style="text-align: center; font-size: 20px;"><i class="fas fa-tags" style="color: var(--color-accent1);"></i></p>
+<h4 style="text-align: center; color: var(--color-accent1); font-family: 'Yomogi', cursive;">ラベル表現 (と対応する損失関数)</h4>
+<p>データに付与されるラベルの種類（例：ハードラベル vs ソフトラベル）や、学習時に使われる損失関数が手法によって異なる点。</p>
+</div>
+<div class="info-card">
+<p style="text-align: center; font-size: 20px;"><i class="fas fa-magic" style="color: var(--color-accent2);"></i></p>
+<h4 style="text-align: center; color: var(--color-accent2); font-family: 'Yomogi', cursive;">データ拡張技術</h4>
+<p>学習データの量を増やすために使われるデータ拡張（例：画像の回転、反転など）の種類や強度が手法によって異なる点。</p>
+</div>
+</div>
+<p>これらの違いが、純粋なデータセット蒸留技術の性能評価を難しくしているのです。</p>
+</div>
+<img alt="Figure 1: Test accuracies of the agent model trained on synthetic data distilled by various DD methods and on randomly selected data." src="test_accuracy_comparison_hard_soft_labels.jpg" style="margin-top: 15px; margin-bottom: 15px;"/>
+<p class="reference" style="text-align: center; margin-bottom: 20px;"><strong>図1:</strong> 様々なDD手法で蒸留された合成データ、およびランダムに選択されたデータで学習したエージェントモデルのテスト精度。ソフトラベルはテスト精度を大幅に向上させることができるにもかかわらず、DD手法は同じ学習設定下でランダム選択を上回れない場合がある。</p>
+<h3 class="subsection-title"><i class="fas fa-adjust"></i>2.2 Soft Labels</h3>
+<div class="content-box">
+<p><span class="keyword">ソフトラベル (Soft labels)</span> は、テスト精度を大幅に向上させることが知られています。ソフトラベルは、特に<span class="highlight">知識蒸留 (Knowledge Distillation)</span> のタスクなど、様々な分野で広く利用されてきました。</p>
+<div class="two-column">
+<div class="column definition-box">
+<div class="definition-title"><i class="fas fa-ruler-combined"></i> ハードラベル (Hard Labels)</div>
+<p style="text-align: center;"><img alt="Hard Label Icon" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Crect x='10' y='20' width='15' height='30' fill='%234a6fa5'/%3E%3Crect x='30' y='40' width='15' height='10' fill='%23cccccc'/%3E%3Crect x='50' y='40' width='15' height='10' fill='%23cccccc'/%3E%3Ctext x='12' y='15' font-family='Yomogi' font-size='10'%3EクラスA%3C/text%3E%3Ctext x='32' y='15' font-family='Yomogi' font-size='10'%3EクラスB%3C/text%3E%3Ctext x='52' y='15' font-family='Yomogi' font-size='10'%3EクラスC%3C/text%3E%3Ctext x='14' y='35' font-family='Yomogi' font-size='12' fill='white'%3E1%3C/text%3E%3Ctext x='34' y='35' font-family='Yomogi' font-size='12'%3E0%3C/text%3E%3Ctext x='54' y='35' font-family='Yomogi' font-size='12'%3E0%3C/text%3E%3C/svg%3E" style="width: 80px; height: auto; margin-bottom:10px;"/></p>
+<p>従来のラベル付け方法で、各サンプルが特定の1つのカテゴリに属することを示します（例: 猫の画像には「猫」というラベル）。カテゴリ値を離散的に割り当てます (例: [0, 0, 1, 0])。</p>
+</div>
+<div class="column definition-box">
+<div class="definition-title"><i class="fas fa-chart-pie"></i> ソフトラベル (Soft Labels)</div>
+<p style="text-align: center;"><img alt="Soft Label Icon" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Crect x='10' y='25' width='15' height='25' fill='%23ff7e5f'/%3E%3Crect x='30' y='35' width='15' height='15' fill='%23ff7e5f'/%3E%3Crect x='50' y='15' width='15' height='35' fill='%23ff7e5f'/%3E%3Ctext x='12' y='10' font-family='Yomogi' font-size='8'%3EクラスA%3C/text%3E%3Ctext x='32' y='10' font-family='Yomogi' font-size='8'%3EクラスB%3C/text%3E%3Ctext x='52' y='10' font-family='Yomogi' font-size='8'%3EクラスC%3C/text%3E%3Ctext x='11' y='22' font-family='Yomogi' font-size='10' fill='white'%3E0.2%3C/text%3E%3Ctext x='31' y='32' font-family='Yomogi' font-size='10' fill='white'%3E0.1%3C/text%3E%3Ctext x='51' y='12' font-family='Yomogi' font-size='10' fill='white'%3E0.7%3C/text%3E%3C/svg%3E" style="width: 80px; height: auto; margin-bottom:10px;"/></p>
+<p>クラスカテゴリ全体にわたる<span class="highlight">確率分布</span>として表現されます（例: この画像は70%猫、20%犬、10%狐かも）。これらの分布は通常、事前学習済みモデルの出力ロジット（<span class="keyword">logits</span>）から導出されます。</p>
+</div>
+</div>
+<div class="definition-box" style="margin-top: 15px;">
+<div class="definition-title"><i class="fas fa-cogs"></i> その他の重要用語</div>
+<ul class="unstyled-list">
+<li><strong><i class="fas fa-chalkboard-teacher"></i> Knowledge Distillation (知識蒸留):</strong> 大規模で高性能な教師モデル (Teacher Model) の「知識」を、より軽量な生徒モデル (Student Model) に転移させる技術。ソフトラベルは、教師モデルが持つクラス間の類似性といった細やかな情報を伝えるのに役立ちます。</li>
+<li><strong><i class="fas fa-sort-numeric-up-alt"></i> Logits (ロジット):</strong> ニューラルネットワークの最終層から出力される、ソフトマックス関数を適用する直前の生のスコア値のこと。これらがソフトラベルの元になります。</li>
+<li><strong><i class="fas fa-exchange-alt"></i> Kullback–Leibler (KL) Divergence:</strong> 2つの確率分布間の「距離」や「違い」を測る指標。ソフトラベルを用いた学習では、生徒モデルの出力分布と教師モデルが生成したソフトラベル分布とのKLダイバージェンスを最小化するように学習します。</li>
+</ul>
+</div>
+<p>最近では、データセット蒸留手法の評価において、ソフトラベルを適用することが一般的なアプローチとなっています。このフレームワークでは、各蒸留画像は、事前学習済みの<span class="keyword">教師モデル (teacher model)</span> によって生成された1つまたは複数のソフトラベルに関連付けられます。例えば：</p>
+<ul class="unstyled-list process-step-list" style="margin-left: 20px; margin-top: 10px;">
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent1);">1</div>
+<div class="step-content">
+<span class="keyword">DATM [18]</span>: 二段階最適化手順の中で、合成データとそれに対応するソフトラベルを<span class="highlight">同時に最適化</span>します。
+                </div>
+</li>
+<li class="process-step">
+<div class="step-number" style="background-color: var(--color-accent2);">2</div>
+<div class="step-content">
+<span class="keyword">SRe2L [59]</span>: テスト時に教師モデルを用いて、データサンプルごとに<span class="highlight">複数のソフトラベル</span>を生成します。
+                </div>
+</li>
+</ul>
+<p>その結果、蒸留データセットでエージェントモデルを学習する際の目的は、モデルの出力ロジットとこれらのソフトラベル間の損失（例：<span class="keyword">KLダイバージェンス</span>）を最小化することになります。この知識蒸留のパラダイムにより、ソフトラベルを用いた評価指標は、<strong>図1</strong>が示すように、一貫して大幅に高い性能を示します。</p>
+<div class="challenge-box" style="margin-top: 20px;">
+<div class="challenge-title"><i class="fas fa-question"></i> 疑問点: 性能向上はどこから？</div>
+<p>ソフトラベルを使うとテスト精度が上がるのは良いことですが、その性能向上は本当に<span class="highlight">蒸留されたデータ自体の情報量が増えた</span>からなのでしょうか？ それとも、単に<span class="highlight">ソフトラベルからの知識蒸留</span>のおかげなのでしょうか？</p>
+</div>
+<p>著者らは、観測されたテスト精度の向上は、蒸留データの情報性が本質的に改善されたことよりも、主に<span class="highlight">ソフトラベルからの知識蒸留に起因する</span>と主張しています。この主張を裏付けるために、以下の比較分析を行いました：</p>
+<ol style="margin-left: 20px; line-height: 1.6;">
+<li>ソフトラベルで注釈付けされた<span class="keyword">ランダムノイズ</span>のテスト精度</li>
+<li>ソフトラベルで注釈付けされた<span class="keyword">ランダムに選択されたサンプル</span>のテスト精度</li>
+<li>ソフトラベルを用いた<span class="keyword">いくつかのベースライン手法</span>のテスト精度</li>
+</ol>
+<p>この実験では、各ベースライン比較において、教師モデル、学習率、オプティマイザなど、他の全ての学習パラメータは同一に制御されています。</p>
+<div class="note-box" style="margin-top: 20px;">
+<div class="note-title"><i class="fas fa-chart-line"></i> 図1からの洞察</div>
+<p><strong>図1</strong>を詳しく見てみましょう。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <span class="highlight">ランダム選択データ + ソフトラベルの威力:</span> 元のデータセットからランダムに選択されたデータにソフトラベルを付与した場合（図1のオレンジ色の線）、多くの場合、ベースラインの蒸留データ（図1の青色の線）よりも性能が優れています。</li>
+<li><i class="fas fa-surprise" style="color: var(--color-secondary);"></i> <span class="highlight">ランダムノイズですら性能向上:</span> さらに驚くべきことに、ランダムなノイズパターンにソフトラベルを付けただけでも、ランダムな推測を大幅に超える、無視できないテスト精度を達成しています。</li>
+</ul>
+<p style="margin-top: 10px;">これらの結果は、ソフトラベル技術がテスト精度の数値を確かに向上させる一方で、蒸留されたデータ自体の<span class="keyword">固有の品質</span>や<span class="keyword">表現能力</span>の有意義な評価を<span class="highlight">曖昧にしてしまう</span>可能性があることを示唆しています。</p>
+<p style="text-align: center; font-family: 'Yomogi', cursive; margin-top: 15px;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> ソフトラベルは魔法の杖のように精度を上げますが、その魔法がデータ自体の良さなのか、杖の力なのかを見極める必要がありそうです。
+            </p>
+</div>
+<p>論文中の Table 2 は、ImageNet1K データセットにおけるアブレーションスタディ（要因分析）の結果を示しており、特に高解像度データセットにおいて、データ拡張が精度の高さに大きく寄与していることを示唆しています。この点については次のセクションで詳しく見ていきます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-random"></i>2.3 Data Augmentation</h3>
+<div class="content-box">
+<p><span class="keyword">データ拡張 (Data Augmentation)</span> は、モデルの学習性能を向上させるために広く使われているテクニックです。現在のデータセット蒸留手法も、評価プロセス中に様々なデータ拡張技術を適用しています。</p>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-images"></i> データ拡張とは？</div>
+<p>既存の学習データに様々な変換（回転、反転、拡大縮小、明るさ調整など）を加えて、データのバリエーションを人工的に増やす手法です。これにより、モデルがより多様なデータに触れることができ、汎化性能の向上が期待されます。</p>
+<p style="text-align: center; margin-top:10px;">
+<i class="fas fa-sync-alt fa-2x" style="color: var(--color-primary); margin: 0 5px;" title="回転"></i>
+<i class="fas fa-arrows-alt-h fa-2x" style="color: var(--color-secondary); margin: 0 5px;" title="反転"></i>
+<i class="fas fa-search-plus fa-2x" style="color: var(--color-accent1); margin: 0 5px;" title="拡大"></i>
+<i class="fas fa-crop-alt fa-2x" style="color: var(--color-accent2); margin: 0 5px;" title="クロップ"></i>
+</p>
+</div>
+<p>論文の<span class="keyword">Table 1</span> (2.1節で言及) が示すように、既存のデータセット蒸留手法で用いられているデータ拡張戦略には<span class="highlight">大きな多様性</span>があり、異なるアプローチは通常、異なる変換のセットを採用しています。しかし、このばらつきは、異なるデータセット蒸留手法を公正に評価し比較することを難しくしています。なぜなら、<span class="highlight">データ拡張によってもたらされるテスト精度の向上は、必ずしも蒸留されたデータ自体の本質的な品質を反映していない</span>からです。</p>
+<div class="challenge-box" style="margin-top: 20px;">
+<div class="challenge-title"><i class="fas fa-balance-scale"></i> 問題点: データ拡張による「かさ増し」効果</div>
+<p>もし手法Aが強力なデータ拡張を使い、手法Bがシンプルなデータ拡張を使った場合、手法Aの精度が高くても、それが蒸留データの質によるものなのか、データ拡張の力によるものなのか判別がつきません。</p>
+</div>
+<p>この主張をより明確に示すために、著者らは確立された2つのベースライン手法について、それぞれデータ拡張を用いた場合と用いなかった場合の両方で性能を測定する比較分析を行いました。<span class="keyword">Table 2</span>に示されているように（Table 2の図はユーザー提供情報に含まれていませんが、その内容はここで解説します）、報告されている性能向上のかなりの部分が、蒸留データセットの固有の品質ではなく、<span class="highlight">データ拡張に直接起因する</span>ものであることが分かります。</p>
+<div class="framework-box" style="margin-top: 20px;">
+<div class="framework-title"><i class="fas fa-vial"></i> Table 2 (ImageNet1Kでのアブレーションスタディ) からの示唆</div>
+<p>Table 2 は、特にImageNet1Kのような高解像度データセットにおいて、データ拡張がテスト精度に大きな影響を与えることを示しています。具体的な数値は提示されていませんが、以下のような傾向が読み取れます：</p>
+<div class="feature-card-grid">
+<div class="feature-item" style="border: 1px solid var(--color-accent1);">
+<div class="icon-item"><i class="fas fa-chart-bar" style="color: var(--color-accent1);"></i></div>
+<h5 style="color: var(--color-accent1); font-family: 'Yomogi', cursive;">データ拡張あり</h5>
+<p>高いテスト精度を達成。</p>
+</div>
+<div class="feature-item" style="border: 1px solid var(--color-secondary);">
+<div class="icon-item"><i class="fas fa-chart-line" style="color: var(--color-secondary);"></i></div>
+<h5 style="color: var(--color-secondary); font-family: 'Yomogi', cursive;">データ拡張なし</h5>
+<p>テスト精度が大幅に低下。</p>
+</div>
+</div>
+<p style="text-align: center; margin-top: 15px;">
+<i class="fas fa-arrow-down" style="font-size: 24px; color: var(--color-primary);"></i>
+</p>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 16px;">
+                この差が<span class="highlight">「データ拡張による性能向上分」</span>と考えられます。
+            </p>
+</div>
+<p>したがって、ソフトラベルの場合と同様に、これらの結果は、データ拡張技術によって膨らませられる可能性のある生のテスト精度だけに頼るのではなく、<span class="highlight">蒸留データの真の情報価値をより正確に捉える新しい評価指標が必要である</span>ことを強調しています。</p>
+<div class="bubble-box" style="margin-top: 25px; border-color: var(--color-secondary);">
+<p style="text-align: center; font-size: 16px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-search" style="color: var(--color-secondary);"></i> <strong>真の価値を見抜く目が必要！</strong> <i class="fas fa-search" style="color: var(--color-secondary);"></i><br/>
+                ソフトラベルやデータ拡張は強力なツールですが、それらが評価の「ノイズ」にならないように、データセット蒸留の本質的な性能を測るための、より賢い評価方法が求められています。<br/>
+<span style="font-family: 'Zen Kurenaido', sans-serif;">これが、DD-Ranking開発のモチベーションです！</span>
+</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="3_DD-Ranking">
+<h2 class="section-title"><i class="fas fa-ruler-combined"></i>3 DD-Ranking</h2>
+<div class="content-box">
+<p>このセクションでは、<span class="keyword">DD-Ranking</span>という新しい評価フレームワークについて解説します。従来のデータセット蒸留（DD）の評価方法は、特に最近の手法で導入された<span class="highlight">ソフトラベル</span>や<span class="highlight">強力なデータ拡張</span>といったテクニックの影響を正しく評価できていない、という問題意識から出発しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>主な目的と論旨</p>
+<p>DD-Rankingの主な目的は、データセット蒸留手法の<span class="keyword">公正な評価スキーム</span>を提供することです。具体的には、以下の2つの主要な影響を分離し、蒸留されたデータ自体の<span class="keyword">真の情報量</span>を明らかにすることを目指します。</p>
+<ul>
+<li><i class="fas fa-tags"></i> <span class="badge blue">知識蒸留</span> (ソフトラベル経由) の影響</li>
+<li><i class="fas fa-magic"></i> <span class="badge orange">データ拡張</span> の影響</li>
+</ul>
+<p>論文では、従来の「テスト精度」だけでは公平で包括的な評価には不十分であると指摘し、<span class="highlight">ラベル表現の頑健性</span>と<span class="highlight">データ拡張の頑健性</span>を評価するための新しい指標を提案しています。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-binoculars"></i>3.1 Overview</h3>
+<div class="content-box">
+<p>上記の不公平さの問題意識に基づき、私たちは<span class="keyword">DD-Ranking</span>を導入します。DD-Rankingは、データセット蒸留（DD）のための<span class="highlight">統合的で使いやすい評価ベンチマーク</span>です。</p>
+<p>その核心的な目標は、DD手法のための<span class="keyword">公正な評価体系</span>を提供することにあります。これにより、知識蒸留やデータ拡張からの影響を切り離し、蒸留データが持つ<span class="highlight">本来の情報量</span>を正確に反映させることができます。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-puzzle-piece"></i>DD-Rankingの設計思想</p>
+<p>テスト精度だけでは公平かつ包括的な評価のニーズを満たせなくなったという発見のもと、私たちはラベル表現とデータ拡張の両方に対して新しい評価指標を設計しました。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-balance-scale-right fa-2x" style="color: var(--color-primary);"></i>
+<p><strong>公正な評価</strong><br/>異なる手法間での比較をより公平に。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-search-dollar fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>情報量の解明</strong><br/>蒸留データの真の価値を測定。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-tools fa-2x" style="color: var(--color-secondary);"></i>
+<p><strong>影響の分離</strong><br/>ソフトラベルやデータ拡張の効果を区別。</p>
+</div>
+</div>
+</div>
+<p>このベンチマークを通じて、DD分野の研究がより本質的なデータの質の向上へと向かうことを目指しています。</p>
+</div>
+<h3 class="section-title"><i class="fas fa-clipboard-check"></i>3.2 Label-Robust Score</h3>
+<div class="content-box">
+<p>ラベル表現に対する頑健性を評価するスコア、<span class="keyword">Label-Robust Score (LRS)</span> について解説します。LRSは、以下の2つの指標を組み合わせて算出されます。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 class="subsection-title"><i class="fas fa-undo-alt"></i>Hard label recovery (HLR)</h4>
+<p>データセット蒸留の元々の目標は、「元のデータセットで学習したモデルの性能を近似するような、少数の合成データ点を生成する」ことでした([54]より)。これらの合成データ点は、必ずしも元のデータ分布から来る必要はありません。</p>
+<p>現在、ほとんどの分類データセットでは<span class="highlight">ハードラベル</span>（例：犬、猫といった明確なカテゴリラベル）が使われています。そのため、DD手法がハードラベルを用いても良好な性能を維持できるかが重要だと考えられます。</p>
+<p>そこで提案されたのが <span class="keyword">Hard Label Recovery (HLR)</span> です。HLRは、ハードラベル設定下での性能回復度合いを測ります。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-calculator"></i>HLRの計算方法</p>
+<p>ハードラベルベースの手法でもソフトラベルベースの手法でも、まず以下の2つのテスト精度を評価します：</p>
+<ul>
+<li><span class="badge purple">acc<sub>syn-hard</sub></span>: 蒸留データをハードラベルで学習したエージェントモデルのテスト精度。</li>
+<li><span class="badge blue">acc<sub>real-hard</sub></span>: 元の完全なデータセットをハードラベルで学習したエージェントモデルのテスト精度。</li>
+</ul>
+<p>HLRはこれらの差として計算されます：</p>
+<div class="formula">
+                        $$ \mathrm { H L R } = \mathrm { a c c } _ { \mathrm { r e a l - h a r d } } - \mathrm { a c c } _ { \mathrm { s y n - h a r d } } $$
+                    </div>
+<p><i class="fas fa-thumbs-down"></i> <span class="highlight">HLRが小さいほど良い</span>ことを意味します。これは、蒸留データを使って学習したモデルが、元のデータセットで学習した場合の性能をより多く「回復」できていることを示します。</p>
+</div>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-chart-line fa-2x" style="color: var(--color-accent2);"></i> <strong>目指すは性能差の最小化！</strong>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title"><i class="fas fa-random"></i>Improvement over random (IOR)</h4>
+<p>DD手法の評価にソフトラベル（各クラスへの確率分布で表現されるラベル）を適用することは一般的になってきましたが、これにはいくつかの課題があります：</p>
+<ul>
+<li>ソフトラベル手法とハードラベル手法を直接比較するのは公平ではありません。</li>
+<li>ソフトラベルベースの学習には統一されたレシピがなく、ソフトラベルの数、損失関数、温度パラメータなどの違いが結果に大きく影響する可能性があります。</li>
+</ul>
+<p>これらの理由から、異なるソフトラベルベースの手法同士を比較することも困難です。そこで、混合ラベルタイプ（ハード/ソフト）の下で異なる手法を比較可能にするために <span class="keyword">Improvement Over Random (IOR)</span> を提案します。</p>
+<p>IORの根底にあるのは、<span class="highlight">「どんなDD手法も、少なくとも同じ学習レシピの下でのランダム選択よりは優れているべきだ」</span>という常識的な考え方です。IORでは、ランダム選択に対する相対的な性能向上を用いて、任意のDD手法ペアを比較します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-calculator"></i>IORの計算方法</p>
+<p>以下の2つのテスト精度を定義します：</p>
+<ul>
+<li><span class="badge purple">acc<sub>syn-any</sub></span>: 任意のラベルタイプ（ハードまたはソフト）の合成データで学習したモデルのテスト精度。</li>
+<li><span class="badge blue">acc<sub>rdm-any</sub></span>: 同じラベルタイプで、合成データと同じ容量（例：クラスごとの画像数）だけランダムに選択された部分集合で学習したモデルのテスト精度。</li>
+</ul>
+<p class="note-box"><i class="fas fa-exclamation-triangle"></i>重要：各DD手法の評価設定（データ拡張、損失関数、学習率など）は、ランダムデータでエージェントモデルを学習する際も<span class="keyword">完全に同一に保ちます</span>。</p>
+<p>IORはこれらの差として計算されます：</p>
+<div class="formula">
+                        $$ \mathrm { I O R } = \mathrm { a c c } _ { \mathrm { s y n - a n y } } - \mathrm { a c c } _ { \mathrm { r d m - a n y } } $$
+                    </div>
+<p><i class="fas fa-thumbs-up"></i> <span class="highlight">IORが大きいほど良い</span>ことを意味します。これにより、知識蒸留（ソフトラベル）によってもたらされる改善を効果的に分離し、蒸留データの真の情報量を反映することができます。</p>
+</div>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-rocket fa-2x" style="color: var(--color-accent1);"></i> <strong>ランダム選択からの飛躍度！</strong>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="bubble-box">
+<h4 class="subsection-title" style="border-left: none; padding-left:0; margin-top:0;"><i class="fas fa-medal"></i>Label-robust score (LRS)</h4>
+<p>Hard Label Recovery (HLR) と Improvement Over Random (IOR) を組み合わせて、最終的な <span class="keyword">Label-Robust Score (LRS)</span> を算出します。</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">
+<p>まず、HLRとIORの加重和 \( \alpha \) を計算します。重みパラメータを \( \lambda \) とします。</p>
+<div class="formula">
+                        $$ \alpha = \lambda \mathrm { I O R } - ( 1 - \lambda ) \mathrm { H L R } $$
+                    </div>
+<p><i class="fas fa-info-circle"></i> HLRには負号が付けられています。これは、IOR（大きいほど良い）とHLR（小さいほど良い）の両方の項が、この和 \( \alpha \) において性能と正の相関を持つようにするためです（つまり、HLRが小さいほど \( -(1-\lambda)HLR \) は大きくなる）。</p>
+</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">
+<p>\( \alpha \) の生の範囲は <span class="highlight">[-1, 1]</span> です。これを <span class="highlight">[0, 1]</span> の範囲に正規化するために、以下の式でLRSを計算します（結果はパーセンテージ表示）。</p>
+<div class="formula">
+                        $$ \mathrm { L R S } = 1 0 0 \% \times ( e ^ { \alpha } - e ^ { - 1 } ) / ( e - e ^ { - 1 } ) $$
+                    </div>
+<p>ここで、\( e \) は自然対数の底（ネイピア数、約2.718）です。</p>
+<p><i class="fas fa-chart-pie"></i>この正規化関数は、\( \alpha = -1 \) のとき LRS = 0% となり、\( \alpha = 1 \) のとき LRS = 100% となります。</p>
+</div>
+</div>
+<p><i class="fas fa-star"></i> <span class="keyword">LRSが高いほど</span>、その手法で得られた蒸留データセットが<span class="highlight">ラベル表現に対してより頑健</span>であり、<span class="highlight">より豊かな情報を含んでいる</span>ことを示します。</p>
+</div>
+</div>
+<h3 class="section-title"><i class="fas fa-shield-alt"></i>3.3 Augmentation-Robust Score</h3>
+<div class="content-box">
+<p><span class="keyword">データ拡張</span>はモデルの学習性能を高めるための一般的なテクニックですが、それ自体はデータセットの質を直接反映するものではありません。したがって、テスト時におけるデータ拡張のみによってもたらされるテスト精度の向上は、データセット蒸留手法の有効性に帰するべきではありません。</p>
+<p>データ拡張の影響を分離するために、<span class="keyword">Augmentation-Robust Score (ARS)</span> を導入します。ARSもまた、ランダムに選択されたデータに対する相対的な改善を利用します。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-cogs"></i>ARSの計算ステップ</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge yellow">ステップ1</span> まず、データ拡張を<strong>適用した</strong>設定で、合成データとランダム選択サブセットを評価します。これにより、以下の精度が得られます（IORの計算と同様です）。</p>
+<ul>
+<li><span class="badge purple">acc<sub>syn-aug</sub></span>: データ拡張<span class="highlight">あり</span>で合成データを学習したモデルのテスト精度。</li>
+<li><span class="badge blue">acc<sub>rdm-aug</sub></span>: データ拡張<span class="highlight">あり</span>でランダム選択サブセットを学習したモデルのテスト精度。</li>
+</ul>
+<p>📝 差分A: \( \mathrm{acc_{syn-aug}} - \mathrm{acc_{rdm-aug}} \)</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge yellow">ステップ2</span> 次に、データ拡張を<strong>適用しない</strong>設定で、合成データとランダムデータを再度評価します。これにより、以下の精度が得られます。</p>
+<ul>
+<li><span class="badge purple">acc<sub>syn-naug</sub></span>: データ拡張<span class="highlight">なし</span>で合成データを学習したモデルのテスト精度。</li>
+<li><span class="badge blue">acc<sub>rdm-naug</sub></span>: データ拡張<span class="highlight">なし</span>でランダム選択サブセットを学習したモデルのテスト精度。</li>
+</ul>
+<p>📝 差分B: \( \mathrm{acc_{syn-naug}} - \mathrm{acc_{rdm-naug}} \)</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bullhorn"></i>重要な主張</p>
+<p>蒸留によって得られた情報量の多いサブセットは、データ拡張の使用に関わらず、同じサイズのランダムに選択されたどのサブセットよりも優れているべきです。</p>
+<p>したがって、上記の差分A (<span class="highlight">\(\mathrm { a c c } _ { \mathrm { s y n - a u g } } - \mathrm { a c c } _ { \mathrm { r d m - a u g } }\)</span>) と 差分B (<span class="highlight">\(\mathrm { a c c } _ { \mathrm { s y n - n a u g } } - \mathrm { a c c } _ { \mathrm { r d m - n a u g } }\)</span>) は、どちらも蒸留データセットの<span class="keyword">真の情報量と正の相関がある</span>と考えられます。</p>
+</div>
+<p>これらの2つの差分の加重和 \( \beta \) を、重みパラメータ \( \gamma \) を用いて計算します。</p>
+<div class="formula">
+                $$ \beta = \gamma ( \mathrm { a c c } _ { \mathrm { s y n - a u g } } - \mathrm { a c c } _ { \mathrm { r d m - a u g } } ) + ( 1 - \gamma ) ( \mathrm { a c c } _ { \mathrm { s y n - n a u g } } - \mathrm { a c c } _ { \mathrm { r d m - n a u g } } ) $$
+            </div>
+<p>そして、LRSの計算と同様の正規化手法（\( \beta \) の範囲を [0, 1] に変換）を用いてARSを計算します。</p>
+<p><i class="fas fa-shield-check"></i> <span class="keyword">ARSが高いほど</span>、その手法で得られた蒸留データセットが<span class="highlight">データ拡張に対してより頑健である</span>ことを示します。</p>
+</div>
+<div style="text-align: center; margin-top: 20px;">
+<img alt="データ拡張頑健性の概念図" src="https://via.placeholder.com/400x200.png?text=Augmentation+Robustness+Concept" style="border: 1px solid #ddd; border-radius: 8px; width: 50%; max-width: 400px;"/>
+<p style="font-family: 'Yomogi', cursive; font-size: 12px; color: var(--color-gray);">図解：データ拡張の影響を受けにくい、真に情報量の多いデータセットを目指す</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="4_Results">
+<h2 class="section-title"><i class="fas fa-chart-line"></i> 4 Results</h2>
+<div class="content-box">
+<p>このセクションでは、提案された新しい評価フレームワーク <span class="keyword">DD-Ranking</span> と、それに基づく新しい評価指標である <span class="keyword">Label-Robust Score (LRS)</span> および <span class="keyword">Augmentation-Robust Score (ARS)</span> を用いて、既存の様々なデータセット蒸留（DD）手法の性能を評価した結果を詳細に報告します。</p>
+<p>主な目的は、従来のテスト精度だけでは捉えきれなかったDD手法の真の能力、特に<span class="highlight">合成データの情報量</span>や<span class="highlight">ラベル表現・データ拡張への頑健性</span>を明らかにすることです。これにより、DD-Rankingがより公平で包括的な評価基準を提供できることを実証します。📊</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 4.1 Evaluation Settings</h3>
+<div class="content-box">
+<p>このサブセクションでは、本研究で行った評価実験の具体的な設定について説明します。どのようなベースライン手法を使い、どのようなデータセットやモデルアーキテクチャで評価したのか、そしてDD-Rankingの評価プロトコルについて明らかにします。✏️</p>
+<div class="info-grid">
+<div class="info-card">
+<div class="framework-title"><i class="fas fa-microscope"></i> Baseline (ベースライン手法)</div>
+<p>評価対象として、データセット蒸留分野における代表的な手法を幅広く選択しました。これらの手法は、ラベルの扱い方によって大きく2つのカテゴリに分けられます。</p>
+<div class="two-column">
+<div class="column">
+<div class="bubble-box">
+<p style="text-align: center; font-weight: bold; color: var(--color-primary);"> <i class="fas fa-tag"></i> ハードラベル手法</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">DC</span> [67]</li>
+<li><span class="badge blue">DSA</span> [62]</li>
+<li><span class="badge blue">MTT</span> [2]</li>
+<li><span class="badge blue">DM</span> [63]</li>
+<li><span class="badge blue">DataDAM</span> [39]</li>
+</ul>
+<p class="reference">これらの手法は、従来の画像分類タスクと同様に、各合成画像に単一の確定的なカテゴリラベル（例：「犬」「猫」）を割り当てます。</p>
+</div>
+</div>
+<div class="column">
+<div class="bubble-box">
+<p style="text-align: center; font-weight: bold; color: var(--color-secondary);"><i class="fas fa-tags"></i> ソフトラベル手法</p>
+<ul class="unstyled-list">
+<li><span class="badge orange">SRe2L</span> [59]</li>
+<li><span class="badge orange">DATM</span> [18]</li>
+<li><span class="badge orange">EDF</span> [50]</li>
+<li><span class="badge orange">DWA</span> [13]</li>
+<li><span class="badge orange">RDED</span> [48]</li>
+<li><span class="badge orange">CDA</span> [58]</li>
+<li><span class="badge orange">EDC</span> [43]</li>
+<li><span class="badge orange">G-VBSM</span> [42]</li>
+</ul>
+<p class="reference">これらの手法は、各合成画像に対してクラスの確率分布（例：「犬80%, 猫15%, 他5%」）で表現されるソフトラベルを使用します。これは知識蒸留の概念と関連が深いです。</p>
+</div>
+</div>
+</div>
+<p>📌 <span class="highlight">データの扱い</span>: 手法が既に蒸留データを公開している場合はそれを直接使用し、公開されていない場合は、論文および公式コードリポジトリに記載された実装に厳密に従って結果を再現しました。</p>
+</div>
+<div class="info-card">
+<div class="framework-title"><i class="fas fa-database"></i> Dataset (データセット)</div>
+<p>DD-Rankingのベンチマーク結果は、以下の4つの既存データセットについて報告します。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-images"></i> <strong>CIFAR-10</strong> [22]: 10クラス、画像解像度 $32 \times 32$</li>
+<li><i class="fas fa-images"></i> <strong>CIFAR-100</strong> [22]: 100クラス、画像解像度 $32 \times 32$</li>
+<li><i class="fas fa-images"></i> <strong>TinyImageNet</strong> [24]: 200クラス、画像解像度 $64 \times 64$</li>
+<li><i class="fas fa-images"></i> <strong>ImageNet1K</strong> [38]: 1000クラス、画像解像度 $224 \times 224$</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> 注意点</p>
+<p>ImageNet1Kデータセットについては、論文のスペースの制約から <span class="keyword">ARS (Augmentation-Robust Score)</span> の結果のみを報告しています。より多くの結果は、我々の公開している<a href="https://nus-hpc-ai-lab.github.io/DD-Ranking/" target="_blank">リーダーボード</a>で確認できます。</p>
+</div>
+</div>
+<div class="info-card">
+<div class="framework-title"><i class="fas fa-laptop-code"></i> Model (モデル)</div>
+<p>評価に使用するモデルアーキテクチャは、公平性を期すために以下のように選択しました。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-cogs"></i> <strong>各ベースライン手法の推奨モデル</strong>: それぞれの手法が論文で報告しているモデルアーキテクチャ（例: ConvNet深さ3, 4 (Instance Norm/Batch Norm)、ResNet-18 [19]）を基本的に使用します。</li>
+<li><i class="fas fa-network-wired"></i> <strong>DD-Rankingのロバスト性検証用モデル</strong>: DD-Ranking評価指標の頑健性を検証するため、以下の多様なモデルアーキテクチャも導入しました。
+                        <ul>
+<li>AlexNet [23]</li>
+<li>ResNet-50</li>
+<li>VGG-11 [45]</li>
+<li>Swin-Transformer-tiny [30]</li>
+<li>Vision-Transformer-base [10]</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="info-card">
+<div class="framework-title"><i class="fas fa-tasks"></i> DD-Ranking evaluation (DD-Ranking評価)</div>
+<p>DD-Rankingを用いた評価は、以下の手順で行いました。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-redo"></i> <strong>繰り返し評価</strong>: 評価は、異なるランダムシードを用いて<span class="highlight">5回</span>実施し、その平均値を結果として報告します。これにより、偶然性による結果のばらつきを抑えます。</li>
+<li><i class="fas fa-sliders-h"></i> <strong>ハードラベル評価時</strong>: ハードラベルを用いて精度を計算する際には、<span class="keyword">学習率のハイパーパラメータ探索</span>を行い、最も良い性能を示した学習率での結果を報告します。</li>
+<li><i class="fas fa-sliders-h"></i> <strong>ソフトラベル評価時</strong>: ソフトラベルを用いて精度を計算する際には、各手法が論文等で提供している学習率をデフォルトで最適とみなします。ただし、<span class="keyword">ランダム選択データ</span>で学習する場合については、学習率の探索を行います。</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="content-box">
+<p>論文中のTable 3とTable 4は、CIFAR-10とCIFAR-100データセットにおけるDD手法の評価結果を示しています。これらの表は、提案指標であるLRS (Label-Robust Score)、HLR (Hard Label Recovery)、IOR (Improvement Over Random) の値を含んでいます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i> <span class="keyword">λ (ラムダ)</span> の設定</p>
+<p>LRSを計算する際の重みパラメータ <span class="keyword">λ</span> は、Table 3以降の結果では <span class="highlight">0.5</span> に設定されています。これは、HLRとIORを等しく重視することを意味します。</p>
+<div class="formula">
+                LRSの計算における \( \alpha \) :   \( \alpha = \lambda \mathrm { IOR } - ( 1 - \lambda ) \mathrm { H L R } \)
+            </div>
+</div>
+</div>
+<img alt="Table 3: Label-robust score evaluation results on CIFAR-10" src="table3.png" style="width: 80%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        表3: CIFAR-10におけるLRS評価結果。HLRとIORも併記。色分けは図1に対応。この表及び以降の結果ではλ=0.5。CIFAR-10ではハードラベルベースの手法が全般的に良好。
+    </div>
+<div class="content-box">
+<p>表3はCIFAR-10データセットでの結果です。この表から、特に<span class="highlight">IPC (Images Per Class、1クラスあたりの画像数)</span>が小さい場合（例: IPC1, IPC10）において、MTT (Trajectory Matching) や DM (Distribution Matching) といったハードラベルベースの手法が高いLRSを示していることが読み取れます。また、IOR (Improvement Over Random) の値を見ると、これらの手法がランダムなデータ選択よりも優れている度合いが大きいことがわかります。総じて、CIFAR-10ではハードラベルベースの手法が良いパフォーマンスを示す傾向にあります。</p>
+</div>
+<img alt="Table 4: LRS, HLR, and IOR evaluation results on CIFAR-100" src="table4.png" style="width: 80%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        表4: CIFAR-100におけるLRS, HLR, IOR評価結果。DATMが一貫して最高の性能を示し、ランダム選択を大幅に上回る。これは、ソフトラベルが適切に使用されれば合成データ改善に効果的であることを示唆する。
+    </div>
+<div class="content-box">
+<p>表4はCIFAR-100データセットでの結果です。こちらでは、ソフトラベル手法である<span class="keyword">DATM</span>が全てのIPC設定において非常に高いLRS、HLR、IORを示し、<span class="highlight">一貫して最高の性能</span>を達成しています。特にIORの値が大きく、ランダム選択を大幅に上回っていることは注目に値します。この結果は、<span class="highlight">ソフトラベルが適切に活用されることで、合成データの品質向上に効果的である</span>ことを強く示唆しています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-medal"></i> 4.2 Label-Robust Score (LRS)</h3>
+<div class="content-box">
+<p>このサブセクションでは、提案する主要な評価指標である <span class="keyword">Label-Robust Score (LRS)</span> を用いた評価結果を、複数のデータセット（CIFAR-10, CIFAR-100, TinyImageNet, ImageNet1K）にわたって詳細に分析します。LRSは、手法がハードラベルでどれだけ元のデータセットの性能を回復できるか (HLR)、そして任意のラベルタイプでランダム選択データよりどれだけ優れているか (IOR) を組み合わせた指標です。</p>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-calculator"></i> LRS (Label-Robust Score) のおさらい</div>
+<p>LRSは、以下の2つの要素から構成されます:</p>
+<ul class="unstyled-list">
+<li><span class="badge purple">HLR (Hard Label Recovery)</span>: \( \mathrm { a c c } _ { \mathrm { r e a l - h a r d } } - \mathrm { a c c } _ { \mathrm { s y n - h a r d } } \) (小さいほど良い)
+                <ul class="unstyled-list" style="margin-left:20px;"><li><i class="fas fa-long-arrow-alt-right"></i> ハードラベル条件下で、蒸留データで学習したモデルの精度が、元の大規模データセットで学習したモデルの精度にどれだけ近いかを示します。</li></ul>
+</li>
+<li><span class="badge yellow">IOR (Improvement Over Random)</span>: \( \mathrm { a c c } _ { \mathrm { s y n - a n y } } - \mathrm { a c c } _ { \mathrm { r d m - a n y } } \) (大きいほど良い)
+                <ul class="unstyled-list" style="margin-left:20px;"><li><i class="fas fa-long-arrow-alt-right"></i> 同じ評価設定（ラベルタイプ、拡張など）で、蒸留データで学習したモデルの精度が、ランダムに選択された同サイズのデータで学習したモデルの精度をどれだけ上回るかを示します。</li></ul>
+</li>
+</ul>
+<p>これらを重み \( \lambda \) で組み合わせます:</p>
+<div class="formula">
+        \( \alpha = \lambda \mathrm { IOR } - ( 1 - \lambda ) \mathrm { H L R } \)
+        </div>
+<p>HLRには負号が付いているため、\( \alpha \) の値が大きいほど性能が良いことを意味します。この \( \alpha \) (範囲: [-1, 1]) を正規化してLRS (範囲: [0, 1]) を得ます:</p>
+<div class="formula">
+        \( \mathrm { L R S } = 1 0 0 \% \times ( e ^ { \alpha } - e ^ { - 1 } ) / ( e - e ^ { - 1 } ) \)
+        </div>
+<p><i class="fas fa-lightbulb"></i> <span class="highlight">LRSが高いほど、その蒸留データセットはラベル表現に対して頑健であり、情報量が豊かである</span>と解釈できます。</p>
+</div>
+<div class="content-box">
+<p class="framework-title"><i class="fas fa-images"></i> Results on CIFAR-10, CIFAR-100, and TinyImageNet</p>
+<p>表3 (CIFAR-10), 表4 (CIFAR-100), および後述の表5 (TinyImageNet) に、これらのデータセットにおけるLRS評価結果を示します。</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<p class="note-title"><i class="fas fa-tag"></i> ハードラベルベース手法の分析</p>
+<ul class="unstyled-list">
+<li>🥇 <span class="keyword">MTT (Trajectory Matching)</span> が最も優れた性能を示し、DCやDSAのような勾配マッチング手法や、DMやDataDAMのような分布マッチング手法を上回りました。</li>
+<li>📈 IPC (Images Per Class) が増加するにつれて、<span class="highlight">分布マッチング手法 (DM, DataDAM)</span> の性能が勾配マッチング手法よりも向上する傾向が見られました。これは、データ点が増えると分布全体の形状を捉えるアプローチが有利になる可能性を示唆しています。</li>
+</ul>
+</div>
+<div class="info-card glass-card">
+<p class="note-title"><i class="fas fa-tags"></i> ソフトラベルベース手法の分析</p>
+<ul class="unstyled-list">
+<li>🏆 <span class="keyword">DATM</span> (合成データと1対1のソフトラベルを共同で最適化する手法) が、教師モデルから複数のソフトラベルを直接利用するアプローチ (D4M, SRe2L, RDED) よりも優れた性能を示しました。これは、ソフトラベル自体もデータと共に最適化することの重要性を示唆しています。</li>
+<li>🚀 <span class="keyword">D4M</span> (生成的モデリングアプローチを採用) は、特にIPCが増加した場合に、デカップルド手法（SRe2L, RDEDなど、蒸留プロセスとソフトラベル生成が分離している手法）よりも性能が向上しました。これは、高品質な画像を生成する能力がIPC増大時に有利に働く可能性を示します。</li>
+</ul>
+</div>
+</div>
+<p style="margin-top:15px;">🔍 <span class="highlight">総合的に見ると、DATMが最も強力なベースライン</span>として浮上しました。</p>
+<p>📝 <span class="keyword">重要な観察</span>: ハードラベルベースの手法は、ハードラベルを用いた場合の全データセット性能に近い結果を出し、ソフトラベルベースの手法と比較して、<span class="highlight">ランダムデータ選択に対する改善度が大きい</span>傾向がありました。</p>
+</div>
+<img alt="Table 5: LRS, HLR, and IOR evaluation results on TinyImageNet" src="table5.png" style="width: 80%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        表5: TinyImageNetにおけるLRS, HLR, IOR評価結果。デカップルド手法では、D4MはIPCが大きい場合に効果的であり、RDEDはIPCが小さい場合に性能が良い傾向がある。
+    </div>
+<div class="content-box">
+<p>表5はTinyImageNetデータセットでの結果です。ここでもDATMが優れた性能を示していますが、デカップルド手法に注目すると興味深い傾向が見られます。</p>
+<ul class="unstyled-list">
+<li><span class="badge purple">D4M</span>: IPCが大きい設定（例: IPC50）で、他のデカップルド手法 (SRe2L, RDED) より高いLRSを示しています。生成モデルの能力が活きるのかもしれません。</li>
+<li><span class="badge yellow">RDED</span>: IPCが小さい設定（例: IPC1, IPC10）で、D4Mよりも良好なLRSを示しています。少数の画像で効率的に情報を捉える能力に長けている可能性があります。</li>
+</ul>
+</div>
+<div class="content-box">
+<p class="framework-title"><i class="fas fa-globe-americas"></i> Results on ImageNet1K</p>
+<p>表6は、大規模データセットであるImageNet1Kにおける様々な手法のLRS結果を示しています。</p>
+</div>
+<img alt="Table 6: LRS, HLR, and IOR evaluation results on ImageNet1K" src="table6.png" style="width: 80%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        表6: ImageNet1KにおけるLRS, HLR, IOR評価結果。注目すべきは、既存のDD手法（主にデカップルド手法）がランダム選択をほとんど上回れず、ハードラベルに切り替えると性能が著しく低下する点である。
+    </div>
+<div class="content-box">
+<p>ImageNet1Kに効率的にスケールできる既存の手法は、すべてソフトラベリング技術を採用しています。しかし、表6の結果は衝撃的です。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> ImageNet1Kでの課題</div>
+<ul class="unstyled-list">
+<li><i class="fas fa-times-circle" style="color:red;"></i> ほとんどのIPC設定において、現在のDD手法は、<span class="highlight">ランダムに選択されたデータにソフトラベリングを適用した場合の性能を一貫して下回っています</span>。</li>
+<li><i class="fas fa-arrow-down" style="color:red;"></i> IPCが増加するにつれて、この性能差はさらに拡大します。</li>
+<li><i class="fas fa-bomb" style="color:red;"></i> これらの手法はソフトラベルを使用すると著しく高い精度を達成しますが、<span class="keyword">ハードラベルでの性能は大幅に低下</span>し、実際のデータセットとの間に大きなギャップがあることが明らかになりました。</li>
+</ul>
+</div>
+<p>これは、大規模データセットにおいては、現在のDD手法が生成する合成データ自体の情報量が、ソフトラベルによる知識蒸留効果を考慮しても、単純なランダムサンプリングに劣る場合があることを示唆しています。</p>
+</div>
+<div class="content-box">
+<p class="framework-title"><i class="fas fa-lightbulb"></i> Findings (得られた知見)</p>
+<p>これらの結果に基づいて、3つの重要な洞察が得られました。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-balance-scale-left fa-2x" style="color: var(--color-secondary);"></i>
+<h4>i) ソフトラベル使用時のテスト精度は信頼できない</h4>
+<p>ソフトラベルはランダムデータに対しても非常に効果的です。特にTinyImageNetやImageNet1Kでは、ソフトラベル付きの<span class="highlight">ランダムデータで訓練された分類器が、DDで合成されたデータで訓練された分類器を一貫して上回りました</span>。DATMはTinyImageNetでランダム選択に対する優位性を維持しましたが、ランダムデータにソフトラベルを適用するとその改善は大幅に減少しました。この観察は、ソフトラベルによる精度向上は主に知識蒸留によるものであり、合成データの固有の情報量ではないという我々の主張を裏付けています。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-hands-helping fa-2x" style="color: var(--color-accent1);"></i>
+<h4>ii) ソフトラベルは共同最適化されると合成データセットの情報量を向上させる</h4>
+<p>ソフトラベルベースの手法の中でも、<span class="keyword">DATM</span>と<span class="keyword">EDF</span>は、各サンプルに固有のソフトラベルを割り当て、蒸留中にサンプルとラベルの両方を共同で最適化するという異なるアプローチを採用しています。テスト時にソフトラベルを生成する生成的・デカップルド手法とは異なり、これらの最適化されたソフトラベルは、LRSスコアの優位性が示すように、合成データの品質を向上させます。これは、<span class="highlight">ソフトラベルを訓練プロセスに統合することが、合成データの品質を意味のある形で高めることができる</span>ことを示しています。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-trophy fa-2x" style="color: var(--color-primary);"></i>
+<h4>iii) マッチングベースの手法は依然として最も強力なベースラインである</h4>
+<p>ImageNet1Kのような大規模データセットへのスケーラビリティを制限する計算上の制約があるにもかかわらず、<span class="keyword">マッチングベースの手法</span>（勾配、軌跡、特徴量マッチングを含む）は、一貫してより効果的な蒸留データセットを生成します。また、デカップルド手法の中では<span class="keyword">RDED</span>と<span class="keyword">D4M</span>がより効果的であるように見え、これは合成データのリアリズムの重要性を示唆しています。</p>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-shield-alt"></i> 4.3 Augmentation-Robust Score (ARS)</h3>
+<div class="content-box">
+<p>このサブセクションでは、<span class="keyword">Augmentation-Robust Score (ARS)</span> を用いて、特に大規模データセットImageNet1Kにおける様々なDD手法のデータ拡張に対する頑健性を評価します。ARSは、データ拡張の有無両方で、DD手法がランダム選択をどれだけ上回るかを評価する指標です。</p>
+</div>
+<div class="definition-box">
+<div class="definition-title"><i class="fas fa-calculator"></i> ARS (Augmentation-Robust Score) のおさらい</div>
+<p>ARSは、以下の2つの差分の重み付き和 \( \beta \) から計算されます:</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">データ拡張ありの場合のIOR</span>: \( \mathrm { a c c } _ { \mathrm { s y n - a u g } } - \mathrm { a c c } _ { \mathrm { r d m - a u g } } \)</li>
+<li><span class="badge orange">データ拡張なしの場合のIOR</span>: \( \mathrm { a c c } _ { \mathrm { s y n - n a u g } } - \mathrm { a c c } _ { \mathrm { r d m - n a u g } } \)</li>
+</ul>
+<p>これらを重み \( \gamma \) で組み合わせます:</p>
+<div class="formula">
+        \( \beta = \gamma ( \mathrm { a c c } _ { \mathrm { s y n - a u g } } - \mathrm { a c c } _ { \mathrm { r d m - a u g } } ) + ( 1 - \gamma ) ( \mathrm { a c c } _ { \mathrm { s y n - n a u g } } - \mathrm { a c c } _ { \mathrm { r d m - n a u g } } ) \)
+        </div>
+<p>LRSと同様の方法で正規化してARSを計算します。ARSが高いほど、その蒸留データセットはデータ拡張に対して頑健であると解釈できます。</p>
+<p>論文では、\( \gamma \) はデフォルトで <span class="highlight">0.5</span> と設定されています。</p>
+</div>
+<img alt="Table 7: Augmentation-robust score (ARS) evaluation results on ImageNet1K" src="table7.png" style="width: 80%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        表7: ImageNet1KにおけるARS評価結果。IOR w/ aug (acc<sub>syn-aug</sub> − acc<sub>rdm-aug</sub>) と IOR w/o aug (acc<sub>syn-naug</sub> − acc<sub>rdm-naug</sub>) の両方を報告。γはデフォルトで0.5。
+    </div>
+<div class="content-box">
+<p>表7は、ImageNet1Kにおける様々なDD手法のARSパフォーマンス指標を示しており、セクション3.3で導入されたデータ拡張あり・なしのIOR結果を含んでいます。</p>
+<div class="challenge-box">
+<div class="challenge-title"><i class="fas fa-exclamation-circle"></i> ARS評価における課題</div>
+<ul class="unstyled-list">
+<li><i class="fas fa-times-circle" style="color:red;"></i> 既存のデカップルドおよび生成的DD手法の多くは、<span class="highlight">データ拡張の有無に関わらず、ランダム選択を超えることができませんでした</span>。</li>
+<li><i class="fas fa-arrow-down" style="color:red;"></i> データ拡張なしの場合、DD手法とランダム選択との間の性能差はIPCが増加するにつれて広がります。つまり、<span class="highlight">IPCが大きいほどDD手法がランダム選択に劣る度合いが大きくなる</span>傾向がありました。</li>
+</ul>
+</div>
+<p>これらの発見は、現代のDDアプローチがデータ拡張戦略に大きく依存しているにもかかわらず、これらの同じ拡張技術が単純なランダム選択に適用された場合にしばしば劣ることを示しています。</p>
+<p>📌 <span class="keyword">重要な指摘</span>: 評価から拡張を除外すると、一部のDD手法とランダム選択との間の性能ギャップがより顕著になり、従来のテスト精度指標がこの領域での公平な評価基準として機能しなくなったという我々の主張をさらに裏付けています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-vial"></i> 4.4 Analysis</h3>
+<div class="content-box">
+<p>このサブセクションでは、提案するDD-RankingフレームワークおよびLRS指標の頑健性について分析します。具体的には、異なるエージェントモデルアーキテクチャや、異なる教師モデルから生成されるソフトラベルに対して、LRSが一貫した評価を提供できるかを検証します。</p>
+</div>
+<div class="content-box">
+<p class="framework-title"><i class="fas fa-cubes"></i> Robust to model architecture (モデルアーキテクチャに対する頑健性)</p>
+<p>様々なデータセット蒸留手法は、蒸留アーキテクチャや合成データの評価のために異なるエージェントモデルを採用しています。モデルアーキテクチャによって生のテスト精度は変動する可能性がありますが、データセット蒸留の性能を評価するために使用される指標は、指標値の変動が最小限で、一貫しているべきです。</p>
+</div>
+<img alt="Figure 2: Label-robust scores of various methods with four different agent model architectures" src="lrs_model_architecture_robustness.jpg" style="width: 90%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        図2: 4つの異なるエージェントモデルアーキテクチャを用いた様々な手法のLRS。各手法においてLRSの変動は最小限であり、DD-Rankingが異なるモデルアーキテクチャに対して頑健であることを示している。
+    </div>
+<div class="content-box">
+<p>図2は、6つの手法（DM, RDED, MTT, D4M, SRe2L, DWA）について、それぞれ異なる設定（データセットとIPC）で、4つの異なるモデルアーキテクチャ（例えば、DM on CIFAR-10 IPC50ではConv-3, AlexNet, ResNet18, VGG11）を用いてLRSを評価した結果を示しています。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge blue">横軸</span>: 評価対象の手法、データセット、IPCの組み合わせ。</p>
+<p>例: "DM CIFAR-10 IPC50" は、DM手法をCIFAR-10データセット、IPC50の設定で評価したことを示す。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge orange">縦軸</span>: LRS (%)</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge green">各棒グラフ群</span>: 特定の手法・設定における、異なるエージェントモデルアーキテクチャでのLRS値。</p>
+<p>例: "DM CIFAR-10 IPC50" の一番左の群は、Conv-3 (青), AlexNet (水色), ResNet18 (薄紫), VGG11 (薄緑) の4つのモデルで評価したLRSを示し、それぞれ約24.3%, 24.5%, 23.9%, 24.2% となっています。</p>
+</div>
+</div>
+<p>📊 <span class="highlight">図2から読み取れる重要な点</span>: 各手法・設定において、異なるモデルアーキテクチャ間でLRSの値は非常に近接しており、<span class="keyword">変動が小さい</span>ことがわかります。例えば、MTT (TinyImageNet IPC10) では、Conv-4, ResNet18, ResNet50, VGG11で評価したLRSはそれぞれ26.7%, 26.5%, 26.8%, 26.6%と、ほぼ同じ値を示しています。</p>
+<p>この一貫性は、我々のベンチマーク（DD-RankingおよびLRS）が<span class="highlight">異なるモデルアーキテクチャに対して頑健である</span>ことを検証するものです。つまり、LRSはモデルの選択に大きく左右されず、データセット蒸留手法自体の性能を安定して評価できることを示唆しています。</p>
+</div>
+<div class="content-box">
+<p class="framework-title"><i class="fas fa-tags"></i> Robust to soft labels (ソフトラベルに対する頑健性)</p>
+<p>デカップルドデータセット蒸留 [59, 41, 46, 48]では、エポックごとのソフトラベルが合成データセットの重要な構成要素です。最近の研究 [41, 43, 4] では、合成データ自体を変更せずに、より強力な教師モデルを利用してソフトラベルを提供することでテスト精度を向上させることが検討されています。しかし、この手法の妥当性は十分に調査されていません。</p>
+</div>
+<img alt="Figure 3: Label-robust scores of decoupled distillation methods with different teacher model architectures" src="lrs_decoupled_methods_teacher_models.jpg" style="width: 90%; margin-bottom:10px;"/>
+<div class="caption" style="text-align: center; font-style: italic; margin-bottom: 20px;">
+        図3: 異なる教師モデルアーキテクチャを用いたデカップルド蒸留手法のLRS。各手法においてLRSの変動は最小限であり、DD-Rankingが異なるモデルによって生成されたソフトラベルに対して頑健であることを示している。
+    </div>
+<div class="content-box">
+<p>図3は、デカップルド蒸留手法（SRe2L, G-VBSM, D4M, RDED）について、異なる教師モデル（ResNet-18, MobileNet-V2, EfficientNet-B0, AlexNet, Swin-T-V2）や、複数の教師からのソフトラベルを融合する高度なハイブリッドソフトラベル戦略を用いた場合のLRSを示しています。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<p><span class="badge blue">横軸</span>: 評価対象のデカップルド手法。</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge orange">縦軸</span>: LRS (%)</p>
+</div>
+<div class="pipeline-step">
+<p><span class="badge green">各棒グラフ群</span>: 特定の手法における、異なる教師モデルアーキテクチャまたはハイブリッド戦略で生成されたソフトラベルを用いた場合のLRS値。</p>
+<p>例: SRe2Lでは、ResNet-18, MobileNet-V2, EfficientNet-B0, AlexNet, Swin-T-V2, Hybridの各教師でLRSを評価しており、それぞれ約14.2%, 14.1%, 14.2%, 14.1%, 14.2%, 14.6%となっています。</p>
+</div>
+</div>
+<p>📊 <span class="highlight">図3から読み取れる重要な点</span>: 図2と同様に、各デカップルド手法において、使用する教師モデルのアーキテクチャやソフトラベル戦略が異なっても、提案されたLRSは<span class="keyword">一貫して強い頑健性を示し、値の変動が小さい</span>ことがわかります。例えば、RDEDでは、異なる教師モデルで得られたLRSは16.9%から17.4%の狭い範囲に収まっています。</p>
+<p>この結果は、LRSが<span class="highlight">多様なソフトラベル設定に対しても信頼性が高い</span>ことを検証するものです。つまり、LRSはソフトラベルの生成方法の違いによる影響を受けにくく、データセット蒸留手法の核となる性能を評価できることを示しています。</p>
+</div>
+</div>
+<div class="section-card" id="5_Related_Works">
+<h2 class="section-title"><i class="fas fa-book-reader"></i> 5 Related Works</h2>
+<div class="content-box">
+<p>このセクションでは、データセット蒸留（Dataset Distillation, DD）に関連する既存の研究を概観します。主に、<span class="keyword">ハードラベルベースの手法</span>と<span class="keyword">ソフトラベルベースの手法</span>という2つの大きなカテゴリに分類し、それぞれの代表的なアプローチとその進展について解説します。さらに、データセット蒸留の評価における既存の<span class="keyword">ベンチマーク</span>とその課題点を指摘し、本論文で提案する<span class="highlight">DD-Rankingの必要性</span>を明らかにします。これにより、DD-Rankingがデータセット蒸留研究のどの文脈に位置づけられるのかを理解することができます。</p>
+</div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-tag"></i> Hard-label-based dataset distillation methods</h3>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-pencil-alt"></i> 用語解説：ハードラベルベースDD</p>
+<p><span class="keyword">ハードラベルベースのデータセット蒸留 (Hard-label-based DD)</span> とは、合成サンプルに対して、元の実データセットのラベルと同じ<span class="highlight">カテゴリカルなラベル（ハードラベル）</span>を割り当てる手法群です。例えば、画像が「犬」か「猫」か、というような明確な分類ラベルを使用します。</p>
+<div style="text-align: center; margin: 15px 0;">
+<span style="font-size: 1.5em; display: inline-block; padding: 10px; border: 2px dashed var(--color-primary); border-radius: 8px;">
+                    🏷️ <span style="font-family: 'Yomogi', cursive;">犬</span>
+</span>
+<span style="font-size: 1.5em; display: inline-block; padding: 10px; border: 2px dashed var(--color-primary); border-radius: 8px; margin-left:10px;">
+                    🏷️ <span style="font-family: 'Yomogi', cursive;">猫</span>
+</span>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-gray); font-size: 0.9em;">図：ハードラベルのイメージ（明確なカテゴリ）</p>
+</div>
+</div>
+<p>このカテゴリの代表的な手法として、<span class="keyword">マッチングベースの手法</span>が知られています。これらは、合成データがある特性において実データと「一致」するように最適化を行います。主なマッチングベースの手法には以下のものがあります。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-project-diagram"></i> i) Gradient matching (勾配マッチング)</p>
+<p>📝 <span class="highlight">合成データ</span>を最適化し、ニューラルネットワーク上でそれらが誘発する<span class="keyword">勾配</span>が、<span class="highlight">実データ</span>から得られる勾配と近くなるようにします。</p>
+<div style="text-align: center; margin: 10px 0;">
+<span style="font-family: 'Kaisei Decol', serif; font-size: 1.2em; color: var(--color-accent1);">∇L<sub>syn</sub>(θ)</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.5em; color: var(--color-primary); margin: 0 10px;">≈</span>
+<span style="font-family: 'Kaisei Decol', serif; font-size: 1.2em; color: var(--color-secondary);">∇L<sub>real</sub>(θ)</span>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-gray); font-size: 0.8em;">図：勾配マッチングの概念図（合成データと実データの勾配を近づける）</p>
+</div>
+<p>先駆的な研究である <span class="badge blue">Dataset Condensation (DC) [67]</span> 以降、様々な研究が勾配マッチングを改善してきました。</p>
+<ul class="unstyled-list">
+<li>✏️ <span class="keyword">DSA [62]</span>: Differentiable Siamese Augmentation</li>
+<li>✏️ <span class="keyword">DCC [25]</span>: Dataset Condensation with Contrastive signals</li>
+<li>✏️ <span class="keyword">LCMat [44]</span>: Loss-Curvature Matching</li>
+</ul>
+</div>
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-route"></i> ii) Trajectory matching (軌道マッチング)</p>
+<p>📝 <span class="highlight">合成データ</span>で訓練されたモデルの<span class="keyword">訓練ダイナミクス（軌道）</span>が、<span class="highlight">実データ</span>で訓練されたモデルの訓練ダイナミクスと一致するように合成データを最適化します。</p>
+<div style="text-align: center; margin: 10px 0;">
+<svg height="80" style="border: 1px solid #ccc; border-radius: 4px;" viewbox="0 0 150 80" width="150">
+<path d="M10,70 Q50,10 90,40 T140,10" fill="none" stroke="var(--color-accent1)" stroke-dasharray="4" stroke-width="2"></path>
+<path d="M10,70 Q55,15 90,40 T135,15" fill="none" stroke="var(--color-secondary)" stroke-width="2"></path>
+<text fill="var(--color-accent1)" font-family="Yomogi" font-size="10px" x="10" y="15">実データ軌道</text>
+<text fill="var(--color-secondary)" font-family="Yomogi" font-size="10px" x="70" y="70">合成データ軌道</text>
+</svg>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-gray); font-size: 0.8em;">図：軌道マッチングの概念図（訓練軌道を近づける）</p>
+</div>
+<p><span class="badge blue">MTT [2]</span> がこのアプローチを初めて導入しました。これを基に、多くの手法が軌道マッチングをさらに強化しています。</p>
+<ul class="unstyled-list">
+<li>✏️ <span class="keyword">TESLA [6]</span>: メモリ効率の改善</li>
+<li>✏️ <span class="keyword">FTD [11]</span>: 軌道エラーの削減</li>
+<li>✏️ <span class="keyword">ATT [28]</span>: 自動的な訓練軌道による改善</li>
+</ul>
+</div>
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-sitemap"></i> iii) Feature matching (特徴量マッチング)</p>
+<p>📝 勾配や軌道に基づく蒸留の代替手法で、<span class="highlight">合成データ</span>が実データと同様の<span class="keyword">内部表現（特徴量）</span>を誘発するように最適化します。</p>
+<div style="text-align: center; margin: 10px 0;">
+<svg height="80" style="border: 1px solid #ccc; border-radius: 4px;" viewbox="0 0 150 80" width="150">
+<circle cx="40" cy="30" fill="rgba(74,111,165,0.3)" r="15"></circle>
+<circle cx="50" cy="40" fill="rgba(74,111,165,0.3)" r="15"></circle>
+<circle cx="45" cy="50" fill="rgba(74,111,165,0.3)" r="15"></circle>
+<text fill="var(--color-primary)" font-family="Yomogi" font-size="10px" x="20" y="70">実データ特徴分布</text>
+<circle cx="100" cy="30" fill="rgba(255,126,95,0.3)" r="15"></circle>
+<circle cx="110" cy="40" fill="rgba(255,126,95,0.3)" r="15"></circle>
+<circle cx="105" cy="50" fill="rgba(255,126,95,0.3)" r="15"></circle>
+<text fill="var(--color-secondary)" font-family="Yomogi" font-size="10px" x="75" y="20">合成データ特徴分布</text>
+<path d="M60,40 Q80,20 100,40" fill="none" marker-end="url(#arrowhead)" stroke="black" stroke-width="1.5"></path>
+<defs><marker id="arrowhead" markerheight="3.5" markerwidth="5" orient="auto" refx="2" refy="1.75"><polygon fill="black" points="0 0, 5 1.75, 0 3.5"></polygon></marker></defs>
+</svg>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-gray); font-size: 0.8em;">図：特徴量マッチングの概念図（特徴量分布を近づける）</p>
+</div>
+<p>このアプローチは、特に<span class="highlight">大きなIPC（Images Per Class）設定</span>において、同等の性能を持ちつつ軽量なフレームワークを提供します。</p>
+<ul class="unstyled-list">
+<li>✏️ <span class="keyword">CAFE [51]</span>: Condensing dataset by Aligning FEatures</li>
+<li>✏️ <span class="keyword">DM [66]</span>: Distribution Matching</li>
+<li>✏️ <span class="keyword">DataDAM [39]</span>: Dataset Distillation with Attention Matching</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-cloud"></i> Soft-label-based dataset distillation methods</h3>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-pencil-alt"></i> 用語解説：ソフトラベルベースDD</p>
+<p><span class="keyword">ソフトラベルベースのデータセット蒸留 (Soft-label-based DD)</span> とは、評価時に<span class="keyword">知識蒸留（Knowledge Distillation）</span>を利用する手法群です。各合成サンプルには、事前訓練された<span class="highlight">教師モデル（teacher model）</span>によって生成された1つまたは複数の<span class="keyword">ソフトラベル</span>（クラス確率分布）が割り当てられます。</p>
+<div style="text-align: center; margin: 15px 0;">
+<span style="display: inline-block; padding: 10px; border: 2px dashed var(--color-secondary); border-radius: 8px;">
+                    📊 <span style="font-family: 'Yomogi', cursive;">犬:0.7, 猫:0.2, 他:0.1</span>
+</span>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-gray); font-size: 0.9em;">図：ソフトラベルのイメージ（クラスの確率分布）</p>
+</div>
+</div>
+<p>ソフトラベルを用いることで、ハードラベルよりも豊富な情報（クラス間の類似性など）を生徒モデルに伝えることを目指します。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-link"></i> マッチングベースの手法におけるソフトラベル活用</p>
+<p>一部のマッチングベース手法では、軌道マッチング中に<span class="highlight">ソフトラベル自体も合成データと同時に最適化</span>します。</p>
+<ul class="unstyled-list">
+<li>✨ <span class="keyword">DATM [18]</span>: Difficulty-Aligned Trajectory Matching</li>
+<li>✨ <span class="keyword">PAD [27]</span>: Prioritize Alignment in Dataset Distillation</li>
+<li>✨ <span class="keyword">EDF [50]</span>: Emphasizing Discriminative Features</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> ポイント</p>
+<p>これらの手法は、ソフトラベルを固定的に使うのではなく、蒸留プロセスの一部として学習することで、より効果的な情報伝達を目指します。</p>
+</div>
+</div>
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-unlink"></i> Decoupled methods (分離型手法)</p>
+<p>最近では、<span class="keyword">分離型手法</span>が、<span class="highlight">二段階最適化（bi-level optimization）</span>を分離することで、ImageNet1Kのような大規模データセットにおいて高いスケーラビリティを示しています。</p>
+<div class="pipeline" style="margin-top:15px;">
+<div class="pipeline-step" style="background-color: rgba(255, 213, 79, 0.1);">
+<strong>ステップ1:</strong> データ合成 (Bi-level最適化の一部)
+                    </div>
+<div class="pipeline-step" style="background-color: rgba(92, 184, 92, 0.1);">
+<strong>ステップ2:</strong> ソフトラベル生成 (教師モデル使用)
+                    </div>
+</div>
+<p style="font-family: 'Yomogi', cursive; color: var(--color-gray); font-size: 0.8em; text-align:center;">図：分離型手法の概念図</p>
+<p><span class="badge blue">SRe2L [59]</span> は、「<span class="highlight">squeeze (圧縮), recover (回復), and relabel (再ラベル付け)</span>」という3段階のパラダイムを初めて提案しました。<span class="keyword">relabel段階</span>で、各合成サンプルに対してソフトラベルが生成・保存されます。</p>
+<p>このアプローチに続き、多くの手法がデータとソフトラベルの両面から性能を向上させています。</p>
+<ul class="unstyled-list">
+<li>🚀 <span class="keyword">CDA [58]</span>: Curriculum Data Augmentation/Synthesis</li>
+<li>🚀 <span class="keyword">DWA [48]</span>: Diversity-driven Weight Adjustment (論文ではDWA[13]と記載されているが、文脈から[48]が適切か確認)</li>
+<li>🚀 <span class="keyword">EDC [43]</span>: Elucidating the Design Space of Dataset Condensation</li>
+<li>🚀 <span class="keyword">G-VBSM [42]</span>: Generalized large-scale data condensation Via various Backbone and Statistical Matching</li>
+</ul>
+</div>
+</div>
+<div class="info-grid" style="margin-top: 20px;">
+<div class="info-card">
+<p class="framework-title"><i class="fas fa-images"></i> 画像品質向上のアプローチ</p>
+<p>さらに、凝縮されたデータの品質向上を目指す手法も登場しています。</p>
+<ul class="unstyled-list">
+<li>🖼️ <span class="keyword">RDED [48]</span>: 中核となる画像パッチを連結することで凝縮データ（condensed data）を合成します。</li>
+<li>🎨 <span class="keyword">D4M [47]</span>: 拡散モデル（diffusion models）を利用して高品質な合成画像を生成します。</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-eye"></i> 注目ポイント</p>
+<p>RDEDやD4Mは、生成される合成画像自体の<span class="highlight">リアリズムや情報量</span>を高めることに注力しています。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h3 class="subsection-title"><i class="fas fa-clipboard-list"></i> Dataset distillation benchmark</h3>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> 課題：包括的なベンチマークの欠如</p>
+<p>データセット蒸留における顕著な課題の一つは、<span class="keyword">包括的なベンチマークが存在しない</span>ことです。これにより、異なる手法間の公平な比較が難しくなっています。</p>
+</div>
+<p>既存のベンチマークとしては、以下のようなものがあります。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-cubes"></i></div>
+<p style="font-family: 'Yomogi', cursive; font-size: 1.1em; color: var(--color-primary);">DC-Bench [5]</p>
+<p>一般的なデータセット凝縮手法のための<span class="highlight">最初の大規模標準化ベンチマーク</span>です。いくつかのデータセット蒸留手法とコアセット選択手法に対する包括的な評価を提供します。</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-microscope"></i></div>
+<p style="font-family: 'Yomogi', cursive; font-size: 1.1em; color: var(--color-primary);">Comp-DD</p>
+<p><span class="keyword">EDF [50]</span> で提案されたもので、<span class="highlight">複雑なシナリオ</span>におけるデータセット蒸留を対象としています。複雑性指標に基づいてImageNet1Kから新しいサブセットを抽出します。</p>
+</div>
+</div>
+<div class="bubble-box" style="margin-top: 25px;">
+<p style="font-weight: bold; color: var(--color-primary); display: flex; align-items: center;"><i class="fas fa-search" style="margin-right: 8px;"></i>しかし、これらの既存ベンチマークには限界が...</p>
+<p>これらのベンチマークは、<span class="keyword">ソフトラベル</span>を用いる手法が主流となる現在のトレンドにおいて、データセット蒸留手法を<span class="highlight">公平に評価するためのニーズ</span>をもはや満たしていません。ソフトラベルの導入方法や評価設定の多様性が、手法間の直接比較を困難にしています。</p>
+</div>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left: 3px solid var(--color-accent1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-lightbulb"></i> そこでDD-Rankingの登場！</p>
+<p>この問題を解決するために、本論文では <span class="keyword">DD-Ranking</span> を提案しています。DD-Rankingは、ソフトラベルやデータ拡張といった評価設定の違いによる影響を分離し、蒸留されたデータセットの真の品質を評価することを目指す統一的なフレームワークです。</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="6_Conclusion_and_Future_Work">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i> 6 Conclusion and Future Work</h2>
+<div class="content-box">
+<p>このセクションでは、本論文で提案した新しいデータセット蒸留 (Dataset Distillation, DD) の評価ベンチマークである <span class="keyword">DD-Ranking</span> についての結論と、今後の研究の方向性について詳しく解説します。✏️</p>
+</div>
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.2em; color: var(--color-accent1); text-align: center; margin-bottom: 15px;">
+<i class="fas fa-lightbulb"></i> DD-Ranking の核心 <i class="fas fa-lightbulb"></i>
+</p>
+<p><i class="fas fa-bullseye" style="color: var(--color-primary);"></i> <strong>提案内容:</strong> <span class="keyword">DD-Ranking</span> は、データセット蒸留のための<span class="highlight">公正かつ包括的な評価</span>を提供する新しいベンチマークです。</p>
+<p><i class="fas fa-exclamation-circle" style="color: var(--color-secondary);"></i> <strong>問題意識:</strong> 既存のDD評価における<span class="keyword">一貫性のない学習設定</span>、特に<span class="highlight">ソフトラベル</span>の使用や<span class="highlight">データ拡張</span>に起因する<span class="keyword">不公平性</span>に動機付けられています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> DD-Rankingの主な取り組みと目的</h3>
+<div class="content-box">
+<p>この問題に対処するため、DD-Rankingは以下の重要な要素を導入しています：</p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4><i class="fas fa-balance-scale-right" style="color: var(--color-accent2);"></i> ラベルロバストスコア (LRS)</h4>
+<p>ソフトラベリングを介した<span class="keyword">知識蒸留</span>の効果を分離し、ラベル表現に対するロバスト性を評価します。</p>
+</div>
+<div class="info-card glass-card">
+<h4><i class="fas fa-magic" style="color: var(--color-accent2);"></i> 拡張ロバストスコア (ARS)</h4>
+<p><span class="keyword">データ拡張</span>の効果を分離し、データ拡張手法に対するロバスト性を評価します。</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="note-box" style="border-left-color: var(--color-primary);">
+<p class="note-title" style="color: var(--color-primary);"><i class="fas fa-search-plus"></i> 究極の目標</p>
+<p>これらのスコアにより、従来の評価では曖昧だった、蒸留されたデータセットの<span class="highlight">真の情報量 (true informativeness)</span>を明らかにすることを目指します。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-chart-line"></i> DD-Rankingが目指す未来</h3>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-seedling" style="color: var(--color-accent1);"></i> データセット蒸留の発展促進</p>
+<p>DD-Rankingが、データセット蒸留の研究開発を、単に最終的な精度を追求するだけでなく、<span class="highlight">蒸留データの質そのものを向上させる方向</span>へと導くことを期待しています。</p>
+<div style="display: flex; align-items: center; justify-content: center; margin: 20px 0; font-family: 'Yomogi', cursive;">
+<div style="background-color: rgba(255, 126, 95, 0.2); padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+<span style="font-size: 1.2em; color: var(--color-secondary);">🎯 精度 (Accuracy)</span>
+</div>
+<i class="fas fa-long-arrow-alt-right fa-2x" style="margin: 0 15px; color: var(--color-primary);"></i>
+<div style="background-color: rgba(92, 184, 92, 0.2); padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+<span style="font-size: 1.2em; color: var(--color-accent1);">🌟 データ品質 (Data Quality)</span>
+</div>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-laptop-code"></i> DD-Rankingの公開状況</h3>
+<div class="feature-card-grid">
+<div class="feature-item glass-card">
+<i class="fab fa-python fa-2x" style="color: var(--color-primary);"></i>
+<h4>PyPI パッケージ</h4>
+<p><span class="keyword">DD-Ranking</span> は既に <span class="badge blue">PyPI パッケージ</span> として公開されており、誰でも簡単に利用開始できます。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-book-reader fa-2x" style="color: var(--color-primary);"></i>
+<h4>詳細なドキュメント</h4>
+<p>利用方法や評価基準に関する<span class="highlight">詳細なドキュメント</span>も提供されており、研究者がスムーズに導入できるようサポートしています。</p>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 25px;">
+<p class="challenge-title"><i class="fas fa-map-signs"></i> 現在のDD-Rankingの範囲と限界点</p>
+<p>現行のDD-Rankingには、一つの潜在的な限界点があります。それは、サポートしている手法が主に<span class="highlight">画像分類タスクのデータセット蒸留</span>に限定されているという点です。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-binoculars"></i> 今後の展望 (Future Work)</h3>
+<p>私たちは、データセット蒸留の分野が画像分類以外にも広がっていることを認識しています。</p>
+<div class="pipeline">
+<div class="pipeline-step">
+<div class="step-number" style="background-color: var(--color-accent2);">1</div>
+<div class="step-content">
+<p><i class="fas fa-microscope" style="color: var(--color-accent2);"></i> <strong>他タスク・他モダリティへの拡張の認識</strong></p>
+<p>既にいくつかの研究 ([72], [55]) が、データセット蒸留を画像分類以外のタスクや、視覚と言語を組み合わせたような<span class="keyword">マルチモーダルな領域</span>へ拡張する試みを行っています。</p>
+<ul class="unstyled-list" style="margin-left: 20px; font-size: 0.9em;">
+<li><i class="fas fa-link" style="color: var(--color-gray);"></i> <span class="reference">[72] Daquan Zhou, Kai Wang, Jianyang Gu, et al. Dataset quantization, 2023.</span></li>
+<li><i class="fas fa-link" style="color: var(--color-gray);"></i> <span class="reference">[55] Xindi Wu, Byron Zhang, Zhiwei Deng, and Olga Russakovsky. Vision-language dataset distillation. In TMLR, 2024.</span></li>
+</ul>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="step-number" style="background-color: var(--color-accent2);">2</div>
+<div class="step-content">
+<p><i class="fas fa-plus-circle" style="color: var(--color-accent2);"></i> <strong>ベースライン手法の継続的な統合</strong></p>
+<p>今後も、データセット蒸留に関する新しい<span class="highlight">ベースライン手法</span>をDD-Rankingベンチマークに継続的に統合し、評価対象を拡充していきます。</p>
+</div>
+</div>
+<div class="pipeline-step">
+<div class="step-number" style="background-color: var(--color-accent2);">3</div>
+<div class="step-content">
+<p><i class="fas fa-globe" style="color: var(--color-accent2);"></i> <strong>他のモダリティへの拡張</strong></p>
+<p>将来的には、DD-Rankingの評価フレームワークを、現在の画像分類だけでなく、<span class="keyword">他のデータモダリティ</span>（例：テキスト、グラフ、時系列データなど）にも拡張していく計画です。</p>
+</div>
+</div>
+</div>
+<div style="text-align: center; margin-top: 30px; padding:15px; background-color: rgba(74, 111, 165, 0.05); border-radius: 8px;">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.3em; color: var(--color-primary);">
+<i class="fas fa-paper-plane"></i> DD-Rankingは、データセット蒸留研究のさらなる発展に貢献していきます！ <i class="fas fas fa-rocket"></i>
+</p>
+</div>
+</div>
+<div class="section-card" id="A_DD-Ranking_Team">
+<h2 class="section-title"><i class="fas fa-users" style="margin-right: 10px;"></i>A DD-Ranking Team</h2>
+<p style="margin-bottom: 20px; font-size: 16px; text-align: center;">
+        📝 このセクションでは、<span class="keyword">DD-Rankingプロジェクト</span>に貢献した研究チームのメンバーをリスト形式で紹介します。各メンバーの名前と所属機関が記載されています。
+    </p>
+<div class="note-box" style="margin-bottom: 25px;">
+<p class="note-title"><i class="fas fa-info-circle"></i>注釈</p>
+<p>リスト中の名前に付いている <span class="highlight" style="padding: 2px 5px; border-radius: 3px; font-weight: bold;">* (アスタリスク)</span> は、そのメンバーがこの研究に対して<span class="keyword">等しく貢献したこと</span> (equal contribution) を示しています。</p>
+</div>
+<h3 class="subsection-title" style="margin-bottom: 15px;"><i class="fas fa-id-card-alt" style="margin-right: 8px;"></i>チームメンバーリスト</h3>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px;">
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zekai Li*</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Xinhao Zhong*</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Samir Khaki</strong><br/>
+<span class="badge" style="background-color: #6a7f9e; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Toronto</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zhiyuan Liang</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Yuhao Zhou</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Mingjia Shi</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Dongwen Tang</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Ziqiao Wang</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Wangbo Zhao</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Xuanlei Zhao</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Mengxuan Wu</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Haonan Wang</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Ziheng Qin</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Dai Liu</strong><br/>
+<span class="badge purple" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Technical University of Munich</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Kaipeng Zhang</strong><br/>
+<span class="badge" style="background-color: #ef6c00; color: white; margin-top: 5px;"><i class="fas fa-flask" style="margin-right: 5px;"></i>Shanghai AI Lab</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Tianyi Zhou</strong><br/>
+<span class="badge" style="background-color: #00897b; color: white; margin-top: 5px;"><i class="fas fa-atom" style="margin-right: 5px;"></i>A*STAR</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zheng Zhu</strong><br/>
+<span class="badge" style="background-color: #c2185b; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Tsinghua University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Kun Wang</strong><br/>
+<span class="badge" style="background-color: #5e35b1; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Science and Technology of China</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Shaobo Wang</strong><br/>
+<span class="badge" style="background-color: #039be5; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Shanghai Jiao Tong University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Guang Li</strong><br/>
+<span class="badge" style="background-color: #43a047; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Hokkaido University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Junhao Zhang</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Jiawei Liu</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zhiheng Ma</strong><br/>
+<span class="badge" style="background-color: #757575; color: white; margin-top: 5px;"><i class="fas fa-building" style="margin-right: 5px;"></i>SUAT</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Linfeng Zhang</strong><br/>
+<span class="badge" style="background-color: #039be5; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Shanghai Jiao Tong University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Yiran Huang</strong><br/>
+<span class="badge purple" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Technical University of Munich</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Lingjuan Lyu</strong><br/>
+<span class="badge" style="background-color: #d81b60; color: white; margin-top: 5px;"><i class="fas fa-industry" style="margin-right: 5px;"></i>Sony</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Jiancheng Lv</strong><br/>
+<span class="badge" style="background-color: #8e24aa; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Sichuan University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Yaochu Jin</strong><br/>
+<span class="badge" style="background-color: #3949ab; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Westlake University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zeynep Akata</strong><br/>
+<span class="badge purple" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Technical University of Munich</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Jindong Gu</strong><br/>
+<span class="badge" style="background-color: #00acc1; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Oxford University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Peihao Wang</strong><br/>
+<span class="badge" style="background-color: #f4511e; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Texas at Austin</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Mike Shou</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zhiwei Deng</strong><br/>
+<span class="badge" style="background-color: #3367d6; color: white; margin-top: 5px;"><i class="fab fa-google" style="margin-right: 5px;"></i>Google DeepMind</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Qian Zheng</strong><br/>
+<span class="badge" style="background-color: #6d4c41; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Zhejiang University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Hao Ye</strong><br/>
+<span class="badge" style="background-color: #ff8f00; color: white; margin-top: 5px;"><i class="fas fa-mobile-alt" style="margin-right: 5px;"></i>Xiaomi</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Shuo Wang</strong><br/>
+<span class="badge" style="background-color: #2962ff; color: white; margin-top: 5px;"><i class="fas fa-paw" style="margin-right: 5px;"></i>Baidu</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Xiaobo Wang</strong><br/>
+<span class="badge" style="background-color: #ad1457; color: white; margin-top: 5px;"><i class="fas fa-landmark" style="margin-right: 5px;"></i>Chinese Academy of Science</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Yan Yan</strong><br/>
+<span class="badge" style="background-color: #f57c00; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Illinois at Chicago</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Yuzhang Shang</strong><br/>
+<span class="badge" style="background-color: #f57c00; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Illinois at Chicago</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>George Cazenavette</strong><br/>
+<span class="badge" style="background-color: #a51c30; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Massachusetts Institute of Technology</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Xindi Wu</strong><br/>
+<span class="badge" style="background-color: #e87511; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Princeton University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Justin Cui</strong><br/>
+<span class="badge" style="background-color: #2774ae; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of California, Los Angeles</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Tianlong Chen</strong><br/>
+<span class="badge" style="background-color: #4b9cd3; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of North Carolina at Chapel Hill</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Angela Yao</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Baharan Mirzasoleiman</strong><br/>
+<span class="badge" style="background-color: #2774ae; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of California, Los Angeles</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Hakan Bilen</strong><br/>
+<span class="badge" style="background-color: #003865; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Edinburgh</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Manolis Kellis</strong><br/>
+<span class="badge" style="background-color: #a51c30; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Massachusetts Institute of Technology</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Konstantinos N. Plataniotis</strong><br/>
+<span class="badge" style="background-color: #6a7f9e; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Toronto</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Bo Zhao</strong><br/>
+<span class="badge" style="background-color: #039be5; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>Shanghai Jiao Tong University</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Zhangyang Wang</strong><br/>
+<span class="badge" style="background-color: #f4511e; color: white; margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>University of Texas at Austin</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Yang You</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+<div class="info-card">
+<p><i class="fas fa-user" style="color: var(--color-secondary); margin-right: 8px;"></i><strong>Kai Wang</strong><br/>
+<span class="badge blue" style="margin-top: 5px;"><i class="fas fa-university" style="margin-right: 5px;"></i>National University of Singapore</span></p>
+</div>
+</div>
+<div class="arrow-connector" style="margin: 30px 0;">
+<span style="font-size: 30px; color: var(--color-accent2);">🤝</span>
+</div>
+<h3 class="subsection-title" style="margin-top: 20px; margin-bottom: 15px;"><i class="fas fa-medal" style="margin-right: 8px;"></i>貢献と責任者</h3>
+<div class="framework-box" style="padding: 20px;">
+<div class="content-box" style="margin-bottom: 15px; border-bottom: 1px dashed var(--color-primary); padding-bottom:15px;">
+<p><i class="fas fa-hands-helping" style="color: var(--color-primary); margin-right: 5px;"></i><strong>Equal Contribution (等しい貢献):</strong> <br/>
+<span class="keyword">Zekai Li</span> 氏と <span class="keyword">Xinhao Zhong</span> 氏が、この研究に等しく貢献しました。これは、両者が研究の主要な部分において同等の役割と責任を果たしたことを意味します。</p>
+<div style="text-align: center; margin-top: 10px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-accent1);">Zekai Li</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 24px; color: var(--color-dark); margin: 0 10px;">&amp;</span>
+<span style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-accent1);">Xinhao Zhong</span>
+</div>
+</div>
+<div class="content-box" style="margin-bottom: 15px; border-bottom: 1px dashed var(--color-primary); padding-bottom:15px;">
+<p><i class="fas fa-user-tie" style="color: var(--color-primary); margin-right: 5px;"></i><strong>Project Lead (プロジェクトリーダー):</strong> <br/>
+<span class="keyword">Zekai Li</span> 氏がプロジェクトリーダーを務めました。プロジェクト全体の指揮、進行管理、調整などを担当したと考えられます。</p>
+<div style="text-align: center; margin-top: 10px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 20px; color: var(--color-secondary);">👑 Zekai Li 👑</span>
+</div>
+</div>
+<div class="content-box">
+<p><i class="fas fa-envelope" style="color: var(--color-primary); margin-right: 5px;"></i><strong>Corresponding Author (責任著者):</strong> <br/>
+<span class="keyword">Kai Wang</span> 氏が責任著者です。論文に関する問い合わせや連絡の窓口となり、研究内容について最終的な責任を負う立場です。</p>
+<div style="text-align: center; margin-top: 10px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 20px; color: var(--color-accent2);">✉️ Kai Wang ✉️</span>
+</div>
+</div>
+</div>
+<div class="bubble-box" style="margin-top: 30px; border-color: var(--color-accent1);">
+<p style="font-size: 16px; font-family: 'Yomogi', cursive; color: var(--color-dark); text-align:center;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent1); margin-right: 5px;"></i> このように多くの研究者が関わっていることは、<span class="highlight" style="background-color: rgba(92, 184, 92, 0.2);">DD-Ranking</span>が広範な専門知識と多様な視点を結集した、大規模かつ重要なプロジェクトであることを示唆しています。
+        </p>
+</div>
+</div>
+<div class="section-card" id="B_Additional_Experiment_Results">
+<h2 class="section-title"><i class="fas fa-chart-bar"></i> B Additional Experiment Results</h2>
+<p>このセクションでは、論文の主要な評価指標である <span class="keyword">Label-Robust Score (LRS)</span> の計算において、重要な役割を果たすパラメータ <span class="keyword">\(\lambda\)</span> の影響について、より詳細な実験結果を掘り下げていきます。これまでのセクション（特にTable 3からTable 6）で示された結果は、<span class="keyword">\(\lambda = 0.5\)</span> という特定の設定に基づいていましたが、ここでは <span class="keyword">\(\lambda\)</span> の値を変化させることで、各データセット蒸留（DD）手法の評価がどのように変わるのかを多角的に分析します。</p>
+<div class="glass-card">
+<p><i class="fas fa-info-circle"></i> <strong>このセクションの核心</strong>：LRSは、DD手法の堅牢性をラベル表現（ハードラベルかソフトラベルか）に対して評価する指標です。このLRSの計算には、<span class="keyword">Hard Label Recovery (HLR)</span> と <span class="keyword">Improvement Over Random (IOR)</span> という2つの要素が関わっており、<span class="keyword">\(\lambda\)</span> はこれらのバランスを調整する重みです。</p>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-calculator"></i> LRS計算における \(\lambda\) の役割</p>
+<p>LRSを導出するための中間スコア \(\alpha\) は、以下の式で計算されます：</p>
+<div class="formula">
+            \[ \alpha = \lambda \cdot \mathrm{IOR} - (1 - \lambda) \cdot \mathrm{HLR} \]
+        </div>
+<p>ここで、</p>
+<ul>
+<li><span class="keyword">HLR (Hard Label Recovery)</span>: <span class="highlight">\(\mathrm{acc}_{\mathrm{real-hard}} - \mathrm{acc}_{\mathrm{syn-hard}}\)</span> で計算され、値が<span class="highlight">小さいほど良い</span>（元のデータセットのハードラベル性能に近い）ことを示します。</li>
+<li><span class="keyword">IOR (Improvement Over Random)</span>: <span class="highlight">\(\mathrm{acc}_{\mathrm{syn-any}} - \mathrm{acc}_{\mathrm{rdm-any}}\)</span> で計算され、値が<span class="highlight">大きいほど良い</span>（ランダム選択よりも性能が優れている）ことを示します。</li>
+<li><span class="keyword">\(\lambda\)</span>: 0から1の値を取る重みパラメータです。
+                <ul>
+<li><i class="fas fa-arrow-up"></i> <span class="highlight">大きな \(\lambda\)</span> (例: \(\lambda \to 1\))：<span class="keyword">IOR</span> の寄与が大きくなり、ランダム選択に対する性能向上を重視する評価になります。</li>
+<li><i class="fas fa-arrow-down"></i> <span class="highlight">小さな \(\lambda\)</span> (例: \(\lambda \to 0\))：<span class="keyword">HLR</span> の寄与が大きくなり（式中では \( (1-\lambda) \) が大きくなり、HLRは小さいほど良いので全体スコアに正に貢献）、ハードラベルでの性能再現性を重視する評価になります。</li>
+</ul>
+</li>
+</ul>
+<p><i class="fas fa-balance-scale-right"></i> デフォルトでは、論文の主要な結果 (Table 3-6) は <span class="keyword">\(\lambda = 0.5\)</span> としており、これはHLRとIORを<span class="highlight">均等に重要視</span>する立場です。</p>
+</div>
+<p>このセクション (Table 8 から Table 19) では、この <span class="keyword">\(\lambda\)</span> の値を <span class="highlight">0.0 から 1.0 まで 0.1 刻み</span>で変化させた場合のLRSを報告します。これにより、各DD手法が評価の重点（HLR重視かIOR重視か）によってどのように評価が変動するかを詳細に見ていきます。</p>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i> <strong>重要なメッセージ</strong>：論文著者らは、将来提案される新しいデータセット蒸留手法が、<span class="keyword">HLRとIORの両方を強化する</span>ことを奨励しています。この追加実験は、その目標に向けた手法の特性をより深く理解するためのものです。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-table"></i> Table 8: CIFAR-10 IPC1 における異なる \(\lambda\) でのLRS評価結果</h3>
+<img alt="Table 8: LRS evaluation results on CIFAR-10 IPC1 under different lambda" src="table8.png"/>
+<div class="content-box">
+<p>📝 <strong>表の読み方</strong>：この表は、CIFAR-10データセットにおいて、1クラスあたり1枚の画像（IPC1）を蒸留した場合の結果を示しています。各行が異なるデータセット蒸留手法を表し、各列が異なる <span class="keyword">\(\lambda\)</span> の値（0.0から1.0）に対応するLRS（%）を示しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search"></i> 詳細解説</p>
+<ul>
+<li><span class="badge blue">\(\lambda = 0.0\) の場合</span>: この列は、HLRのみを考慮した（IORを無視した）評価に近いです（正確には \(-\mathrm{HLR}\) を最大化する）。LRSが高い手法は、ハードラベルでの性能再現性が優れていることを意味します。</li>
+<li><span class="badge orange">\(\lambda = 1.0\) の場合</span>: この列は、IORのみを考慮した（HLRを無視した）評価に近いです。LRSが高い手法は、ランダム選択に比べて大幅な性能向上を達成していることを意味します。</li>
+<li><span class="badge purple">\(\lambda = 0.5\) の場合</span>: この列は、論文の主要結果 (Table 3-6) と同じ設定で、HLRとIORを均等に重視した評価です。</li>
+</ul>
+<p>✏️ <strong>観察ポイント</strong>：</p>
+<ul>
+<li>特定の手法が、<span class="keyword">\(\lambda\)</span> の値によってランキングがどのように変動するかに注目しましょう。例えば、ある手法は \(\lambda\) が小さい（HLR重視）場合に高いLRSを示すかもしれませんが、\(\lambda\) が大きい（IOR重視）場合にはLRSが低下するかもしれません。</li>
+<li>一般的に、ハードラベルベースの手法 (DC, DSA, MTT, DM, DataDAMなど) は <span class="highlight">\(\lambda\) が小さい場合</span>に比較的良い性能を示す傾向があり、ソフトラベルベースの手法 (SRe2L, DATMなど) は <span class="highlight">\(\lambda\) が大きい場合</span>に性能が改善する可能性があります。ただし、これはあくまで一般的な傾向であり、個々の手法の特性によって異なります。</li>
+<li>この表では、例えばMTTやDCといった手法は、多くの\(\lambda\)値で比較的高いLRSを維持しているように見えます。一方で、SRe2Lのようなソフトラベルを用いる手法は、\(\lambda\)が大きくなるにつれて（IORを重視するにつれて）LRSが改善する傾向が見られるかもしれません。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-table"></i> Table 9: CIFAR-10 IPC10 における異なる \(\lambda\) でのLRS評価結果</h3>
+<img alt="Table 9: LRS evaluation results on CIFAR-10 IPC10 under different lambda" src="table9.png"/>
+<div class="content-box">
+<p>📝 <strong>表の読み方</strong>：この表は、CIFAR-10データセットにおいて、1クラスあたり10枚の画像（IPC10）を蒸留した場合の結果を示しています。IPCが増加したことで、各手法のLRSがIPC1の場合と比較してどのように変化するか、また <span class="keyword">\(\lambda\)</span> の影響がどう変わるかを見ることができます。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search"></i> 詳細解説</p>
+<p>IPCが増加すると、一般的には蒸留データセットの表現力が高まり、全体的にLRSが向上することが期待されます。</p>
+<p>✏️ <strong>観察ポイント</strong>：</p>
+<ul>
+<li>IPC1の場合（Table 8）と比較して、各手法のLRSの絶対値がどのように変化したかを確認しましょう。</li>
+<li><span class="keyword">\(\lambda\)</span> の値によるLRSの変動パターンが、IPC1の場合と比べてどのように変化したかに注目します。IPCが増えることで、HLRとIORのバランスが手法の評価に与える影響が変わる可能性があります。</li>
+<li>例えば、IPC10では、DATMのようなソフトラベルと画像を共同で最適化する手法が、幅広い \(\lambda\) 値で高いLRSを示すかもしれません。また、DMやDataDAMのような分布マッチング手法も、IPCが増えることで性能が向上する傾向があります。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-table"></i> Table 10: CIFAR-10 IPC50 における異なる \(\lambda\) でのLRS評価結果</h3>
+<img alt="Table 10: LRS evaluation results on CIFAR-10 IPC50 under different lambda" src="table10.png"/>
+<div class="content-box">
+<p>📝 <strong>表の読み方</strong>：この表は、CIFAR-10データセットにおいて、1クラスあたり50枚の画像（IPC50）を蒸留した場合の結果です。IPCがさらに増加した状況での <span class="keyword">\(\lambda\)</span> の影響を分析します。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search"></i> 詳細解説</p>
+<p>IPC50という、比較的多くの画像を使える設定では、蒸留データセットは元のデータセットの情報をかなり保持できるはずです。この設定では、特にHLR（ハードラベルでの性能再現性）が重要になるかもしれません。</p>
+<p>✏️ <strong>観察ポイント</strong>：</p>
+<ul>
+<li>IPC10の場合（Table 9）と比較して、LRSのさらなる向上は見られるでしょうか。</li>
+<li><span class="keyword">\(\lambda\)</span> が小さい（HLR重視）場合と大きい（IOR重視）場合で、手法間のランキングに大きな変動があるかを確認します。IPCが大きい場合、多くの手法が高いHLRを達成しやすくなるため、IORの差がより顕著になる可能性も考えられます。</li>
+<li>この表では、多くの手法が高いLRSを示すことが予想されますが、特に\(\lambda\)が小さい（HLR重視）領域での性能差や、\(\lambda\)が大きい（IOR重視）領域での性能差に注目することで、各手法の強みが明らかになるかもしれません。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-table"></i> Table 11: CIFAR-100 IPC1 における異なる \(\lambda\) でのLRS評価結果</h3>
+<img alt="Table 11: LRS evaluation results on CIFAR-100 IPC1 under different lambda" src="table11.png"/>
+<div class="content-box">
+<p>📝 <strong>表の読み方</strong>：この表は、データセットをCIFAR-100に変更し、1クラスあたり1枚の画像（IPC1）を蒸留した場合の結果です。CIFAR-100はCIFAR-10よりもクラス数が10倍多いため、より困難なタスクです。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search"></i> 詳細解説</p>
+<p>クラス数が増えると、IPC1という非常に少ない情報量で各クラスを代表させるのは極めて難しくなります。このため、全体的にLRSはCIFAR-10の場合よりも低くなることが予想されます。</p>
+<p>✏️ <strong>観察ポイント</strong>：</p>
+<ul>
+<li>CIFAR-10 IPC1（Table 8）と比較して、LRS全体がどの程度低下しているかを確認しましょう。</li>
+<li>クラス数が多く、情報量が少ない状況で、どの手法が比較的ロバストな性能を示すか、また <span class="keyword">\(\lambda\)</span> の値による影響がCIFAR-10の場合とどう異なるかに注目します。</li>
+<li>例えば、DATMはCIFAR-100でも比較的良好な性能を示すことがTable 4から示唆されていますが、それが異なる\(\lambda\)値でどのように現れるかを確認します。</li>
+</ul>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-table"></i> Table 12: CIFAR-100 IPC10 における異なる \(\lambda\) でのLRS評価結果</h3>
+<img alt="Table 12: LRS evaluation results on CIFAR-100 IPC10 under different lambda" src="table12.png"/>
+<div class="content-box">
+<p>📝 <strong>表の読み方</strong>：この表は、CIFAR-100データセットで、1クラスあたり10枚の画像（IPC10）を蒸留した場合の結果です。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search"></i> 詳細解説</p>
+<p>IPCが10に増えることで、CIFAR-100のような多クラス分類タスクでも、ある程度の情報量を確保できるようになります。これにより、IPC1の場合と比較してLRSの向上が期待されます。</p>
+<p>✏️ <strong>観察ポイント</strong>：</p>
+<ul>
+<li>CIFAR-100 IPC1（Table 11）と比較して、各手法のLRSがどの程度改善したかを確認します。</li>
+<li><span class="keyword">\(\lambda\)</span> の影響が、IPCが増えたことでどのように変化したかを見ます。特定の <span class="keyword">\(\lambda\)</span> の範囲で特に性能が良い手法や、幅広い <span class="keyword">\(\lambda\)</span> で安定した性能を示す手法があるかなどを分析します。</li>
+<li>DATMは、この設定でも引き続き強力な候補となる可能性があります。また、他の手法がIPCの増加によってどのように性能を伸ばすかも注目点です。</li>
+</ul>
+</div>
+</div>
+<div class="glass-card" style="margin-top: 20px;">
+<p><i class="fas fa-exclamation-triangle"></i> <strong>注意点</strong>：論文ではTable 8からTable 19まで言及がありますが、提供されたMarkdownにはTable 12までしか画像と具体的な言及がありません。そのため、ここではTable 12までの解説となります。もしTable 13以降のデータがあれば、同様の視点で分析を続けることができます。</p>
+</div>
+<div class="bubble-box">
+<p><i class="fas fa-project-diagram"></i> <strong>全体的な考察の方向性</strong></p>
+<p>これらの追加実験結果を通じて、以下の点が明らかになります：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-cogs"></i> <strong>手法の特性理解</strong>：各DD手法が、HLR（ハードラベルでの性能維持）とIOR（ランダムに対する改善度）のどちらに強みを持つのか、あるいは両方にバランスが取れているのかが、<span class="keyword">\(\lambda\)</span> を変えることでより鮮明になります。</li>
+<li><i class="fas fa-balance-scale"></i> <strong>評価の多面性</strong>：<span class="keyword">\(\lambda = 0.5\)</span> だけでは見えにくい手法の側面が明らかになり、より公平で多角的な評価が可能になります。</li>
+<li><i class="fas fa-bullseye"></i> <strong>将来の研究への示唆</strong>：新しいDD手法を開発する際に、HLRとIORのどちらを優先的に改善ターゲットとするか、あるいは両方をバランス良く向上させるか、といった戦略を立てる上で重要な知見となります。論文が目指す「HLRとIORの両方を強化する」方向性に向けて、現行手法の強みと弱みを把握できます。</li>
+</ul>
+</div>
+<p style="text-align: center; margin-top: 20px; font-family: 'Yomogi', cursive;">--- このセクションの解説はここまでです ---</p>
+</div>
+<div class="section-card" id="C_Additional_Related_Work">
+<h2 class="section-title"><i class="fas fa-puzzle-piece"></i> C Additional Related Work</h2>
+<p>このセクションでは、論文の著者たちが<span class="keyword">DD-Rankingベンチマーク</span>にまだ含まれていない<span class="highlight">データセット蒸留（Dataset Distillation, DD）手法</span>について触れ、今後のベンチマーク拡張の意向を示しています。より多くの手法を網羅することで、データセット蒸留分野の研究をさらに促進することを目指しています。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-bullhorn"></i> 今後の展望</p>
+<p>著者らは、「近い将来、DD-Rankingベンチマークを継続的に拡張していく」と述べています。これにより、さらに多様なデータセット蒸留手法を公平に比較・評価できるようになることが期待されます。これは、データセット蒸留技術の発展にとって重要なステップです。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-table"></i> LRS評価結果の詳細 (Table 13 - 19)</h3>
+<p>このセクションで提示されている表 (Table 13 から Table 19) は、さまざまなデータセット（CIFAR-100, TinyImageNet, ImageNet1K）と<span class="keyword">IPC (Images Per Class)</span>設定において、異なる<span class="keyword">λ (ラムダ)</span>の値を用いた場合の<span class="keyword">LRS (Label-Robust Score)</span>評価結果を示しています。これらの詳細な結果は、DD-Rankingで提案された評価指標の特性や、各蒸留手法がλの変動に対してどのように応答するかを深く理解するのに役立ちます。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-book-open"></i> 押さえておきたい用語解説 📌</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.05); padding:15px; text-align: left;">
+<p style="font-weight: bold; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-medal"></i> LRS (Label-Robust Score)</p>
+<p style="font-size: 13px;">この論文で提案された新しい評価指標です。ハードラベルでの性能回復度（HLR）と、ランダムにサンプリングされたデータに対する性能改善度（IOR）を組み合わせて計算されます。このスコアが高いほど、蒸留されたデータセットがラベルの表現方法（ハードラベル／ソフトラベル）の変動に対して頑健であり、かつ情報量に富んでいることを示唆します。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.05); padding:15px; text-align: left;">
+<p style="font-weight: bold; color: var(--color-secondary); margin-bottom: 5px;"><i class="fas fa-images"></i> IPC (Images Per Class)</p>
+<p style="font-size: 13px;">「クラスごとの画像数」を意味します。データセット蒸留では、元の大きなデータセットから、各クラスにつき少数の代表的な画像を生成・選択します。例えば、IPC1は各クラス1枚の画像、IPC50は各クラス50枚の画像で蒸留データセットを構成することを意味します。</p>
+</div>
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.05); padding:15px; text-align: left;">
+<p style="font-weight: bold; color: var(--color-accent1); margin-bottom: 5px;"><i class="fas fa-balance-scale"></i> λ (ラムダ)</p>
+<p style="font-size: 13px;">LRSを計算する際に用いられる重みパラメータです。LRSの計算式 \( \alpha = \lambda \mathrm { IOR } - ( 1 - \lambda ) \mathrm { H L R } \) において、IORとHLRのどちらをより重視するかを調整します。λが大きいほどIOR（ランダム選択からの改善度）の寄与が大きくなり、λが小さいほどHLR（ハードラベルでの性能回復度）の寄与が大きくなります。これらの表では、λの値を0.1から0.9まで変化させた場合の結果が示されています。</p>
+</div>
+</div>
+</div>
+<p>これらの表は、特定のデータセット、IPC、そしてλの値の組み合わせにおける各データセット蒸留手法のLRSを示しています。これにより、研究者は各手法がどのような条件下でどのような評価を受けるのか、またλの選択が評価にどう影響するかを詳細に確認できます。</p>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 13: CIFAR-100 IPC50 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 13: LRS evaluation results on CIFAR-100 IPC50 under different lambda" src="table13.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、<span class="highlight">CIFAR-100データセット</span>において、<span class="highlight">IPC50</span> (クラスあたり50画像) の設定で、さまざまなデータセット蒸留手法のLRSを、λの値を0.1から0.9まで変化させて評価した結果を示しています。表内の各行が異なる手法（例: DC, DSA, MTTなど）に対応し、各列が異なるλの値でのLRSを示しています。λの値によって各手法のLRSがどのように変動するかを確認できます。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 14: TinyImageNet IPC1 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 14: LRS evaluation results on TinyImageNet IPC1 under different lambda" src="table14.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、<span class="highlight">TinyImageNetデータセット</span>において、<span class="highlight">IPC1</span> (クラスあたり1画像) という非常に少ない画像数での設定で、LRSを評価した結果です。ここでも、λの値を0.1から0.9まで変化させた場合の結果が示されており、極端な圧縮状況下での手法の頑健性やλへの感受性を分析できます。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 15: TinyImageNet IPC10 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 15: LRS evaluation results on TinyImageNet IPC10 under different lambda" src="table15.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、<span class="highlight">TinyImageNetデータセット</span>において、<span class="highlight">IPC10</span> (クラスあたり10画像) の設定でのLRS評価結果です。IPC1の場合（Table 14）と比較して、画像数が増えたことで各手法のLRSやλへの応答がどのように変化するかを観察できます。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 16: TinyImageNet IPC50 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 16: LRS evaluation results on TinyImageNet IPC50 under different lambda" src="table16.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、<span class="highlight">TinyImageNetデータセット</span>において、<span class="highlight">IPC50</span> (クラスあたり50画像) の設定でのLRS評価結果です。IPCがさらに増加した場合のλの影響をIPC1やIPC10の結果と比較検討することができます。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 17: ImageNet1K IPC1 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 17: LRS evaluation results on ImageNet1K IPC1 under different lambda" src="table17.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、大規模データセットである<span class="highlight">ImageNet1K</span>において、<span class="highlight">IPC1</span>の設定でのLRS評価結果です。ImageNet1Kのような複雑で大規模なデータセットで、かつクラスあたり1枚という極端に少ない画像数での蒸留は非常に困難なタスクです。この条件下での各手法の振る舞いとλの影響を示しています。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 18: ImageNet1K IPC10 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 18: LRS evaluation results on ImageNet1K IPC10 under different lambda" src="table18.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、<span class="highlight">ImageNet1Kデータセット</span>において、<span class="highlight">IPC10</span>の設定でのLRS評価結果です。Table 17 (IPC1) と比較してIPCが増えた場合の変化を観察することで、データ量の増加がLRS評価やλの感度にどう影響するかを分析する材料となります。</p>
+</div>
+<div class="glass-card">
+<h4 class="subsection-title" style="font-size: 16px; color: var(--color-accent1);"><i class="fas fa-chart-bar"></i> Table 19: ImageNet1K IPC50 におけるLRS評価結果 (異なるλ)</h4>
+<img alt="Table 19: LRS evaluation results on ImageNet1K IPC50 under different lambda" src="table19.png" style="width: 80%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表は、<span class="highlight">ImageNet1Kデータセット</span>において、<span class="highlight">IPC50</span>の設定でのLRS評価結果です。ImageNet1Kにおける3つのIPC設定 (1, 10, 50) での結果を、λの値を横断的に比較することで、大規模データセットにおける各手法の特性をより深く理解できます。</p>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i> これらの表から読み取れること 🧐</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <strong>手法間の比較:</strong> 同じλの値で異なる手法のLRSを比較することで、どの手法が特定の条件下で優れているか、またはλの変更に対して安定しているかなどを評価できます。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <strong>λの重要性:</strong> λの値を変えることでLRSの順位が変動する可能性があります。これは、IORを重視するかHLRを重視するかによって、手法の評価が変わることを意味します。研究者は自分の目的に応じてλの値を設定したり、複数のλで評価したりすることが推奨されます。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <strong>データセット・IPC依存性:</strong> ある手法があるデータセットやIPC設定で高いLRSを示しても、別の設定ではそうでない場合があります。これらの表は、そうした依存性を詳細に分析するためのデータを提供します。</li>
+</ul>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-history"></i> Table 20: データセット蒸留に関する既存研究のまとめ</h3>
+<img alt="Table 20: Summary of previous works on dataset distillation" src="table20.png" style="width: 95%; margin: 15px auto; border: 1px solid #ccc; padding: 5px; border-radius: 8px;"/>
+<p>📝 この表 (Table 20) は、データセット蒸留分野における<span class="highlight">主要な既存研究</span>をまとめたものです。各研究について、以下の情報が整理されています。</p>
+<div class="info-grid">
+<div class="info-card">
+<p style="font-weight: bold; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-book"></i> 手法名 (Method)</p>
+<p>提案されたデータセット蒸留手法の名称です。例えば、DC [67], MTT [2], SRe2L [59] などが含まれます。</p>
+</div>
+<div class="info-card">
+<p style="font-weight: bold; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-tags"></i> ラベルタイプ (Label Type)</p>
+<p>手法がハードラベルを使用するか、ソフトラベルを使用するかを示します。これはDD-Rankingが問題提起した重要な比較軸の一つです。</p>
+</div>
+<div class="info-card">
+<p style="font-weight: bold; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-cogs"></i> カテゴリ (Category)</p>
+<p>手法がどのようなアプローチに基づいているかを示します。例えば、勾配マッチング (Gradient Matching)、軌道マッチング (Trajectory Matching)、分布マッチング (Distribution Matching)、デカップルド手法 (Decoupled) などがあります。</p>
+</div>
+<div class="info-card">
+<p style="font-weight: bold; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-calendar-alt"></i> 公開年 (Year)</p>
+<p>研究が公開された年を示します。これにより、技術の進化の時系列を追うことができます。</p>
+</div>
+<div class="info-card">
+<p style="font-weight: bold; color: var(--color-primary); margin-bottom: 5px;"><i class="fas fa-university"></i> 会議/ジャーナル (Venue)</p>
+<p>研究が発表された主要な国際会議やジャーナル名です。例えば、ICLR, CVPR, NeurIPS, ICMLなどがあります。</p>
+</div>
+</div>
+<p>この表は、データセット蒸留の<span class="keyword">研究動向を概観</span>し、DD-Rankingがどのような背景のもとに提案されたのかを理解する上で非常に役立ちます。また、DD-Rankingが今後取り込む可能性のある手法や、比較対象となる既存手法を網羅的に示しています。</p>
+<div class="bubble-box">
+<p>📊 <span style="font-weight:bold; color:var(--color-secondary);">ポイント:</span> Table 20は、データセット蒸留の研究が多岐にわたるアプローチ（勾配マッチング、軌道マッチング、特徴マッチング、デカップルド手法など）で進展してきたこと、そしてソフトラベルの利用が近年増加している傾向を示唆しています。DD-Rankingは、これらの多様な手法を公平に評価するための統一的な枠組みを提供することを目的としています。</p>
+</div>
+<hr style="border: 1px dashed var(--color-primary); margin: 30px 0;"/>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 16px;">
+<i class="fas fa-lightbulb" style="color: var(--color-accent3);"></i> まとめると、この「Additional Related Work」セクションは、DD-Rankingベンチマークの網羅性をさらに高めるための将来的な拡張計画を示しつつ、提案されたLRS指標の頑健性を様々な条件下で検証する追加データを提供し、データセット蒸留分野の既存研究の広範なマップを提示しています。これにより、読者はDD-Rankingの文脈と今後の発展方向をより深く理解することができます。
+    </p>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorldEval: World Model as Real-World Robot Policies Evaluator解説</title>
+<link href="style.css" rel="stylesheet"/>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script>
+        window.MathJax = {
+          tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)'], ['\\\\(', '\\\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]'], ['\\\\[', '\\\\]']]
+          }
+        };
+    </script>
+<script async="" id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N7SLXFTVBP"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+
+gtag('config', 'G-N7SLXFTVBP');
+</script>
+
+<body>
+<div class="container">
+<!-- ヘッダー部分 -->
+<div class="header">
+<div class="title-area">
+<h1 class="title">WorldEval: World Model as Real-World Robot Policies Evaluator</h1>
+<p class="subtitle">None</p>
+</div>
+<div class="meta-info">
+<p>論文解説</p>
+</div>
+</div>
+<div class="section-card" id="Abstract">
+<h2 class="section-title"><i class="fas fa-scroll"></i>Abstract - 論文の概要</h2>
+<div class="glass-card">
+<p style="text-align: center; font-size: 16px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-bullhorn"></i> このアブストラクトでは、ロボット操作ポリシーの評価における現状の課題を明らかにし、その解決策として<span class="keyword">ワールドモデル</span>を用いた革新的な評価フレームワーク<span class="keyword">WorldEval</span>を提案します。特に、ワールドモデルがロボットの行動を忠実に再現した動画を生成するためのキー技術<span class="keyword">Policy2Vec</span>と、それを用いた自動評価パイプラインの有効性、そして実世界評価との高い相関性を実証することを目指します。
+        </p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> ロボット技術の進歩と評価の課題</h3>
+<div class="content-box">
+<p><i class="fas fa-robot"></i> ロボット工学の分野では、様々なタスクをこなせる<span class="highlight">汎用的なロボット操作ポリシー</span>（ロボットの行動戦略）の開発が目覚ましい進歩を遂げています。これにより、ロボットがより複雑な作業を行える可能性が広がっています。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-exclamation-triangle"></i> しかし、大きな壁が…実世界での評価</p>
+<p>開発されたポリシーが本当にうまく機能するかを<span class="keyword">実世界のロボットでテストする</span>のは、依然として非常に<span class="highlight">時間がかかり、困難な作業</span>です。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-tasks"></i> <span class="keyword">タスク数の増加</span>: ロボットにやらせたい作業が増えれば増えるほど、評価の手間も膨大になります。</li>
+<li><i class="fas fa-broadcast-tower"></i> <span class="keyword">環境条件の変化</span>: 作業場所の明るさや物の配置が変わるなど、環境が少しでも変わると、ポリシーがうまく機能しなくなる可能性があり、その都度評価が必要になります。</li>
+</ul>
+<p style="text-align: center; margin-top: 15px;">
+<i class="fas fa-hourglass-half fa-2x" style="color: var(--color-secondary);"></i> <i class="fas fa-arrow-right fa-2x" style="color: var(--color-gray); margin: 0 10px;"></i> <i class="fas fa-redo fa-2x" style="color: var(--color-secondary);"></i> <i class="fas fa-arrow-right fa-2x" style="color: var(--color-gray); margin: 0 10px;"></i> <i class="fas fa-sad-tear fa-2x" style="color: var(--color-secondary);"></i>
+</p>
+<p style="text-align: center; font-family: 'Yomogi', cursive;">時間と労力の繰り返し…大変です！</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> 解決策の提案: ワールドモデルによる評価</h3>
+<div class="content-box">
+<p>この研究では、<span class="keyword">ワールドモデル</span>（世界の仕組みを学習したシミュレーションモデル）が、実世界のロボットポリシー評価において、以下の点で非常に有効な<span class="highlight">代替手段</span>となり得ることを示します。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-expand-arrows-alt fa-2x" style="color: var(--color-primary);"></i>
+<h4><span class="badge blue">スケーラブル</span></h4>
+<p>多くのタスクやポリシーを効率的に評価可能</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-sync-alt fa-2x" style="color: var(--color-primary);"></i>
+<h4><span class="badge blue">再現可能</span></h4>
+<p>同じ条件で何度でも評価でき、結果の比較が容易</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-check-circle fa-2x" style="color: var(--color-primary);"></i>
+<h4><span class="badge blue">信頼性</span></h4>
+<p>実世界の結果と相関の高い評価を提供</p>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-video"></i> 鍵となる課題: 正確な行動ビデオの生成</h3>
+<div class="content-box">
+<p>ワールドモデルを評価に使う上での重要な課題は、<span class="keyword">ロボットの行動を忠実に反映した正確なポリシービデオを生成する</span>ことです。ただ単に動画を作るだけでなく、ロボットが「実際にどう動くか」を正しく予測する必要があります。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search"></i> 観察された問題点</p>
+<p>従来の方法、例えばロボットの行動指令（関節の角度など）を直接ワールドモデルに入力したり、高次元の複雑なエンコーディング手法（情報を圧縮して表現する方法）を使ったりするだけでは、<span class="highlight">ロボットが意図した通りに行動するビデオを生成できない</span>ことが多いことが分かりました。</p>
+<p style="text-align: center; margin-top:15px;">
+<span style="font-family: 'Yomogi', cursive; font-size: 16px;">ロボットのアクション入力 <i class="fas fa-arrow-right" style="color: var(--color-gray);"></i> ワールドモデル <i class="fas fa-arrow-right" style="color: var(--color-gray);"></i> <span style="color:red;">意図しない動きの動画 <i class="fas fa-times-circle"></i></span></span>
+</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-magic"></i> 提案手法: Policy2Vec</h3>
+<div class="content-box">
+<p>この課題を解決するために、<span class="keyword">Policy2Vec</span>というシンプルかつ効果的なアプローチを提案します。</p>
+<div class="bubble-box" style="border-color: var(--color-accent1);">
+<p style="font-family: 'Yomogi', cursive; font-size: 18px; color: var(--color-accent1); text-align:center;">💡 Policy2Vec のアイデア 💡</p>
+<p>Policy2Vecは、既存の<span class="highlight">ビデオ生成モデル</span>を、ロボットの<span class="keyword">潜在的な行動情報（latent action）</span>に従ってロボットビデオを生成する<span class="highlight">ワールドシミュレータ</span>へと変換する手法です。</p>
+<div class="pipeline" style="margin-top:15px;">
+<div class="pipeline-step" style="background-color: #e6ffed;">
+<span class="step-number" style="background-color: var(--color-accent1);">1</span>
+                    ロボットポリシーから「潜在的な行動情報」を抽出
+                </div>
+<div class="pipeline-step" style="background-color: #e6ffed;">
+<span class="step-number" style="background-color: var(--color-accent1);">2</span>
+                    この情報をビデオ生成モデルに入力
+                </div>
+<div class="pipeline-step" style="background-color: #e6ffed;">
+<span class="step-number" style="background-color: var(--color-accent1);">3</span>
+                    ロボットの行動を反映したビデオを生成 <i class="fas fa-check-circle" style="color: var(--color-accent1); margin-left: 5px;"></i>
+</div>
+</div>
+</div>
+<p><i class="fas fa-info-circle"></i> <span class="keyword">潜在的な行動情報 (Latent Action)</span> とは、ロボットのポリシーネットワーク内部で生成される、目に見えない行動の意図や計画を圧縮した表現のことです。表面的な関節の動きだけでなく、より高次元な行動の意味合いを含んでいます。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tools"></i> WorldEval: 自動評価パイプライン</h3>
+<div class="content-box">
+<p>Policy2Vecを基盤として、<span class="keyword">WorldEval</span>という自動化されたパイプラインを導入します。これは、実世界のロボットポリシーを<span class="highlight">完全にオンラインで（シミュレーション内で）評価する</span>ために設計されています。</p>
+<div class="framework-box" style="border-color: var(--color-accent2);">
+<p class="framework-title" style="color: var(--color-accent2); border-bottom-color: var(--color-accent2);"><i class="fas fa-chart-line"></i> WorldEvalの主な機能</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-sort-amount-up" style="color: var(--color-accent2);"></i> <span class="highlight">ポリシーランキング</span>: 様々なロボットポリシーや、単一ポリシー内の異なる学習段階（チェックポイント）の性能を効果的に順位付けします。</li>
+<li><i class="fas fa-shield-alt" style="color: var(--color-accent2);"></i> <span class="highlight">安全性検出</span>: 新しく開発されたロボットモデルが危険な行動を取るのを事前に検知し、防ぐ<span class="keyword">セーフティディテクター</span>として機能します。</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-vial"></i> 実証実験と結果</h3>
+<div class="content-box">
+<p>実世界の環境で複数の操作ポリシーを対象とした包括的なペア評価（WorldEvalでの評価と実機での評価を比較）を実施しました。</p>
+<div class="info-grid">
+<div class="info-card" style="background-color: rgba(92, 184, 92, 0.1);">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-link"></i> 強力な相関性</p>
+<p>WorldEvalにおけるポリシーの性能と、<span class="highlight">実世界シナリオでの性能との間に強い相関関係</span>があることを実証しました。つまり、WorldEvalで「良い」と評価されたポリシーは、実際にロボットを動かしても「良い」結果を出す傾向があるということです。</p>
+<p style="text-align: center; margin-top: 10px;">
+<span style="font-family: 'Kaisei Decol', serif; font-size: 16px;">WorldEval評価 <i class="fas fa-exchange-alt" style="color: var(--color-accent1);"></i> 実世界評価</span>
+</p>
+</div>
+<div class="info-card" style="background-color: rgba(255, 126, 95, 0.1);">
+<p class="note-title" style="color: var(--color-secondary);"><i class="fas fa-chart-pie"></i> 既存手法との比較</p>
+<p>さらに、我々の手法は、<span class="keyword">real-to-sim</span>アプローチ（実世界のデータを基にシミュレーション環境を構築して評価する従来手法）のような一般的な手法よりも<span class="highlight">大幅に優れた性能</span>を示しました。</p>
+</div>
+</div>
+</div>
+<div class="glass-card" style="margin-top: 25px;">
+<p style="text-align: center; font-size: 16px; font-family: 'Yomogi', cursive;">
+<i class="fas fa-paper-plane"></i> <strong>結論として、WorldEvalはロボットポリシー評価のためのスケーラブルで信頼性の高い「ものさし」となり、危険な実機テストを減らしつつ、開発サイクルを加速させる可能性を秘めています！</strong>
+</p>
+</div>
+</div>
+<div class="section-card" id="1_Introduction">
+<h2 class="section-title"><i class="fas fa-scroll"></i> 1 Introduction</h2>
+<p>このセクションでは、ロボットの行動戦略（ポリシー）を評価する新しい方法、<strong>WorldEval</strong> について紹介します。特に、実世界のロボットを使って実験する代わりに、コンピュータシミュレーション（ワールドモデル）の中で評価するというアイデアが中心です。</p>
+<div class="info-grid">
+<div class="info-card">
+<h3 class="subsection-title"><i class="fas fa-rocket"></i> ロボット工学の進歩と評価の壁</h3>
+<p>近年、ロボット工学は目覚ましい進歩を遂げ、<span class="keyword">汎用ロボット操作ポリシー</span>（様々なタスクをこなせる賢いロボットの行動戦略）の開発が進んでいます。しかし、これらのポリシーを実際に評価するのは、依然として大きな課題を抱えています。</p>
+</div>
+<div class="info-card">
+<h3 class="subsection-title"><i class="fas fa-tasks"></i> 実世界評価の難しさ</h3>
+<p>例えば、ロボットに1000種類もの異なる作業を学習させたとしましょう。その全てを実機でテストするのは<span class="highlight">非現実的</span>です。また、新しいモデルが古いモデルよりも本当に全体的に優れているのかを判断するのも非常に困難です。さらに、新しい学習方法を試す中で、ロボットが予期せず誤った行動や危険な動きをする可能性もあります。これを実世界で直接テストすると、作業者への危害、周囲の機器の損傷、ロボット自体の破損といった<span class="highlight">重大なリスク</span>が伴います。</p>
+<div style="text-align: center; margin-top: 10px;">
+<i class="fas fa-tools fa-2x" style="color: var(--color-gray);"></i>
+<i class="fas fa-arrow-right fa-2x" style="color: var(--color-primary); margin: 0 10px;"></i>
+<i class="fas fa-exclamation-triangle fa-2x" style="color: var(--color-secondary);"></i>
+</div>
+<p style="text-align: center; font-family: 'Yomogi', cursive;">多くのタスク評価 ➜ 時間とコスト大、危険も伴う</p>
+</div>
+</div>
+<div class="note-box" style="margin-top: 20px;">
+<p class="note-title"><i class="fas fa-shield-alt"></i> 求められる評価手法</p>
+<p>このような背景から、ロボットコミュニティでは、実世界へ展開する前に、管理された環境でロボット操作ポリシーを評価するための、<span class="keyword">安全</span>で<span class="keyword">信頼性が高く</span>、かつ<span class="keyword">スケーラブル</span>（規模が大きくなっても対応できる）な手法が緊急に求められています。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-lightbulb"></i> 提案：ワールドモデルによる解決</h3>
+<p>本研究では、この課題に対する解決策として<span class="keyword">ワールドモデル</span>の概念を提案します。ワールドモデルとは、ざっくり言うと「世界の法則を学習したシミュレータ」のようなものです。この論文では、実世界のデータで学習された操作ポリシーを、このワールドモデル（ワールドシミュレータ）内で評価します。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-globe-americas"></i> ワールドモデル (World Model) [5]</p>
+<p>環境のダイナミクス（どのように変化するか）を学習し、現在の状態と行動に基づいて未来の状態を予測するモデルのこと。この研究では、ロボットの行動をシミュレートする「仮想世界」として機能します。</p>
+</div>
+<p>このような<span class="keyword">実データからビデオへの評価 (real-to-video evaluation)</span> フレームワークは、従来の実世界での評価を補完するものとして、以下の利点を提供できます。</p>
+<div class="feature-card-grid">
+<div class="feature-item">
+<i class="fas fa-expand-arrows-alt fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>スケーラブル</strong><br/>多くのタスクやポリシーを効率的に評価可能</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-redo fa-2x" style="color: var(--color-primary);"></i>
+<p><strong>再現可能</strong><br/>同じ条件で何度も評価でき、結果の比較が容易</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-search-plus fa-2x" style="color: var(--color-accent2);"></i>
+<p><strong>洞察に富む</strong><br/>ポリシーの挙動を詳細に分析可能</p>
+</div>
+</div>
+<p>ロボット操作のためのワールドモデルに関する既存の研究[1, 2, 3, 4]は、主に操作性能を向上させるための補助的または事前学習の目的としてビデオ生成を利用しています。しかし、本研究は、それらとは異なる、しかし同様に重要な問いに取り組んでいます。</p>
+<div class="bubble-box" style="margin-top: 25px; border-color: var(--color-secondary);">
+<p style="font-family: 'Yomogi', cursive; font-size: 1.2em; color: var(--color-secondary); text-align:center;"><i class="fas fa-question-circle"></i> 本研究の核心的な問い</p>
+<p style="text-align:center; font-size: 1.1em;">実世界データで訓練されたロボットの操作ポリシーを、<br/><span class="highlight">ワールドシミュレータを通じて評価し、ランク付けできる</span><br/>自動化されたパイプラインを構築することは可能か？</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> ワールドモデル評価器の構築アプローチと課題</h3>
+<p>ワールドモデル評価器を構築する一つの可能なアプローチは、操作ポリシーからの行動出力（ロボットが次にどう動くかの指示）を直接採用するか、または明示的に訓練された<span class="keyword">行動エンコーダ</span>（行動をコンピュータが理解しやすい数値の集まりに変換する装置）を用いて、ロボットの行動を離散的な高次元空間に射影する方法です。この方法は、自動運転やビデオゲームの分野で広く採用されています[6, 7]。</p>
+<div class="info-grid">
+<div class="info-card">
+<p class="challenge-title" style="color: var(--color-secondary);"><i class="fas fa-exclamation-circle"></i> ロボット操作特有の課題点</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-puzzle-piece" style="color: var(--color-secondary); margin-right: 5px;"></i><strong>行動空間の曖昧さ:</strong> ロボットの行動空間（例えば、関節のわずかな動きなど）は意味的に曖昧なことがあり、これらの行動をどう最適に表現するかが未解決の問題です。</li>
+<li><i class="fas fa-eye-slash" style="color: var(--color-secondary); margin-right: 5px;"></i><strong>解釈と可視化の困難:</strong> ポリシーモデルから予測された行動を解釈し、それを生成ビデオ内で適切に視覚化することも難しい課題です。</li>
+<li><i class="fas fa-cubes" style="color: var(--color-secondary); margin-right: 5px;"></i><strong>物理特性の把握:</strong> 特に未知の物体や新しい環境にある物体の物理特性を正確に捉えることは難しく、これがスケーラビリティを大きく妨げます。</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-brain"></i> 本研究の中心的なアイデア</h3>
+<p>この研究の中心的なアイデアは、ポリシーモデルからの正確な行動出力を使用したり、行動エンコーディング専用の別ネットワークを訓練したりする代わりに、<span class="highlight">ポリシーネットワーク自体がロボット行動の効果的な表現を本質的に提供する</span>というものです。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb" style="color: var(--color-accent2);"></i> ひらめきポイント！</p>
+<p>ワールドモデルは、効果的なロボットポリシーとそうでないポリシーを、生成されるビデオ出力にその性能を直接反映させることで区別できる、という洞察に基づいています。</p>
+<div style="text-align: center; margin: 15px 0;">
+<span style="font-family: 'Yomogi', cursive; font-size: 1.1em;">ポリシーA (優秀) <i class="fas fa-arrow-right" style="color: var(--color-primary);"></i> 生成ビデオA (成功) <i class="fas fa-check-circle" style="color: var(--color-accent1);"></i></span><br/>
+<span style="font-family: 'Yomogi', cursive; font-size: 1.1em;">ポリシーB (イマイチ) <i class="fas fa-arrow-right" style="color: var(--color-primary);"></i> 生成ビデオB (失敗) <i class="fas fa-times-circle" style="color: var(--color-secondary);"></i></span>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-magic"></i> Policy2Vec: 新しい行動表現戦略</h3>
+<p>これらの限界を克服するために、私たちは <span class="keyword">Policy2Vec</span> というシンプルな戦略を導入します。これは、操作ポリシーネットワーク自体の固有のエンコーディング能力を<span class="keyword">行動エンコーダ</span>として活用するものです。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-project-diagram"></i> Policy2Vec の仕組み</p>
+<p>この革新的なアプローチは、ポリシーネットワークの<span class="keyword">潜在表現</span>（内部で情報を圧縮したベクトル）を直接利用することで、外部の、あるいは明示的に訓練された行動エンコーダの必要性を回避します。</p>
+<p><strong>基本的な考え方:</strong> ポリシーネットワークは、生成ビデオを通じて可視化された際に、効果的なポリシーと非効果的なポリシーを区別できるような、有益で識別的な行動表現を本質的に生み出します。</p>
+<p><strong>具体的には:</strong> Policy2Vecは、ポリシーが生成した行動ベクトルを、事前訓練されたビデオ生成モデルに注入します。これにより、ビデオ生成モデルが、評価対象の各ポリシーに合わせてカスタマイズされた<span class="keyword">ワールドモデル</span>へと効果的に変換されます。</p>
+<div style="text-align: center; margin: 10px 0;">
+<span class="badge blue">ポリシーの潜在行動ベクトル</span> <i class="fas fa-plus" style="color: var(--color-primary); margin:0 5px;"></i> <span class="badge purple">事前学習済ビデオ生成モデル</span> <i class="fas fa-equals" style="color: var(--color-primary); margin:0 5px;"></i> <span class="badge green">カスタムワールドモデル</span>
+</div>
+<p>我々の実験結果は、これらのポリシーによって生成されたエンコーディングが、視覚的な結果を通じてポリシーの有効性を頑健に反映し、ロボットポリシーの効果的なオンライン評価を可能にすることを示しています。</p>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-flask"></i> WorldEval: 統合評価ツール群の紹介</h3>
+<p>Policy2Vecを基盤として、私たちは<span class="keyword">WorldEval</span>を導入します。これは、ロボット操作シナリオのために特別に設計された、統合的な<span class="keyword">real-to-video評価ツール群</span>です。</p>
+<div class="glass-card">
+<h4><i class="fas fa-vial"></i> WorldEvalによる広範な実験</h4>
+<p>Diffusion Policy [8]、OpenVLA [9]、DexVLA [10]、そして $\pi _ { 0 }$ [11] といった複数の公開されている操作ポリシーを用いた広範な実験により、WorldEvalによって測定されたポリシーの性能と、実世界での実験で観察された実際の性能との間に<span class="highlight">強い相関関係</span>があることが示されました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item" style="background-color: rgba(74, 111, 165, 0.1); padding:15px;">
+<i class="fas fa-link fa-2x" style="color: var(--color-primary);"></i>
+<p><strong>強い相関</strong><br/>WorldEval評価 ⇔ 実世界性能</p>
+</div>
+<div class="feature-item" style="background-color: rgba(255, 126, 95, 0.1); padding:15px;">
+<i class="fas fa-tachometer-alt fa-2x" style="color: var(--color-secondary);"></i>
+<p><strong>FID指標</strong><br/>軽量かつ迅速なポリシーランク付け</p>
+</div>
+<div class="feature-item" style="background-color: rgba(92, 184, 92, 0.1); padding:15px;">
+<i class="fas fa-map-signs fa-2x" style="color: var(--color-accent1);"></i>
+<p><strong>汎用性</strong><br/>新環境・新物体への対応可能性</p>
+</div>
+</div>
+<p>加えて、私たちは<span class="keyword">Fréchet Inception Distance (FID)</span>を、単純なタスクにおいて異なるポリシーモデルを効果的かつ迅速にランク付けできる軽量な定量的指標として特定しました。</p>
+<p class="definition-box" style="padding: 10px; margin-top:10px;">
+<p class="definition-title" style="margin-bottom:5px; padding-bottom:3px;"><i class="fas fa-ruler-combined"></i> Fréchet Inception Distance (FID)</p>
+<p style="font-size: 0.9em;">生成された画像（この場合はビデオフレーム）の集合と、実際の画像の集合の分布がどれだけ似ているかを測る指標。値が小さいほど、生成されたものが本物に近いことを意味します。ここではポリシー評価の代理指標として利用されます。</p>
+</p>
+<p>さらに、WorldEvalは、全く新しい環境や未知の物体に対するロボットポリシーを評価する潜在能力を示し、実世界のポリシーの挙動を正確に反映します。</p>
+<p>したがって、WorldEvalは、ワールドモデルをロボット操作ポリシー評価のための<span class="highlight">信頼性が高くスケーラブルなツール</span>として活用する上で、重要な一歩を示すものです。</p>
+</div>
+<img alt="WorldEval Evaluation Approach" src="WorldEval_evaluation_approach.jpg" style="margin-top: 20px; border: 1px solid #ddd; border-radius: 8px;"/>
+<p style="text-align:center; font-size:0.9em; color:var(--color-gray);">図1: WorldEval は、多様なタスクにわたる実世界のポリシーを評価するための、適応性があり、柔軟で、信頼性の高いアプローチです。ワールドシミュレータでの成功率と実ロボットで観察された成功率との間に強い相関を示します。</p>
+</div>
+<div class="section-card" id="2_Related_Work">
+<h2 class="section-title"><i class="fas fa-book-reader"></i> 2 Related Work</h2>
+<p style="margin-bottom: 20px; font-size: 16px; text-align: center; font-family: 'Yomogi', cursive;">
+        このセクションでは、私たちの研究「WorldEval」がどのような背景から生まれたのか、そして既存の研究とどう違うのかを明らかにするために、関連する研究分野を詳しく見ていきます。
+        特に、<span class="highlight">ロボットの行動ルール（ポリシー）をどう評価するか</span>、<span class="highlight">ロボットの行動をどう表現するか</span>、<span class="highlight">ロボットのための「世界モデル」とは何か</span>、そして<span class="highlight">ロボットがお手本から学ぶ「模倣学習」</span>という４つのテーマについて、これまでの歩みと課題、そしてWorldEvalがもたらす新しい可能性について解説します。✏️
+    </p>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-clipboard-check"></i> ロボットポリシーの評価</h3>
+<p>「汎用的な」ロボット、つまり色々なタスクをこなせる賢いロボットのポリシー（行動戦略）を評価するのは、とても大変な作業です。多くの場合、<span class="keyword">たくさんの異なるタスクや環境</span>で、実際に動かしてみたり、シミュレーションしたりしてテストする必要があります。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-robot" style="color: var(--color-accent1);"></i></div>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1); text-align: center;">実世界での評価</h4>
+<p>実際にロボットを動かして性能を確かめる方法です。現実の複雑な状況を反映できますが、時間とコストがかかり、危険も伴うことがあります。[12-24]</p>
+</div>
+<div class="info-card">
+<div class="icon-item"><i class="fas fa-desktop" style="color: var(--color-accent2);"></i></div>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent2); text-align: center;">シミュレーションベースの評価</h4>
+<p>コンピュータ上で仮想環境を作り、その中でロボットを動かして評価する方法です。安全かつ繰り返しテストできますが、現実とのギャップ（シムとリアルの差）が問題になることがあります。[12-24]</p>
+</div>
+</div>
+<p style="margin-top: 15px;">いくつかの先進的な評価手法も提案されています：</p>
+<div class="two-column">
+<div class="column">
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-puzzle-piece"></i> SIMPLER [25]</div>
+<p>実世界で学習したモデルを、シミュレーション環境でテストするための包括的なアプローチです。現実 🌍 <i class="fas fa-arrow-right" style="color: var(--color-primary);"></i> シミュレーション 💻 の流れで評価します。</p>
+</div>
+</div>
+<div class="column">
+<div class="framework-box">
+<div class="framework-title"><i class="fas fa-cogs"></i> AutoEval [26]</div>
+<p>実際のロボットを使い、管理された実験室環境で評価プロセスを自動化するシステムです。  Lab 🔬 <i class="fas fa-arrow-right" style="color: var(--color-primary);"></i> 自動評価 🤖 の仕組みです。</p>
+</div>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 20px;">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> しかし、これらの手法にも限界があります...</div>
+<ul class="unstyled-list">
+<li>📌 シミュレーション環境の構築には、特にロボットの<span class="keyword">エンボディメント</span>（物理的な形状や能力のこと）やシナリオが異なる場合、多くの時間と手間がかかります。</li>
+<li>📌 AutoEvalは、特定の実験室の設備や、一種類のロボットエンボディメントに依存してしまうという制約があります。</li>
+<li>📌 このような従来の<span class="keyword">評価プロキシ</span>（代理評価手法）は、新しいエンボディメントで学習したロボットモデルを評価したり、何千ものタスクにわたる性能を評価する際には、うまく機能しないことがあります。</li>
+</ul>
+</div>
+<div class="bubble-box" style="margin-top:25px; border-color: var(--color-accent1);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px;">
+<span class="badge green" style="background-color: var(--color-accent1);">WorldEvalの貢献</span><br/>
+                そこで提案する <span class="keyword">WorldEval</span> フレームワークは、タスクの複雑さやロボットのエンボディメントの種類に関わらず、<span class="highlight">実世界のロボットポリシーをオンラインで評価可能にする</span>ことで、この分野を前進させます！🚀✨
+            </p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-gamepad"></i> ロボットの行動表現</h3>
+<p>ロボットに「どのように動くか」を指示するための<span class="keyword">行動表現 (Action Representation)</span> は、ロボット研究において非常に古くからある重要な問題です。大きく分けて、以下の4つの学習アプローチがあります。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px;">
+<div class="info-card" style="border-top: 5px solid var(--color-primary);">
+<div class="icon-item" style="margin-top: 10px;"><i class="fas fa-th-large" style="font-size: 30px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-primary); text-align:center;">(i) 離散化 (Discretization) [27]</h4>
+<p style="font-size:13px;">行動の各次元（例：関節の角度、手の位置）を、いくつかの区間（ビン）に分割する方法です。例えば、ロボットアームの関節角度を-90度から+90度まで10段階に分ける、といった具合です。</p>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-secondary);">
+<div class="icon-item" style="margin-top: 10px;"><i class="fas fa-brain" style="font-size: 30px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-secondary); text-align:center;">(ii) 関数近似 (Function Approx.) [8, 28-33]</h4>
+<p style="font-size:13px;">ニューラルネットワークを使って、行動をパラメータ化（数式で表現）する方法です。ロボットが見ているものや指示を入力すると、ネットワークが適切な行動を出力します。</p>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-accent2);">
+<div class="icon-item" style="margin-top: 10px;"><i class="fas fa-layer-group" style="font-size: 30px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent2); text-align:center;">(iii) 潜在空間表現 (Latent Space Rep.) [34]</h4>
+<p style="font-size:13px;">変分オートエンコーダ（<span class="keyword">VAE</span>）のような教師なし学習を使って、行動をより低次元の「潜在空間」に圧縮して表現する方法です。複雑な行動の本質的な特徴を捉えられます。</p>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-accent3);">
+<div class="icon-item" style="margin-top: 10px;"><i class="fas fa-language" style="font-size: 30px;"></i></div>
+<h4 style="font-family: 'Kaisei Decol', serif; color: var(--color-accent3); color: var(--color-dark); text-align:center;">(iv) 言語トークン列 (Seq. of Language Tokens) [35, 9, 36, 37]</h4>
+<p style="font-size:13px;">自己回帰型のVision-Language-Actionモデルで広く使われている方法で、行動を言語のトークン（単語や記号の断片）の並びとして表現します。「手を前に伸ばす」→「掴む」→「持ち上げる」といった具合です。</p>
+</div>
+</div>
+<div class="note-box" style="margin-top: 25px; background-color: rgba(74, 111, 165, 0.05); border-left-color: var(--color-primary);">
+<div class="note-title" style="color: var(--color-primary);"><i class="fas fa-lightbulb"></i> WorldEvalのアプローチ</div>
+<p>私たちのアプローチは、上記 (ii) の<span class="keyword">関数近似法</span>を探求しています。特に、<span class="highlight">ポリシーネットワーク自体を行動表現として利用する</span>ことで、世界モデルがより頑健な評価機として機能する効果を高めることを目指しています。つまり、ポリシーが内部でどのように行動を考えているかを直接使う、というアイデアです！</p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-globe-americas"></i> ロボットのための世界モデル</h3>
+<p><span class="keyword">世界モデル (World Model)</span> とは、学習した行動表現に基づいて、将来の状態や結果を予測するモデルのことです。あたかもロボットが自分自身の小さな「世界」を持っていて、その中で「こう動いたら、こうなるだろう」とシミュレーションするようなイメージです。</p>
+<p>世界モデルは、ロボットのナビゲーション（移動）やマニピュレーション（物体の操作）の学習を助けるために、多くの応用研究があります。[38-46, 1-4]
+        例えば、</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-map-signs" style="font-size: 24px;"></i></div>
+<p>経路計画の改善</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-hand-paper" style="font-size: 24px;"></i></div>
+<p>物体操作の精度向上</p>
+</div>
+<div class="feature-item">
+<div class="icon-item"><i class="fas fa-video" style="font-size: 24px;"></i></div>
+<p>将来の状況予測</p>
+</div>
+</div>
+<p style="margin-top: 15px;">また、別の研究の流れとして、<span class="keyword">ビデオ生成 (Video Generation)</span> を使ってポリシー学習を強化するアプローチもあります。[47-54] これは、ロボットが行動した結果どうなるかを動画で予測することで、より良い行動を学ぼうとするものです。</p>
+<div class="glass-card" style="margin-top: 20px;">
+<p><span class="keyword">1X-world [55]</span> は、世界モデルを実ロボットポリシーの評価機として活用するという概念を初めて提案した研究の一つです。しかし、この研究では具体的な実現方法については示されていませんでした。</p>
+<div style="text-align: center; margin-top:10px;">
+<i class="fas fa-question-circle fa-2x" style="color: var(--color-secondary);"></i>
+</div>
+</div>
+<div class="bubble-box" style="margin-top:25px; border-color: var(--color-accent2);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px;">
+<span class="badge purple" style="background-color: var(--color-accent2);">WorldEvalの独自性</span><br/>
+                私たちの手法は、これらのアプローチとは根本的に異なります。ビデオ予測や世界モデルを使ってロボットポリシーを<span class="highlight">改善する</span>のではなく、WorldEvalは<span class="highlight">実ロボットポリシーのオンライン評価を実行できる世界シミュレータを訓練する</span>ことを目指しています。評価に特化している点が大きな違いです！ 🧐
+            </p>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title"><i class="fas fa-chalkboard-teacher"></i> ロボット制御のための模倣学習</h3>
+<p><span class="keyword">模倣学習 (Imitation Learning)</span> は、専門家（人間など）のデモンストレーション（お手本）からロボットが行動を学ぶ手法です。[8, 27, 28, 30-31, 33-34, 56-69] 特に最近では、<span class="keyword">Vision-Language-Action (VLA) モデル</span> [9, 11, 29, 32, 35, 70-82] が、その<span class="highlight">スケーラビリティ</span>（大規模データへの対応能力）の高さからロボットコミュニティで大きな注目を集めています。</p>
+<div class="pipeline" style="margin-top: 20px;">
+<div class="pipeline-step">
+<i class="fas fa-database fa-fw" style="color: var(--color-primary); margin-right: 5px;"></i> 大規模データセット
+            </div>
+<div class="pipeline-step">
+<i class="fas fa-cogs fa-fw" style="color: var(--color-primary); margin-right: 5px;"></i> 強力なモデル (例: VLAモデル)
+            </div>
+<div class="pipeline-step">
+<i class="fas fa-check-circle fa-fw" style="color: var(--color-accent1); margin-right: 5px;"></i> ドメイン内タスクの効率的な学習
+            </div>
+<div class="pipeline-step">
+<i class="fas fa-lightbulb fa-fw" style="color: var(--color-accent1); margin-right: 5px;"></i> 未知のドメイン外シナリオへの適応
+            </div>
+</div>
+<p style="margin-top: 15px;">これらのアプローチは、大規模なデータセットと強力なモデルを活用することで、学習データに含まれるタスク（<span class="keyword">ドメイン内タスク</span>）を効率的に学習し、学習データには含まれない多くの未知の状況（<span class="keyword">ドメイン外シナリオ</span>）にも適応できる能力を示しています。</p>
+<div class="challenge-box" style="margin-top: 20px;">
+<div class="challenge-title"><i class="fas fa-exclamation-triangle"></i> しかし、モデルの能力が急速に進歩するにつれて、課題も...</div>
+<p>実世界でのポリシー評価がますます困難になっています。従来の実世界評価方法は、</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-clock" style="color: var(--color-secondary); margin-right: 5px;"></i> 非常に時間がかかり、労力も大きい。</li>
+<li><i class="fas fa-map-marker-alt" style="color: var(--color-secondary); margin-right: 5px;"></i> 新しい環境や未知の物体に対する性能評価には不十分。</li>
+</ul>
+</div>
+<div class="bubble-box" style="margin-top:25px; border-color: var(--color-accent1);">
+<p style="font-family: 'Yomogi', cursive; font-size: 16px;">
+<span class="badge green" style="background-color: var(--color-accent1);">WorldEvalの解決策</span><br/>
+                この限界に対処するため、本研究では、<span class="highlight">世界シミュレータを活用した包括的かつ効率的なポリシー評価</span>を提案します。これにより、時間とコストを抑えつつ、多様な状況での評価が可能になります。🌍🤖📊
+            </p>
+</div>
+</div>
+<img alt="Figure 2: Model architecture and evaluation pipeline for WorldEval" class="figure-image" src="WorldEval_model_architecture_pipeline.jpg" style="width: 80%; margin-top: 30px; border: 1px solid #ddd; border-radius: 8px;"/>
+<p class="reference" style="text-align: center; margin-top: 5px; font-size: 13px;">
+<strong>図2: WorldEvalのモデルアーキテクチャと評価パイプライン</strong><br/>
+<span style="display:block; margin-top:5px;"><strong>上段:</strong> 複数のロボットポリシーから<span class="keyword">Policy2Vec埋め込み</span>を抽出し、事前学習済みのビデオ生成モデルに注入することで、世界モデルへと変換します。</span>
+<span style="display:block; margin-top:5px;"><strong>下段:</strong> 世界シミュレータを用いてポリシーモデルを評価するためのWorldEval全体のパイプラインを示しています。</span>
+</p>
+<div class="note-box" style="margin-top:20px;">
+<div class="note-title"><i class="fas fa-search-plus"></i> 図2の解説ポイント</div>
+<p>この図は、WorldEvalの心臓部を示しています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-project-diagram" style="color: var(--color-primary); margin-right: 5px;"></i> <strong>Policy2Vec:</strong> ロボットのポリシー（行動戦略）そのものをベクトル表現（Policy2Vec埋め込み）に変換します。これが、ロボットの「意図」や「行動のクセ」を捉える鍵となります。</li>
+<li><i class="fas fa-film" style="color: var(--color-primary); margin-right: 5px;"></i> <strong>ビデオ生成モデルの変換:</strong> このPolicy2Vec埋め込みを、既存の高性能なビデオ生成モデル（例：絵を描いたり動画を作ったりするAI）に「注入」します。これにより、ただのビデオ生成モデルが、特定のポリシーの行動をシミュレートする「世界モデル」へと進化します。</li>
+<li><i class="fas fa-tasks" style="color: var(--color-primary); margin-right: 5px;"></i> <strong>評価パイプライン:</strong> このようにして作られた世界モデル（世界シミュレータ）を使って、様々なロボットポリシーを評価します。具体的には、あるタスクを与えられた時に、そのポリシーがどのような行動を生成するかをビデオで確認し、成功したかどうかを判定します。</li>
+</ul>
+<p>この仕組みにより、実際にロボットを動かさなくても、ポリシーの性能を効率的に評価できるようになります。</p>
+</div>
+</div>
+<div class="section-card" id="3_WorldEval:_World_Simulator_for_Evaluation_of_Robot_Manipulation">
+<h2 class="section-title"><i class="fas fa-robot"></i>3 WorldEval: World Simulator for Evaluation of Robot Manipulation</h2>
+<p>このセクションでは、ロボットの操作ポリシーを評価するための新しいフレームワーク <strong class="keyword">WorldEval</strong> について詳しく解説します。WorldEvalは、<span class="highlight">現実世界のロボットを使って実験する代わりに、シミュレータ内でポリシーの性能を評価する</span>ことを目指しています。特に、ロボットの行動に応じてリアルなビデオを生成する「世界モデル」を活用する点が特徴です。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-lightbulb"></i>主な目的と論旨</p>
+<p>ロボットポリシーの評価は、時間とコストがかかり、特に多数のタスクや変化する環境条件下では困難です。WorldEvalは、この課題に対し、<strong class="keyword">スケーラブルで再現可能、かつ信頼性の高い評価手段</strong>を世界モデルを通じて提供することを目指します。重要なのは、現実世界での評価を完全に置き換えるのではなく、シミュレータでの評価結果と現実世界での評価結果の<span class="highlight">相対的な性能ランキングに強い相関を持たせる</span>ことで、ポリシー設計の改善に役立つ情報を提供することです。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tasks"></i>3.1 Problem Formulation (問題設定)</h3>
+<p>ここでは、WorldEvalが取り組む問題設定を明確にします。</p>
+<p>私たちは、<strong class="keyword">行動条件付き世界モデル</strong> (action-conditioned world model) を使って、ロボットの操作ポリシーを評価し、その行動特性を分析する方法を探求します。ここでの「行動条件付き」とは、ロボットの「行動」を入力として、その結果どうなるかを予測・生成するモデルという意味です。</p>
+<div class="glass-card">
+<p><i class="fas fa-bullseye"></i><strong>WorldEvalの目標</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-times-circle" style="color: var(--color-secondary);"></i> 完全に現実世界の評価を置き換えることや、世界モデルによって現実世界のポリシーの振る舞いを完璧に再現すること<strong>ではありません</strong>。生成されたビデオと実際のパフォーマンス条件の間には、どうしても差異（ギャップ）が生じるためです。</li>
+<li><i class="fas fa-check-circle" style="color: var(--color-accent1);"></i> <strong class="keyword">現実世界の実験で観察される相対的な性能ランキング</strong>と、<strong class="keyword">世界シミュレータから得られる性能ランキング</strong>との間に<span class="highlight">強い相関関係を達成する</span>ことです。</li>
+</ul>
+<p>このような相関関係が得られれば、開発者はシミュレータを使って手軽にポリシーの良し悪しを判断し、設計の反復的な改善に繋げることができます。</p>
+</div>
+<p>つまり、WorldEvalはポリシーの現実世界での振る舞いを精密に1対1で再現しようとするのではなく、<span class="highlight">生成されたビデオと実際の評価との間で一貫した相対的パフォーマンスを示す</span>ことを目指します。具体的には、あるポリシーが現実世界のテストで別のポリシーよりも優れていれば、この比較結果がWorldEvalの評価でも一貫して反映されるべきです。これにより、世界シミュレータは信頼できる代理指標として機能し、ポリシーの反復的な改良に役立つフィードバックを提供できます。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-calculator"></i>形式的な定義</p>
+<p>2つのポリシー $\pi_a$ と $\pi_b$ があり、それぞれの現実世界での性能指標 (例：代表的なタスクセットにおける平均成功率) を $R_a$ と $R_b$ とします。私たちの目標は、これらの現実世界の指標と強く相関する性能指標 $R_{W,a}$ と $R_{W,b}$ を生成する世界シミュレータ $W$ を開発することです。</p>
+<div class="formula">
+<p>もし、現実世界で $R_a &gt; R_b$ ならば、理想的にはWorldEvalでも $R_{W,a} &gt; R_{W,b}$ となるような関係性を目指します。</p>
+<p>$$ \text{Goal: } \mathrm{correlation}( (R_a, R_b), (R_{W,a}, R_{W,b}) ) \approx 1 $$</p>
+</div>
+<p class="reference">$\pi_a, \pi_b$: 評価対象のロボットポリシー<br/>
+        $R_a, R_b$: ポリシー $\pi_a, \pi_b$ の実環境での性能（例：成功率）<br/>
+        $W$: WorldEvalの世界シミュレータ<br/>
+        $R_{W,a}, R_{W,b}$: ポリシー $\pi_a, \pi_b$ のシミュレータ $W$ 上での性能</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-video"></i>3.2 Policy2Vec: Action-Conditioned Robot Video Generation (行動条件付きロボットビデオ生成)</h3>
+<p>このセクションでは、WorldEvalの中核技術である <strong class="keyword">Policy2Vec</strong> について説明します。Policy2Vecは、ロボットの行動に基づいてリアルなビデオを生成する手法です。</p>
+<div class="challenge-box">
+<p class="challenge-title"><i class="fas fa-question"></i>解決すべき課題</p>
+<p>多くの既存アプローチは、主に言語指示のみに基づいてもっともらしいビデオを生成し、その後、逆動力学などを用いて運動学的情報を導き出すことに焦点を当てています。しかし、私たちの目標は、<span class="highlight">ポリシー評価器として機能する世界シミュレータを構築する</span>ことです。このシミュレータは、ロボットの<strong class="keyword">行動</strong>を直接入力として受け取り、それに対応するリアルなビデオ出力を生成します。これにより、次のような重要な問いが生じます：</p>
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 1.2em; color: var(--color-primary);">「正確な評価のために、現実世界の行動を効果的に捉える世界モデルをどのように構築できるか？」</p>
+</div>
+<div class="content-box">
+<p><strong class="keyword">Latent action embedding (潜在行動埋め込み)</strong></p>
+<p>典型的なロボットポリシーモデルは、以下の3つの主要コンポーネントで構成されます：</p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<div class="feature-item">
+<i class="fas fa-eye" style="font-size: 24px; color: var(--color-accent1);"></i>
+<p><strong>視覚エンコーダ (Visual Encoder)</strong><br/>カメラ画像などの視覚情報を処理し、特徴量を抽出します。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-language" style="font-size: 24px; color: var(--color-accent2);"></i>
+<p><strong>言語エンコーダ (Language Encoder)</strong><br/>「リンゴを皿に置く」といった言語指示を処理し、特徴量を抽出します。</p>
+</div>
+<div class="feature-item">
+<i class="fas fa-robot" style="font-size: 24px; color: var(--color-accent3);"></i>
+<p><strong>行動デコーダ (Action Decoder)</strong><br/>視覚情報と言語情報から、ロボットの具体的な行動（関節の角度変化など）を生成します。</p>
+</div>
+</div>
+<p>行動デコーダが最終的な行動シーケンスを出力する<span class="highlight">前段階</span>で、ポリシーの内部表現をエンコードした<strong class="keyword">潜在行動埋め込み (Latent Action Embeddings)</strong> を抽出することができます。これらの潜在変数は、潜在空間内に豊かな意味情報を含んでおり、現在のポリシー下でのロボットの<span class="highlight">意図された振る舞い</span>を効果的に表現することができます。これがPolicy2Vecのキーアイデアです。</p>
+</div>
+<img alt="図2: WorldEvalのモデルアーキテクチャと評価パイプライン" src="WorldEval_model_architecture_pipeline.jpg"/>
+<p class="reference" style="text-align: center;">図2: WorldEvalのモデルアーキテクチャと評価パイプラインの概要</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-plus"></i>図2の解説 (上部: Policy2Vecによるビデオ生成)</p>
+<p>図2の上部は、Policy2Vecがどのようにして行動からビデオを生成するかを示しています。</p>
+<ol class="unstyled-list">
+<li><i class="fas fa-brain" style="color: var(--color-primary);"></i> <strong>ポリシーネットワーク</strong>: まず、評価したいロボットポリシー（Vision Encoder, Language Encoder, Action Decoderから成る）があります。このポリシーは、現在の観測（例: カメラ画像）と言語指示（例: "Collect toy to the white tray."）を入力として受け取ります。</li>
+<li><i class="fas fa-cogs" style="color: var(--color-secondary);"></i> <strong>潜在行動の抽出</strong>: Action Decoderが最終的なロボットの関節角度などを出力する直前の、内部的な特徴量（<strong class="keyword">潜在行動埋め込み</strong>、図中ではピンクや黄色の丸で表現）を抽出します。これが <strong class="keyword">Policy2Vec</strong> の核となる情報です。異なるポリシーや同じポリシーでも状況が異なれば、この潜在行動埋め込みは変化します。</li>
+<li><i class="fas fa-project-diagram" style="color: var(--color-accent1);"></i> <strong>入力の準備</strong>:
+                <ul>
+<li>抽出された潜在行動埋め込みは、<strong class="keyword">Projection層</strong>を通してビデオ生成モデルが扱いやすい次元に変換されます。</li>
+<li>言語指示も処理されます（図中 umT5）。</li>
+<li>最初のフレームの画像も入力として使われます。</li>
+</ul>
+</li>
+<li><i class="fas fa-film" style="color: var(--color-accent2);"></i> <strong>ビデオ生成</strong>: これらの情報（潜在行動埋め込み、言語埋め込み、初期フレーム）が、事前学習済みのビデオ生成モデル（この研究では <strong class="keyword">WAN 2.1</strong> をベースとし、<strong class="keyword">DiTブロック</strong> を含み、<strong class="keyword">LoRA</strong>でファインチューニングされる）に入力されます。</li>
+<li><i class="fas fa-video" style="color: var(--color-accent3);"></i> <strong>結果</strong>: モデルは、入力された行動と指示に基づいた未来のロボットのビデオフレームを生成します。</li>
+</ol>
+<p>このプロセスにより、特定のポリシーが特定の状況でどのような行動を取ろうとしているのかを、ビデオとして視覚化できます。</p>
+</div>
+<div class="content-box">
+<p><strong class="keyword">Integrating latent action into video generation model (潜在行動のビデオ生成モデルへの統合)</strong></p>
+<p>潜在行動埋め込みを取得した後、これらをビデオ生成モデルの<strong class="keyword">制御信号</strong>として使用し、言語指示と初期フレームと共に、未来のロボットビデオフレームの生成をガイドします。これを実現するために、事前学習済みのビデオ生成モデルを修正し、ファインチューニングしました。</p>
+<p>この研究では、ベースモデルとして <strong class="keyword">WAN 2.1</strong> [83] を選択しています。その理由は、<span class="highlight">強力な制御性</span>と<span class="highlight">高品質なビデオ合成能力を維持できる</span>点にあります。他のビデオ生成モデルも適用可能です。WAN 2.1は <strong class="keyword">DiT (Diffusion Transformer)</strong> [84] モジュール上に構築されており、これは拡散ベースの画像生成プロセスをガイドするためのマルチモーダル条件のモデリングにおいて重要な役割を果たします。</p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-plug"></i>潜在行動の統合プロセス</p>
+<div class="process-step">
+<div class="step-number">1</div>
+<div class="step-content">ポリシーから得られた潜在行動表現は、まず<strong class="keyword">射影層 (projection layer)</strong> を通して次元数を調整します。</div>
+</div>
+<div class="process-step">
+<div class="step-number">2</div>
+<div class="step-content">次に、学習可能な重み $\alpha$ でスケーリングされます。</div>
+</div>
+<div class="process-step">
+<div class="step-number">3</div>
+<div class="step-content">そして、言語埋め込み（言語指示から得られた特徴量）に加算されます。</div>
+</div>
+</div>
+<p class="reference">（図2上部の Projection と + の記号部分を参照）</p>
+<p>重要な点として、<span class="highlight">ファインチューニング中にはポリシーネットワーク自体は必要ありません</span>。代わりに、ポリシーネットワークから潜在行動を直接キャプチャし、対応する初期観測と言語指示と共に新しいデータセットを形成します。結果として得られる融合された制御信号（潜在行動と言語情報が合わさったもの）がDiTモジュールに入力されます。</p>
+<p>我々は、140億パラメータスケールの画像からビデオへのモデルに対して <strong class="keyword">LoRA (Low-Rank Adaptation)</strong> [85] ファインチューニングを実行しました。主に射影層を学習し、DiTブロック内の線形層を軽くファインチューニングします。この軽量なチューニングにより、モデルは行動のセマンティクス（意味）とそれらが実世界でどのように表現されるかを効果的に捉えることができます。</p>
+<div class="bubble-box">
+<p><i class="fas fa-lightbulb"></i><strong>Policy2Vecの利点</strong></p>
+<p>結果として、同じ観測と言語指示が与えられた場合でも、<strong class="keyword">異なるポリシーは潜在空間内で異なる行動表現を生み出します</strong>。これらの表現を、最初のフレームと言語指示と共にビデオ生成モデルに入力することで、各ポリシーの実行結果を直感的に視覚化し評価することができます。これにより、ポリシーのパフォーマンスを評価するためのシンプルで解釈可能な方法が提供されます。</p>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-plus"></i>図2の解説 (下部: WorldEval評価パイプライン)</p>
+<p>図2の下部は、WorldEvalを用いたポリシー評価の全体的な流れを示しています。</p>
+<ol class="unstyled-list">
+<li><i class="fas fa-tasks" style="color: var(--color-primary);"></i> <strong>タスク設定</strong>: まず評価対象のタスクがあります (例: "Collect toy")。ロボットは初期状態（最初のフレーム画像）に置かれます。</li>
+<li><i class="fas fa-random" style="color: var(--color-secondary);"></i> <strong>潜在行動の抽出</strong>: 評価したい複数のポリシー (図中ではピンクと黄色のポリシー) それぞれについて、現在の状況に対する潜在行動を抽出します (Policy2Vec)。</li>
+<li><i class="fas fa-magic" style="color: var(--color-accent1);"></i> <strong>世界モデルによるビデオ生成</strong>: 抽出された潜在行動、初期フレーム、タスク指示を世界モデル (Policy2Vecでファインチューニングされたビデオ生成モデル) に入力し、それぞれのポリシーが実行した場合の予測ビデオを生成します。ビデオは時系列フレーム (Timestep) として生成されます。</li>
+<li><i class="fas fa-clipboard-check" style="color: var(--color-accent2);"></i> <strong>成功検出器 (Success Detector)</strong>: 生成されたビデオを<strong class="keyword">成功検出器</strong> (Automated Policy Verifier) に入力し、タスクが成功したかどうかを判定します。これにより、各ポリシーの成功率が算出されます。</li>
+<li><i class="fas fa-chart-bar" style="color: var(--color-accent3);"></i> <strong>結果</strong>: 各ポリシーの成功率に基づいて、ポリシーの性能を比較・ランキングします。図では、黄色いポリシーが最も成功率が高く、次いで青、ピンクの順になっています。</li>
+</ol>
+<p>このパイプライン全体がWorldEvalであり、実世界のロボットを動かすことなく、ポリシーの評価とランキングを可能にします。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-check-circle"></i>3.3 Automated Policy Verifier for Policy Success (ポリシー成功のための自動ポリシー検証器)</h3>
+<p>WorldEvalの世界モデルはロボットポリシーの振る舞いをビデオ経由で生成するため、人間が目で見て評価することは簡単です。しかし、多数の評価を効率的に行うためには、<span class="highlight">試行の成功を自動的に判断するプロセス</span>を実装することが非常に重要です。</p>
+<div class="definition-box">
+<p class="definition-title"><i class="fas fa-microchip"></i>成功分類器 (Success Classifier)</p>
+<p>具体的には、成功分類器 $C_T$ を定義します。これは、画像状態 $S$ を入力とし、タスクが成功したか否かを示すバイナリ値（0または1）を出力する関数です。この分類器 $C_T$ は、真のタスク成功関数 $T$（これも画像状態 $S$ から成功か否かをマッピングする関数）を近似するように設計されます。</p>
+<div class="formula">
+<p>$$ C_T : S \to \{0, 1\} $$</p>
+<p>$$ C_T \approx T : S \to \{0, 1\} $$</p>
+</div>
+<p class="reference">$S$: 画像状態 (ロボットが見ている景色や対象物の状態)<br/>
+        $C_T$: 成功分類器モデル<br/>
+        $T$: 真のタスク成功関数 (人間が判断する成功/失敗)<br/>
+        $\{0, 1\}$: 0は失敗、1は成功を示すバイナリ指標</p>
+</div>
+<p>ビデオベースの大規模モデル (Video-based large models) の場合、<strong class="keyword">評価ベースのプロンプト</strong> (evaluation-based prompts) を使うことで、タスクの完了を効果的に検証できます。例えば、生成されたビデオと共に次のようなテキストプロンプトをモデルに与えます：</p>
+<div class="bubble-box">
+<p><i class="fas fa-comment-dots"></i>プロンプト例:</p>
+<p style="font-family: 'Yomogi', cursive;">「このリンゴは皿の上に置かれていますか？ はい/いいえ で答えてください」</p>
+</div>
+<p>このようなプロンプトと対応する生成ビデオを入力することで、モデルはタスクが成功裏に実行されたかどうかを正確に分類できます。</p>
+<div class="info-grid" style="grid-template-columns: 1fr;">
+<div class="info-card">
+<p><i class="fas fa-brain" style="color: var(--color-primary);"></i><strong>実践的な選択: Gemini-2.0</strong></p>
+<p>実際には、この研究では成功検出器として <strong class="keyword">Gemini-2.0</strong> [86] を利用しています。その主な理由は、Gemini-2.0が<span class="highlight">優れたビデオ理解能力</span>を持っているためです。これにより、生成されたビデオの内容を深く理解し、タスクの成功・失敗をより正確に判断することが期待できます。</p>
+</div>
+</div>
+<p>この自動検証器の導入により、WorldEvalは大量のポリシー評価を人手を介さずに、迅速かつ客観的に行うことが可能になります。</p>
+</div>
+<div class="section-card" id="4_Experiments">
+<h2 class="section-title"><i class="fas fa-flask"></i>4 Experiments</h2>
+<div class="content-box">
+<p>このセクションでは、提案手法である<span class="keyword">WorldEval</span>が、実際にどれほど有効なのかを様々な実験を通して検証していきます。特に、オープンソースで公開されている複数の汎用的なロボット操作ポリシーを対象に、いくつかの実世界のロボットタスクで評価を行います。🔬</p>
+<p>具体的には、以下の主要なリサーチクエスチョン (RQ) に焦点を当てて検証を進めます。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-question-circle" style="color: var(--color-accent1);"></i> RQ1: WorldEval (シミュレーション)で得られた異なる操作ポリシーの性能ランキングは、実世界での評価結果と強く相関するのか？</li>
+<li><i class="fas fa-question-circle" style="color: var(--color-accent2);"></i> RQ2: WorldEvalは、従来のシミュレーションベースの評価方法と比較して、測定可能な利点を提供するのか？</li>
+<li><i class="fas fa-question-circle" style="color: var(--color-accent3);"></i> RQ3: WorldEvalは、危険なポリシーを確実に特定し、実世界での致命的な結果を防ぐことができるのか？</li>
+<li><i class="fas fa-question-circle" style="color: var(--color-primary);"></i> RQ4: WorldEvalは、タスク成功検出器に頼らずに、ポリシーモデルを迅速に評価するための、より費用対効果の高い指標を提供できるのか？</li>
+<li><i class="fas fa-question-circle" style="color: var(--color-secondary);"></i> RQ5: Policy2Vec（本研究で提案する行動符号化手法）は、他の行動符号化手法よりも優れているのか？</li>
+</ul>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-info-circle"></i>補足</p>
+<p>論文では、スペースの都合上、上記5つの問いに本文で答えています。残りの2つの問い（WorldEvalがポリシーネットワークによって予測された行動を忠実に反映できるか、多様なポリシー間の比較性能を超えて、WorldEvalが実世界シナリオで観察される内部ポリシー特性を正確に再現できるか、など）については、Appendixで追加実験と共に議論されていますが、本解説ではこのセクション4で触れられている内容を網羅します。</p>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-robot"></i>ロボットとタスクのセットアップ</p>
+<p>実験で使用したロボットとタスク環境について見ていきましょう。</p>
+<img alt="Robot and task setup" class="content-image" src="Robot_task_setup.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図3: ロボットとタスクのセットアップ</strong></p>
+<p>左上にロボットのセットアップを示しています。我々は、上部カメラビュー（RealSense 457）を備えた双腕のALOHAスタイルのロボットを使用します。他のカメラは本研究では使用していません。</p>
+</div>
+<div class="info-grid">
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-cogs"></i>ロボットセットアップ</h4>
+<p>使用するロボットシステムは、<span class="keyword">AgileX</span>という双腕のALOHAスタイルロボットアームです。各アームは6自由度（6-DoF）を持っています。主な特徴は以下の通りです。</p>
+<ul>
+<li><i class="fas fa-camera" style="color: var(--color-primary);"></i> <strong>カメラ:</strong> 上部に設置された <span class="highlight">RealSense 457</span> カメラを使用。</li>
+<li><i class="fas fa-arrows-alt" style="color: var(--color-secondary);"></i> <strong>状態・行動空間:</strong> この構成により、合計で<span class="highlight">14次元</span>の状態空間と行動空間になります。</li>
+<li><i class="fas fa-wave-square" style="color: var(--color-accent1);"></i> <strong>データ収集:</strong> テレオペレーション（遠隔操作）装置を通じて、<span class="highlight">50Hz</span>の頻度でデータを収集します。</li>
+</ul>
+</div>
+<div class="info-card">
+<h4 class="subsection-title"><i class="fas fa-tasks"></i>タスクセットアップ</h4>
+<p>実験のために、以下の5つのタスクを設計しました。</p>
+<ul>
+<li>🧺 <strong>Bussing Table (テーブル片付け):</strong> 再利用可能なアイテムをトレイに分類し、ゴミをゴミ箱に捨てるタスク。緑の皿、茶色のマグカップ、緑のマグカップ、茶色のボウル、使用済みの紙コップ、青い紙ゴミなど、様々な物体が登場します。これは$\pi_0$やDexVLAから継承された挑戦的なタスクで、ポリシーネットワークのファインチューニングには100軌道のみを使用しました。</li>
+<li>🧸 <strong>Collect Toy (おもちゃ集め):</strong> ファインチューニングや事前学習中に見たことのない、全く新しいタスク。ロボットは未知のぬいぐるみを見つけて集め、指定されたエリア（左右どちらかの皿）に置く必要があります。</li>
+<li>☕ <strong>Place Cup (カップ配置):</strong></li>
+<li>🧱 <strong>Handover Block (ブロック手渡し):</strong></li>
+<li>🔨 <strong>Strike Block (ブロック叩き):</strong></li>
+</ul>
+<p class="reference">Place Cup, Handover Block, Strike Blockの3つのタスクは、RoboTwinベンチマーク[20]から採用しました。これらのタスクでは、ポリシーネットワークのファインチューニングに50軌道のみを使用しました。</p>
+<p>各タスクについて、同じオブジェクトセットを使用して<span class="highlight">40回のロールアウト</span>（試行）を実施しました。テストのために<span class="highlight">1,000回以上の実世界試行</span>を行っています。図3にロボットのセットアップとタスクの例を示しています。</p>
+</div>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-code"></i>実装の詳細 (Implementation details)</p>
+<p><span class="keyword">WAN 2.1 [83]</span> モデルを、1,400の実世界のロボット軌道データを用いて学習させました。学習設定の詳細は以下の通りです。</p>
+<ul class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+<li class="info-card feature-item"><i class="fas fa-graduation-cap"></i>初期学習率: <span class="highlight">1e-4</span></li>
+<li class="info-card feature-item"><i class="fas fa-layer-group"></i>バッチサイズ: <span class="highlight">8</span></li>
+<li class="info-card feature-item"><i class="fas fa-cogs"></i>LoRA alpha &amp; rank: <span class="highlight">16</span></li>
+<li class="info-card feature-item"><i class="fas fa-redo"></i>学習エポック数: <span class="highlight">30エポック</span></li>
+<li class="info-card feature-item"><i class="fas fa-video"></i>学習サンプル: 各軌道を3回サンプリングし、<span class="highlight">81フレーム</span>からなる学習サンプルを生成（解像度 $480 \times 480$）</li>
+</ul>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-chart-line"></i>評価指標 (Evaluation metrics)</p>
+<p>実世界のロボット性能とWorldEval上での性能との相関を示すために、2つの評価指標を使用します。</p>
+<div class="two-column">
+<div class="column glass-card">
+<h4 class="subsection-title"><i class="fas fa-arrows-alt-h"></i>ピアソン相関係数 (Pearson $r$)</h4>
+<p>これは2つの変数間の<span class="keyword">線形関係の強さ</span>を定量化する指標で、様々な分野で広く利用されています[89, 25, 26]。ピアソン相関係数が1に近いほど、非常に効果的な評価プロキシであることを意味します。つまり、実世界での成功率の向上が、WorldEvalでの成功率の線形的な増加に直接対応することを示します。📈 <span class="badge yellow">↑ 高いほど良い</span></p>
+</div>
+<div class="column glass-card">
+<h4 class="subsection-title"><i class="fas fa-sort-amount-down"></i>平均最大ランク違反 (Mean Maximum Rank Violation, MMRV)</h4>
+<p>これは、実世界とWorldEvalでの<span class="keyword">ポリシーランキングの一致度</span>を評価する指標です。MMRVの詳細な定義については、SIMPLER [25]を参照してください。簡単に言うと、MMRVは2つのポリシー $\pi_i$ と $\pi_j$ の間のランク違反を測定し、プロキシ評価が実際の性能ランキングと比較して、どれだけ深刻にポリシーを誤ってランク付けしているかを定量化します。📊 <span class="badge yellow">↓ 低いほど良い</span></p>
+</div>
+</div>
+</div>
+<div class="note-box">
+<p>論文中には、以下の表1と表2が画像として掲載されています。これらはWorldEvalの性能を他の手法と比較した結果を示しています。</p>
+</div>
+<img alt="Table 1: WorldEval vs. Real-to-Sim evaluation" class="content-image" src="table1.png"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-table"></i><strong>表1: WorldEval と Real-to-Sim 評価の比較</strong></p>
+<p>WorldEvalは最も低いMMRV（↓）と最も高いピアソン $r$（↑）を達成し、Real-to-Simを上回っています。</p>
+</div>
+<img alt="Table 2: Policy2Vec versus other encoding methods" class="content-image" src="table2.png"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-table"></i><strong>表2: Policy2Vec と他のエンコーディング手法の比較</strong></p>
+<p>5つのタスクにわたるピアソン相関係数 $(r)$、MMRV（↓）、FIDスコア（↓）、および最終的なランクを報告しています。提案するPolicy2Vec Avg.が全体として最高のパフォーマンスを達成しています。</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-check-circle"></i>4.1 WorldEvalは実世界評価との間に強い性能相関を示す</h3>
+<div class="content-box">
+<p>このセクションでは、WorldEvalが実世界のロボットの性能と比較して、モデルの性能をどのように評価するかを実証します。</p>
+<img alt="Real vs. WorldEval success rates" class="content-image" src="WorldEval_real_vs_simulated_success_rates.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図4: 実世界の成功率 vs. WorldEvalの成功率</strong></p>
+<p>WorldEvalの評価セットアップは、実際のポリシー性能と強い相関を示しています。優れたポリシー評価プロキシは、低いMMRVと高いピアソン相関係数(r)を持ちます。このグラフでは、横軸が実際のロボットの成功率、縦軸がWorldEvalでの成功率を示しています。点が対角線に近いほど、WorldEvalの評価が実際の性能をよく反映していることを意味します。異なる色は異なるポリシー（$\pi_0$, DexVLA, Diffusion Policy, OpenVLA）を表しています。</p>
+</div>
+<p>図4は、実世界と生成されたビデオシナリオ間での主要なペア評価の結果をまとめたものです。評価された4つのポリシーすべてにおいて、<span class="highlight">生成されたビデオと実世界の条件下での相対的な性能に強い相関</span>が見られました。この相関は、WorldEvalがポリシー開発中の性能測定ツールとしての有効性を裏付けています。</p>
+<p>具体的には、以下のような傾向が確認できました。</p>
+<ul>
+<li><span class="keyword">DexVLA</span>や<span class="keyword">$\pi_0$</span>のような実世界で高い性能を示すポリシーは、WorldEvalによる生成ビデオ評価でも一貫して高いスコアを達成しました。🚀</li>
+<li>逆に、<span class="keyword">OpenVLA</span>のような実世界での性能が低いモデルは、WorldEvalの評価でも同様に低いスコアを示しました。🐌</li>
+</ul>
+<p>この一貫性は、低い<span class="keyword">MMRV</span>値と高い<span class="keyword">ピアソンr</span>によってさらに裏付けられています。これらの実験結果は、WorldEvalが実世界のロボット評価のための信頼できる代理（プロキシ）として機能することを示しています。✨</p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-balance-scale"></i>4.2 Real-to-Sim評価との比較</h3>
+<div class="content-box">
+<p>実世界のポリシーをシミュレーション環境で評価することは、関連研究セクションで述べたように、広く採用され、広範囲に研究されている分野です。このセクションでは、特に<span class="keyword">Real-to-Sim</span>（実機からシミュレーションへ）アプローチとの比較に焦点を当てます。</p>
+<p>実験設定の整合性を確保するために、私たちの実ロボットと同一のエンボディメント（物理的構造）を持つ<span class="keyword">RoboTwin [20]</span>を利用しました。RoboTwinのフレームワークに従い、以下の3つのタスクを設計・実行しました。</p>
+<ul class="tag-list">
+<li class="tag">StrikeBlock (ブロック叩き)</li>
+<li class="tag">HandoverBlock (ブロック手渡し)</li>
+<li class="tag">PlaceCup (カップ配置)</li>
+</ul>
+<p>ポリシーは実世界のデータを用いて学習され、その後RoboTwinシミュレーション環境内で評価されました。</p>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i>SIMPLERとの比較について</p>
+<p><span class="keyword">SIMPLER [25]</span>手法に特有の機器やロボットに関する制約のため、SIMPLERとの直接比較は実現できませんでした。しかし、実世界のデータとシミュレーション間の視覚的な不一致を最小限に抑えるために、SIMPLERによって提案されたReal-to-Sim技術を適用し、公正な比較評価を可能にしました。</p>
+</div>
+<p>上記の<span class="keyword">表1</span>に実験結果を示しています。MMRVとピアソン$r$の両方の指標において、<span class="highlight">WorldEvalの性能がReal-to-Simの性能を大幅に上回っている</span>ことがわかります。ロボットの物理的特性の差が最小限であり、SIMPLERのReal-to-Sim技術を用いて実環境とシミュレーション環境間の視覚的なギャップを埋めるための広範な努力にもかかわらず、タスクやオブジェクトが同一であっても、シミュレーションは依然として実ロボットポリシーの評価には不十分でした。</p>
+<p>これらの結果は、我々のアプローチの有効性を強調し、実世界のロボットポリシーを評価するための従来のReal-to-Sim手法に対する優れた代替手段としての可能性を示しています。🌟</p>
+<img alt="Visualization of Real-World Robot Policy and Generated Video Policy" class="content-image" src="Real_vs_WorldEval_policy_visualization.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図5: 実世界ロボットポリシーと生成ビデオポリシーの視覚化</strong></p>
+<p>左側が実世界のロボットポリシー、右側がWorldEvalによって生成されたビデオポリシーです。上の3行はロボットがタスクを成功させた例、下の2行はモデルが失敗したタスクの例です。すべてのポリシーで$\pi_0$が使用されています。この図から、WorldEvalが生成するビデオが、実際のロボットの動き（成功も失敗も）をよく捉えていることがわかります。</p>
+</div>
+<img alt="WorldEval safety detector" class="content-image" src="WorldEval_safety_detector.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図6: WorldEvalはロボットポリシーの安全検出器として機能可能</strong></p>
+<p>左側は実世界での評価で、ロボットが予期せず両腕を上げてしまう危険な動作を示しています。右側は対応する生成ビデオで、モザイク状に乱れています。これは、WorldEvalが安全でないロボットの行動に対して意味のあるビデオを生成できないことを示しており、安全装置としての役割を果たす可能性を示唆しています。</p>
+</div>
+</div>
+<h3 class="subsection-title"><i class="fas fa-vials"></i>4.3 さらなる実験とアブレーションスタディ</h3>
+<div class="content-box">
+<p>このセクションでは、WorldEvalの能力をさらに深く掘り下げるための追加実験や、構成要素の重要性を検証するアブレーションスタディについて報告します。</p>
+<div class="glass-card">
+<h4 class="subsection-title mini"><i class="fas fa-project-diagram"></i>異なる行動埋め込み手法との比較</h4>
+<p><span class="keyword">Policy2Vec</span>はWorldEvalフレームワークの基礎であり、その自動評価パイプラインを支えています。その有効性を厳密に評価するために、2つの代替的な行動符号化パラダイムとの比較分析を行いました。</p>
+<ol class="process-step-list unstyled-list">
+<li class="process-step">
+<div class="step-number">1</div>
+<div class="step-content"><strong>VQVAE [87]:</strong> ベクトル量子化によって連続的な行動を離散化する広く採用されている手法。Discrete Policy [34]で確立された学習プロトコルに従って実装しました。</div>
+</li>
+<li class="process-step">
+<div class="step-number">2</div>
+<div class="step-content"><strong>One-hotエンコーディングベースライン:</strong> 閾値ベースのカテゴリ化を適用して連続的な行動を離散表現に変換する手法。</div>
+</li>
+</ol>
+<p>上記の<span class="keyword">表2</span>に示されているように、<span class="highlight">Policy2Vecはすべての指標で優れた性能を達成</span>し、特にMMRVをVQVAEと比較して0.1、One-hotエンコーディングと比較して2.24削減しました。これらの結果は、Policy2Vecが代替的な行動符号化アプローチと比較して効果的であることを決定的に示しています。🏆</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h4 class="subsection-title mini"><i class="fas fa-eye"></i>WorldEvalはポリシーネットワークによって予測された行動を忠実に反映できるか？</h4>
+<p>生成されたロボットビデオを図5に視覚化し、5つのタスクを示しています。上の3行はポリシー$\pi_0$によって成功裏に完了されたタスクを示し、下の2行はテスト中にポリシーが失敗したタスクを表しています。観察されるように、<span class="highlight">生成されたビデオ内の行動は、実世界のロボットポリシーの行動と密接に一致</span>しています。</p>
+<img alt="Visualization of Real-World Robot Policy and Generated Video Policy (再掲)" class="content-image" src="Real_vs_WorldEval_policy_visualization.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図5 (再掲): 実世界ロボットポリシーと生成ビデオポリシーの視覚化</strong></p>
+<p>この図は、WorldEvalがタスクの成功・失敗に関わらず、実際のロボットの動きをどれだけ忠実に再現できるかを示しています。特に、「Collect Toy」タスクは注目に値します。</p>
+</div>
+<p>さらに、「Collect Toy」シナリオを我々のアプローチの<span class="keyword">汎化能力</span>の模範として強調します。このタスクは、未知の言語指示、これまでに遭遇したことのない物体（ピカチュウ）、および学習データセットには存在しない全く新しいタスク構成を特徴とする、完全に新しい挑戦を表しています。これらの要因によって導入された固有の新規性と複雑性にもかかわらず、生成されたビデオは驚くほど実ロボットの行動を反映し、望ましい結果と一致する行動を成功裏に実行します。この観察は、我々の手法の適応性と堅牢性を強く裏付けており、<span class="highlight">新規で多様なシーン、馴染みのない物体、そしてこれまで見たことのないタスクへのスケーラビリティ</span>を示しています。🌍</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h4 class="subsection-title mini"><i class="fas fa-shield-alt"></i>WorldEvalをポリシー安全検出器として</h4>
+<p>チームが新しいポリシーアーキテクチャ、収集データ、または学習方法論を実験することは一般的です。しかし、学習プロセスやモデル最適化における固有の不確実性のため、新しく学習されたポリシーネットワークが不規則な行動を生成することはよくあります。</p>
+<p>我々は、WorldEvalが<span class="keyword">崩壊した行動（危険な行動）を効果的に識別し、区別する</span>ことを実証します。図6（左）では、DexVLAモデルが両腕をまっすぐ上に上げるという危険な行動を生成する実世界の例を示しています。図6（右）では、対応する生成ビデオがモザイクパターンに崩壊しています。</p>
+<img alt="WorldEval safety detector (再掲)" class="content-image" src="WorldEval_safety_detector.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図6 (再掲): WorldEvalはロボットポリシーの安全検出器として機能可能</strong></p>
+<p>左の危険な実ロボットの動きに対して、右のWorldEvalによる生成ビデオが乱れている（モザイク状になっている）ことがわかります。</p>
+</div>
+<p>この現象について、我々は次のように仮説を立てています：これらの特定の重みに対する<span class="highlight">行動特徴表現が十分に学習されておらず</span>、WorldEvalが意味のある情報を抽出できず、結果としてビデオ出力が崩壊したのではないか、と。この観察は、WorldEvalが危険な行動を効果的に区別できることを示しており、実世界のロボット配備における致命的な結果に対する<span class="keyword">セーフガードとしての重要性</span>を強調しています。🛡️</p>
+</div>
+<div class="arrow-connector"></div>
+<div class="glass-card">
+<h4 class="subsection-title mini"><i class="fas fa-search-dollar"></i>実ロボット評価の軽量なプロキシとしてのFID</h4>
+<p>WorldEvalでポリシーの成功判定にGemini-2.0を利用することに加えて、比較ポリシー評価のための<span class="keyword">安価な指標</span>として<span class="highlight">Fréchet Inception Distance (FID)</span>を提案します。図7に示すように、FIDはほとんどのタスクで実世界の成功率と強い相関を示しています。</p>
+<img alt="Real success rate vs. FID" class="content-image" src="Real_success_rate_vs_FID.jpg"/>
+<div class="caption bubble-box">
+<p><i class="fas fa-image"></i><strong>図7: 実世界の成功率 vs. FID</strong></p>
+<p>横軸が実ロボットの成功率、縦軸がFIDスコア（低いほど良い）です。各点は異なるポリシーを示し、線は傾向を表します。多くのタスクで、成功率が高いほどFIDが低い（つまり良い）傾向が見られます。特に単純なタスクでこの相関が強いです。</p>
+</div>
+<p>この関係は、環境に1つまたは2つの物体しか含まないPlace Cup、Handover Block、Strike Blockなどの<span class="highlight">単純な操作シナリオで特に顕著</span>であり、FIDが低複雑度設定でのポリシー評価に有用であることを確認しています。しかし、Table Busingのような複雑なタスクでは、ピアソン相関係数 $r$ が大幅に低下し、この指標の有効性が低下するため、ドメイン固有の制限が浮き彫りになります。</p>
+<p>この結果は、FIDが<span class="keyword">単純なタスクでのモデル評価の予備的な方法</span>として機能し、その後、Gemini-2.0のような自動化された方法をより複雑なタスクでの性能評価に用いることができることを示唆しています。💰</p>
+</div>
+</div>
+</div>
+<div class="section-card" id="5_Conclusion">
+<h2 class="section-title"><i class="fas fa-flag-checkered"></i>5 Conclusion</h2>
+<div class="glass-card" style="margin-bottom: 25px; border-left: 5px solid var(--color-primary);">
+<p style="text-align: center; font-size: 18px; font-family: 'Yomogi', cursive; color: var(--color-primary); margin-bottom:15px;">
+<i class="fas fa-bullseye"></i> <strong>このセクションの目的と論旨</strong> <i class="fas fa-bullseye"></i>
+</p>
+<p style="font-size: 15px; line-height: 1.5;">
+            本論文の結論として、私たちは<span class="keyword">汎用ロボットマニピュレーションポリシー</span>（様々なタスクをこなせるロボットの制御戦略）の現実世界での評価が直面する、<span class="highlight">スケーラビリティ (拡張性)、安全性、再現性</span>といった根深い課題に対し、革新的な解決策を提示しました。その核心は、<span class="keyword">ワールドモデル</span>（世界の仕組みを学習したモデル）を応用した自動評価フレームワーク <span class="keyword">WorldEval</span> と、その基盤となる独自技術 <span class="keyword">Policy2Vec</span> です。このセクションでは、これらの提案がどのようにして従来の評価手法の限界を克服し、ロボティクス研究の発展に貢献しうるのか、その要点を明確にまとめ、本研究の意義を強調します。
+        </p>
+</div>
+<div class="content-box">
+<h3 class="subsection-title" style="color: var(--color-accent1); border-left-color: var(--color-accent1);"><i class="fas fa-cogs"></i> 本研究の主な貢献と成果</h3>
+<p>本研究は、現実世界でのロボットポリシー評価におけるいくつかの重要な課題に取り組みました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card" style="border-top: 5px solid var(--color-accent1);">
+<div class="feature-item">
+<i class="fas fa-shield-alt" style="font-size: 30px; color: var(--color-accent1); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1);">ワールドモデルによる安全な評価</h4>
+</div>
+<p>私たちは、ワールドモデルが、<span class="highlight">制御されたリスクのない環境</span>でポリシーの振る舞いを合成することにより、従来の現実世界での評価に代わる、<span class="keyword">堅牢で自動化された代替手段</span>として機能することを示しました。</p>
+<div style="text-align: center; margin-top: 15px;">
+<i class="fas fa-desktop" style="font-size: 20px; color: #3498db;"></i>
+<span style="font-family: 'Kaisei Decol', serif; font-size: 16px; color: #3498db;"> シミュレーション環境</span>
+<i class="fas fa-arrow-right" style="font-size: 20px; color: var(--color-dark); margin: 0 10px;"></i>
+<i class="fas fa-robot" style="font-size: 20px; color: #e74c3c;"></i>
+<span style="font-family: 'Kaisei Decol', serif; font-size: 16px; color: #e74c3c;"> 現実世界のロボット</span>
+</div>
+<div class="note-box" style="background-color: rgba(92, 184, 92, 0.1); border-left-color: var(--color-accent1); margin-top:10px;">
+<p class="note-title" style="color: var(--color-accent1);"><i class="fas fa-lightbulb"></i> ポイント</p>
+<p>物理的なロボットを使わずに、コンピュータ上でロボットの動作をシミュレートして評価できるため、<span class="highlight">時間とコストを削減</span>し、<span class="highlight">危険な状況を回避</span>できます。</p>
+</div>
+</div>
+<div class="info-card" style="border-top: 5px solid var(--color-accent2);">
+<div class="feature-item">
+<i class="fas fa-project-diagram" style="font-size: 30px; color: var(--color-accent2); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent2);">Policy2Vec: 新規な行動表現手法</h4>
+</div>
+<p>私たちのアプローチの中心には <span class="keyword">Policy2Vec</span> があります。これは、ポリシーネットワーク自体の<span class="highlight">潜在表現</span>を活用して行動追従ビデオを生成する新しい手法です。これにより、明示的な行動エンコーディングや高次元入力の限界を回避します。</p>
+<div style="text-align:center; margin: 15px 0;">
+<span class="badge purple">ポリシーネットワーク</span> <i class="fas fa-long-arrow-alt-right" style="color:var(--color-accent2);"></i>
+<span class="badge purple">潜在表現 (Policy2Vec)</span> <i class="fas fa-long-arrow-alt-right" style="color:var(--color-accent2);"></i>
+<span class="badge purple">行動追従ビデオ</span>
+</div>
+<div class="note-box" style="background-color: rgba(149, 117, 205, 0.1); border-left-color: var(--color-accent2);margin-top:10px;">
+<p class="note-title" style="color: var(--color-accent2);"><i class="fas fa-microchip"></i> 仕組み</p>
+<p>ロボットが「次に何をすべきか」を決定するポリシーネットワーク内部の情報を直接利用し、その「意図」を動画として可視化します。これにより、ロボットの行動をより忠実にシミュレートできます。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title" style="color: var(--color-secondary); border-left-color: var(--color-secondary);"><i class="fas fa-tasks"></i> WorldEvalの有効性の検証</h3>
+<p><span class="keyword">Policy2Vec</span> と自動評価パイプラインである <span class="keyword">WorldEval</span> を統合することで、ロボットポリシーの<span class="highlight">スケーラブルで信頼性の高い評価</span>が可能になり、これは現実世界のパフォーマンスと強く相関します。</p>
+<div class="framework-box" style="border-color: var(--color-secondary); background-color: rgba(255, 126, 95, 0.05);">
+<p class="framework-title" style="color: var(--color-secondary); border-bottom-color: var(--color-secondary);"><i class="fas fa-vial"></i> 実験による検証</p>
+<ul class="unstyled-list" style="padding-left: 20px;">
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<i class="fas fa-check-circle" style="color: var(--color-accent1); margin-right: 8px; margin-top: 4px;"></i>
+<div>
+<strong>ポリシーのランキング:</strong> 様々なマニピュレーションポリシー間での性能比較。
+                        <div class="bubble-box" style="border-color: var(--color-accent1); margin-top: 5px; padding: 8px;">
+<p style="margin:0; font-size: 13px;">WorldEvalは、実際のロボットでテストした場合と同様の順位付けができました。</p>
+</div>
+</div>
+</li>
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<i class="fas fa-chart-line" style="color: var(--color-accent1); margin-right: 8px; margin-top: 4px;"></i>
+<div>
+<strong>チェックポイント改善の特定:</strong> 単一ポリシーの学習途中での性能向上度合いの評価。
+                         <div class="bubble-box" style="border-color: var(--color-accent1); margin-top: 5px; padding: 8px;">
+<p style="margin:0; font-size: 13px;">学習が進むにつれて性能が向上する様子を、WorldEvalでも確認できました。</p>
+</div>
+</div>
+</li>
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<i class="fas fa-exclamation-triangle" style="color: var(--color-accent1); margin-right: 8px; margin-top: 4px;"></i>
+<div>
+<strong>危険行動の検出:</strong> 物理的な展開なしでの潜在的な危険挙動の特定。
+                        <div class="bubble-box" style="border-color: var(--color-accent1); margin-top: 5px; padding: 8px;">
+<p style="margin:0; font-size: 13px;">ロボットが危険な動作をする可能性がある場合、WorldEval上で事前に検知できました。</p>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title" style="color: var(--color-accent3); border-left-color: var(--color-accent3);"><i class="fas fa-trophy"></i> 従来手法との比較と汎用性</h3>
+<div class="two-column">
+<div class="column">
+<div class="note-box" style="background-color: rgba(255, 213, 79, 0.1); border-left-color: var(--color-accent3);">
+<p class="note-title" style="color: var(--color-accent3);"><i class="fas fa-award"></i> 優れた性能</p>
+<p><span class="keyword">WorldEval</span> は、従来の<span class="highlight">real-to-sim</span>（現実からシミュレーションへ）アプローチよりも<span class="highlight">優れた性能</span>を示しました。これは、現実のロボットの挙動をより忠実に再現できることを意味します。</p>
+</div>
+</div>
+<div class="column">
+<div class="note-box" style="background-color: rgba(255, 213, 79, 0.1); border-left-color: var(--color-accent3);">
+<p class="note-title" style="color: var(--color-accent3);"><i class="fas fa-globe-americas"></i> 高い汎用性</p>
+<p><span class="keyword">WorldEval</span> は、<span class="highlight">未知の環境や物体</span>に対しても汎用性を示しました。これは、新しいタスクや状況でも評価ツールとして機能することを示唆しています。</p>
+</div>
+</div>
+</div>
+<div style="text-align: center; margin: 20px 0;">
+<i class="fas fa-chart-bar" style="font-size: 24px; color: var(--color-primary);"></i>
+<span style="font-family: 'Kaisei Decol', serif; font-size: 16px; margin: 0 10px;">WorldEval  &gt;  Real-to-Sim</span>
+<i class="fas fa-cogs" style="font-size: 24px; color: var(--color-secondary);"></i>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<div class="content-box">
+<h3 class="subsection-title" style="color: var(--color-primary); border-left-color: var(--color-primary);"><i class="fas fa-microscope"></i> 今後の展望と意義</h3>
+<p>本研究は、ビデオベースのワールドシミュレータが、ロボティクスコミュニティにとって<span class="keyword">重要なツール</span>としての<span class="highlight">実行可能性</span>を強調するものです。</p>
+<div class="glass-card" style="border: 1px solid var(--color-primary); margin-top: 15px;">
+<div style="display: flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+<i class="fas fa-graduation-cap" style="font-size: 28px; color: var(--color-primary); margin-right: 15px;"></i>
+<p style="font-family: 'Yomogi', cursive; font-size: 20px; color: var(--color-primary); margin: 0;">
+                    ロボティクス研究における WorldEval の位置づけ
+                </p>
+</div>
+<div class="pipeline">
+<div class="pipeline-step" style="border-color: var(--color-accent1);">
+<i class="fas fa-flask" style="color: var(--color-accent1); margin-right: 5px;"></i> <strong>研究開発の加速:</strong> 安全かつ効率的な評価により、新しいロボット制御アルゴリズムの開発サイクルを短縮。
+                </div>
+<div class="pipeline-step" style="border-color: var(--color-accent2);">
+<i class="fas fa-users" style="color: var(--color-accent2); margin-right: 5px;"></i> <strong>標準化された評価基準:</strong> 様々な研究機関や企業間で、統一された基準での性能比較が可能に。
+                </div>
+<div class="pipeline-step" style="border-color: var(--color-secondary); margin-bottom: 0;">
+<i class="fas fa-lightbulb" style="color: var(--color-secondary); margin-right: 5px;"></i> <strong>新たな研究領域の開拓:</strong> ワールドモデル自体の改善や、より複雑なタスクへの応用など、さらなる研究の促進。
+                </div>
+</div>
+<p style="text-align: center; margin-top: 20px; font-style: italic; color: var(--color-gray);">
+                ✏️ これらの貢献により、ロボットがより賢く、安全に、そして多様なタスクをこなせるようになる未来が近づきます。
+            </p>
+</div>
+</div>
+</div>
+<div class="section-card" id="A_Limitations">
+<h2 class="section-title"><i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>A Limitations</h2>
+<p style="font-family: 'Zen Kurenaido', sans-serif; line-height: 1.6;">このセクションでは、提案手法である<span class="keyword">WorldEval</span>が持ついくつかの<span class="highlight">限界点</span>や、今後の研究で取り組むべき<span class="highlight">課題</span>について詳しく見ていきます。WorldEvalはロボットの操作ポリシーを評価するための非常に有望なアプローチですが、まだ完璧ではなく、いくつかの側面で改善の余地が残されています。さっそく、主な課題を一つずつ掘り下げていきましょう。✏️</p>
+<div class="challenge-box" style="margin-top: 25px;">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-puzzle-piece" style="margin-right: 8px; color: var(--color-secondary);"></i>1. 制御信号の限定性</h3>
+<p>現在のWorldEvalのフレームワークにおける最初の限界は、ビデオ生成のための<span class="keyword">制御信号</span>として、ポリシーモデルから出力される<span class="highlight">アクション出力のみ</span>に限定的に依存している点です。</p>
+<div style="text-align: center; margin: 20px 0; padding: 15px; background-color: rgba(74, 111, 165, 0.05); border-radius: 8px; border: 1px dashed var(--color-primary);">
+<span style="font-family: 'Yomogi', cursive; border: 2px solid var(--color-primary); padding: 8px 12px; border-radius: 20px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block;">
+<i class="fas fa-robot" style="color: var(--color-primary); margin-right: 5px;"></i>ポリシーモデルの<br/>アクション出力
+            </span>
+<span style="font-family: 'Yomogi', cursive; font-size: 30px; color: var(--color-accent2); margin: 0 15px; vertical-align: middle;">➡️</span>
+<span style="font-family: 'Yomogi', cursive; border: 2px solid var(--color-accent1); padding: 8px 12px; border-radius: 20px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block;">
+<i class="fas fa-video" style="color: var(--color-accent1); margin-right: 5px;"></i>ビデオ生成
+            </span>
+</div>
+<p>しかし、ロボットの行動は、単純なアクションだけでなく、例えば「リンゴを赤い皿に置いて」といった<span class="keyword">言語指示</span>や、ポリシーが内部で行う「どの物体を優先的に掴むべきか」といった<span class="keyword">中間的な推論プロセス</span>など、より多様な情報（これを<span class="highlight">モダリティ</span>と呼びます）によってもガイドされることが理想的です。これらの追加的な情報をビデオ生成プロセスに組み込むことで、シミュレーションによる評価と、実際のロボットが実世界で見せるパフォーマンスとの間の<span class="highlight">ギャップをより効果的に埋められる</span>可能性があります。</p>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-lightbulb" style="margin-right: 5px;"></i>💡今度の展望：よりリッチな情報で現実に近づける</p>
+<p>将来的には、アクション出力に加えて、言語指示やポリシー内部の思考プロセスといった<span class="keyword">マルチモーダルな情報</span>をビデオ生成の制御信号として統合することが考えられます。これにより、単に動きを再現するだけでなく、ロボットが「なぜ」そのように動いたのかという文脈まで含んだ、より現実に忠実なビデオ生成が期待できます。</p>
+<div style="text-align: center; margin: 20px 0; padding: 15px; background-color: rgba(255, 248, 225, 0.7); border-radius: 8px; border: 1px dashed var(--color-accent3);">
+<div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center;">
+<span style="font-family: 'Yomogi', cursive; border: 2px solid var(--color-primary); padding: 8px; margin:5px; border-radius: 15px; background-color: white;">アクション出力 <i class="fas fa-shoe-prints"></i></span>
+<span style="font-family: 'Yomogi', cursive; font-size: 24px; color: var(--color-dark); margin:0 5px;">+</span>
+<span style="font-family: 'Yomogi', cursive; border: 2px solid var(--color-accent2); padding: 8px; margin:5px; border-radius: 15px; background-color: white;">言語指示 <i class="fas fa-comment-dots"></i></span>
+<span style="font-family: 'Yomogi', cursive; font-size: 24px; color: var(--color-dark); margin:0 5px;">+</span>
+<span style="font-family: 'Yomogi', cursive; border: 2px solid var(--color-accent3); padding: 8px; margin:5px; border-radius: 15px; background-color: white;">中間推論 <i class="fas fa-brain"></i></span>
+</div>
+<span style="font-family: 'Yomogi', cursive; font-size: 30px; color: var(--color-accent1); margin: 10px 15px; display: block;">⬇️</span>
+<span style="font-family: 'Yomogi', cursive; border: 2px solid var(--color-accent1); padding: 8px 12px; border-radius: 20px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block;">
+<i class="fas fa-film" style="color: var(--color-accent1); margin-right: 5px;"></i>より高品質で<br/>文脈を反映したビデオ生成
+                </span>
+</div>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 25px;">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-ghost" style="margin-right: 8px; color: var(--color-secondary);"></i>2. 生成ビデオにおけるアーティファクト（不自然な現象）</h3>
+<p>特に<span class="keyword">性能の低いポリシー</span>（あまり上手でないロボットの動き）をWorldEvalで評価しようとすると、生成されるビデオに依然として<span class="keyword">アーティファクト</span>と呼ばれる人工的で不自然な現象が残ってしまうという問題があります。これらはビデオの信頼性を損なう可能性があります。</p>
+<p style="font-family: 'Kaisei Decol', serif; margin-bottom:15px;">具体的なアーティファクトの例としては、以下のようなものがあります：</p>
+<div class="feature-card-grid">
+<div class="feature-item" style="border-left: 3px solid var(--color-secondary); background-color: #fff8f8;">
+<i class="fas fa-shapes fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; margin-bottom: 5px; color: var(--color-dark);">物体の変形</h4>
+<p style="font-size: 13px;">リンゴが粘土のようにぐにゃっと曲がるなど、現実ではありえない形に物体が歪んでしまう。</p>
+</div>
+<div class="feature-item" style="border-left: 3px solid var(--color-secondary); background-color: #fff8f8;">
+<i class="fas fa-eye-slash fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; margin-bottom: 5px; color: var(--color-dark);">視覚的な幻覚</h4>
+<p style="font-size: 13px;">(Visual Hallucinations) テーブルにないはずのコップが見えたり、奇妙な模様がチラついたりする。</p>
+</div>
+<div class="feature-item" style="border-left: 3px solid var(--color-secondary); background-color: #fff8f8;">
+<i class="fas fa-wind fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; margin-bottom: 5px; color: var(--color-dark);">不自然な物体の動き</h4>
+<p style="font-size: 13px;">ボールが物理法則を無視して壁をすり抜けたり、不自然に跳ねたりする。</p>
+</div>
+<div class="feature-item" style="border-left: 3px solid var(--color-secondary); background-color: #fff8f8;">
+<i class="fas fa-question-circle fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; margin-bottom: 5px; color: var(--color-dark);">予期しない出現・消失</h4>
+<p style="font-size: 13px;">操作対象の物体が突然現れたり、逆にいきなり消えたりする。</p>
+</div>
+<div class="feature-item" style="border-left: 3px solid var(--color-secondary); background-color: #fff8f8;">
+<i class="fas fa-sun fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; margin-bottom: 5px; color: var(--color-dark);">露出過多</h4>
+<p style="font-size: 13px;">カメラのレンズに強い光が当たったように、画面の一部または全体が白飛びしてしまう。</p>
+</div>
+<div class="feature-item" style="border-left: 3px solid var(--color-secondary); background-color: #fff8f8;">
+<i class="fas fa-hand-paper fa-2x" style="color: var(--color-secondary); margin-bottom: 10px;"></i>
+<h4 style="font-family: 'Yomogi', cursive; margin-bottom: 5px; color: var(--color-dark);">ロボットアームのゴースト効果</h4>
+<p style="font-size: 13px;">ロボットのアームが半透明になったり、過去の動きの残像がうっすらと残ったりする。</p>
+</div>
+</div>
+<p style="margin-top:15px;">これらのアーティファクトが発生する原因として、主に以下の3点が考えられています：</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+<div class="info-card" style="background-color: #f0f4f8;">
+<p style="font-family: 'Yomogi', cursive; text-align:center; font-size:18px;"><i class="fas fa-database" style="color: var(--color-primary); margin-right:5px;"></i>1. データ不足</p>
+<p>特に<span class="highlight">失敗シナリオ</span>（ロボットがタスクをうまくできなかった場合のデータ）に関する<span class="keyword">学習データの網羅性が不十分</span>であること。モデルは「上手くいくパターン」は学習しても、「下手なパターン」がどのような映像になるかは十分に学んでいないのかもしれません。</p>
+</div>
+<div class="info-card" style="background-color: #f0f4f8;">
+<p style="font-family: 'Yomogi', cursive; text-align:center; font-size:18px;"><i class="fas fa-cogs" style="color: var(--color-primary); margin-right:5px;"></i>2. 生成モデルの限界</p>
+<p>現在のビデオ<span class="keyword">生成モデル（Generative Models）</span>が持つ<span class="highlight">本質的な限界</span>。複雑な物理現象や長時間の整合性を完璧に再現するのは、まだ技術的に難しい場合があります。</p>
+</div>
+<div class="info-card" style="background-color: #f0f4f8;">
+<p style="font-family: 'Yomogi', cursive; text-align:center; font-size:18px;"><i class="fas fa-signal" style="color: var(--color-primary); margin-right:5px;"></i>3. 制御入力の不備</p>
+<p><span class="keyword">制御入力</span>（ポリシーからのアクション出力）が、ビデオを正確に生成するには<span class="highlight">詳細さが不十分</span>である可能性。例えば、アームの微細な動きや力の加減などが十分に表現できていないのかもしれません。</p>
+</div>
+</div>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-tools" style="margin-right: 5px;"></i>🔧今後の改善策：アーティファクトを減らすために</p>
+<p>これらのアーティファクトを低減するためには、より多様な失敗例を含むデータセットの拡充、生成モデル自体の性能向上、そしてより詳細でリッチな制御信号をポリシーモデルから抽出・利用する研究が必要です。例えば、ロボットの力のフィードバック情報を追加したり、より高解像度のアクション表現を用いることなどが考えられます。</p>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 25px;">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-map-signs" style="margin-right: 8px; color: var(--color-secondary);"></i>3. 未知のシナリオへの適応性</h3>
+<p>WorldEvalの評価パイプラインは、<span class="keyword">事前に学習された（pre-trained）ビデオ生成モデル</span>に依存しています。これは、学習データに含まれていないような、<span class="highlight">大幅に新しいシナリオ</span>（例えば、全く見たことのない物体や、これまで経験したことのないタスク）に対して、柔軟に適応する能力が<span class="keyword">制限される可能性</span>があることを意味します。</p>
+<div class="glass-card" style="margin: 20px auto; padding: 20px; text-align: center;">
+<p style="font-family: 'Kaisei Decol', serif; font-size: 1.1em;">現在のWorldEvalの仕組み:</p>
+<div style="display: flex; justify-content: space-around; align-items: center; margin-top: 15px; flex-wrap: wrap;">
+<div style="text-align: center; margin: 10px; padding:10px; background-color: rgba(255,255,255,0.7); border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+<i class="fas fa-images fa-2x" style="color: var(--color-accent2);"></i>
+<p style="font-size: 0.9em; margin-top: 5px;">既存の学習データ<br/>(既知のタスク・環境)</p>
+</div>
+<span style="font-family: 'Yomogi', cursive; font-size: 24px; color: var(--color-primary); margin: 0 10px;">➡️</span>
+<div style="text-align: center; margin: 10px; padding:10px; background-color: rgba(255,255,255,0.7); border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+<i class="fas fa-brain fa-2x" style="color: var(--color-accent1);"></i>
+<p style="font-size: 0.9em; margin-top: 5px;">事前学習済み<br/>ビデオ生成モデル</p>
+</div>
+<span style="font-family: 'Yomogi', cursive; font-size: 24px; color: var(--color-primary); margin: 0 10px;">➡️</span>
+<div style="text-align: center; margin: 10px; padding:10px; background-color: rgba(255,255,255,0.7); border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+<i class="fas fa-question-circle fa-2x" style="color: var(--color-secondary);"></i>
+<p style="font-size: 0.9em; margin-top: 5px;">新規シナリオへの<br/>適応が困難？</p>
+</div>
+</div>
+</div>
+<p>過去に見たことのないタスクや環境に対して<span class="keyword">頑健性（ロバストネス）</span>を達成するには、さらなる研究が必要です。具体的には、以下のような方向性が考えられます：</p>
+<ul style="list-style: none; padding-left: 0;">
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<span class="badge purple" style="margin-right: 8px; margin-top:3px;"><i class="fas fa-wrench"></i></span>
+<div>
+<strong style="font-family: 'Yomogi', cursive;">アーキテクチャの改良:</strong> ビデオ生成モデルのネットワーク構造自体を、より汎化性能の高いものへと改良する。例えば、未知の状況にも対応しやすいように、モジュール化された構造や、注意機構（Attention Mechanism）の高度化などが考えられます。
+                </div>
+</li>
+<li style="margin-bottom: 10px; display: flex; align-items: flex-start;">
+<span class="badge purple" style="margin-right: 8px; margin-top:3px;"><i class="fas fa-sliders-h"></i></span>
+<div>
+<strong style="font-family: 'Yomogi', cursive;">追加のファインチューニングや再学習:</strong> 新しいタスクや環境のデータに触れるたびに、モデルを<span class="highlight">追加でファインチューニング</span>したり、場合によっては<span class="highlight">再学習</span>したりするステップを導入する。これにより、モデルは新しい知識を継続的に取り込み、適応能力を高めることができます。
+                </div>
+</li>
+</ul>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-globe-americas" style="margin-right: 5px;"></i>🌍 目標：真の汎用性へ</p>
+<p>ロボットが本当に「汎用的」であるためには、未知の状況にも柔軟に対応できる能力が不可欠です。WorldEvalがその評価ツールとしてより強力になるためには、この<span class="keyword">新規シナリオへの適応性</span>を高める研究が重要となります。</p>
+</div>
+</div>
+<div class="challenge-box" style="margin-top: 25px;">
+<h3 class="subsection-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-bullseye" style="margin-right: 8px; color: var(--color-secondary);"></i>4. 生成ビデオにおける潜在アクションの不正確な再現</h3>
+<p>理想的なシナリオでは、WorldEvalの核となる<span class="keyword">世界モデル（World Model）</span>は、ポリシーモデルが意図した<span class="keyword">潜在アクション（Latent Actions）</span>を生成ビデオ内で正確に捉え、再現するべきです。潜在アクションとは、ポリシーネットワーク内部でエンコードされた、ロボットの行動意図を表す情報のことです。</p>
+<p>しかし、現在のWorldEvalの手法では、この<span class="highlight">潜在アクションの正確なキャプチャと再現</span>が完全には達成されていません。</p>
+<div class="framework-box" style="margin: 20px 0;">
+<p class="framework-title" style="font-family: 'Yomogi', cursive; text-align:center;">理想と現実のギャップ</p>
+<div class="two-column">
+<div class="column" style="text-align: center; border-right: 1px dashed var(--color-gray); padding-right: 10px;">
+<strong style="font-family: 'Kaisei Decol', serif; color: var(--color-accent1);">理想 <i class="fas fa-star"></i></strong>
+<div style="margin-top:10px; padding:10px; background-color:rgba(92, 184, 92, 0.1); border-radius:8px;">
+                        ポリシーモデルの<br/><span class="keyword">潜在アクション</span>
+<div style="font-size:24px; color:var(--color-accent1); margin:5px 0;">🎯</div>
+                        正確にキャプチャ &amp; 再現
+                        <div style="font-size:24px; color:var(--color-accent1); margin:5px 0;">⬇️</div>
+                        生成ビデオ内の<br/>ロボットの動き
+                    </div>
+</div>
+<div class="column" style="text-align: center; padding-left: 10px;">
+<strong style="font-family: 'Kaisei Decol', serif; color: var(--color-secondary);">現状 <i class="fas fa-tools"></i></strong>
+<div style="margin-top:10px; padding:10px; background-color:rgba(255, 126, 95, 0.1); border-radius:8px;">
+                        ポリシーモデルの<br/><span class="keyword">潜在アクション</span>
+<div style="font-size:24px; color:var(--color-secondary); margin:5px 0;">⚠️</div>
+<span class="highlight">完全には達成されず</span>
+<div style="font-size:24px; color:var(--color-secondary); margin:5px 0;">⬇️</div>
+                        生成ビデオ内の<br/>ロボットの動き
+                    </div>
+</div>
+</div>
+<p style="font-size: 0.9em; text-align: center; margin-top: 10px;">つまり、ポリシーが「こう動け」と意図した内容が、ビデオ生成の過程でいくらか<span class="highlight">情報が欠落したり、歪んで伝わったり</span>している可能性があるということです。</p>
+</div>
+<p>この問題の解決策として、研究チームは<span class="keyword">大規模なデータセット</span>でモデルを学習させることが有効であると考えています。</p>
+<div class="note-box" style="margin-top:15px;">
+<p class="note-title" style="font-family: 'Yomogi', cursive;"><i class="fas fa-server" style="margin-right: 5px;"></i>📊 大規模データによる改善</p>
+<p>より多くの、多様なロボットの行動データ（成功例も失敗例も含む）で世界モデルを学習させることで、モデルは潜在アクションと実際のビデオ表現との間の<span class="highlight">複雑な関係性</span>をより深く理解できるようになる可能性があります。これにより、潜在アクションをより忠実にビデオ内で再現できるようになり、WorldEvalの評価精度がさらに向上することが期待されます。</p>
+<div style="text-align: center; margin-top: 15px;">
+<span style="font-family: 'Yomogi', cursive; padding: 5px 10px; border: 1px dashed var(--color-accent2); border-radius: 8px; background-color: #f5f0ff;">
+                    データ量 <i class="fas fa-arrow-up" style="color: var(--color-accent1);"></i>
+<span style="margin: 0 5px;">➡️</span>
+                    潜在アクションの再現度 <i class="fas fa-arrow-up" style="color: var(--color-accent1);"></i>
+</span>
+</div>
+</div>
+</div>
+<hr style="border: 1px dashed var(--color-primary); margin: 30px 0;"/>
+<p style="font-family: 'Kaisei Decol', serif; text-align:center; font-size: 1.1em; color: var(--color-primary);">📝 <span class="keyword">まとめ</span>：WorldEvalは非常に有望な手法ですが、ここで挙げたような限界点も存在します。これらの課題を克服するための継続的な研究開発が、より信頼性が高く、汎用的なロボットポリシー評価システムの実現に繋がっていくでしょう。</p>
+</div>
+<div class="section-card" id="B_More_Experiments">
+<h2 class="section-title"><i class="fas fa-flask"></i> B More Experiments</h2>
+<div class="content-box">
+<p>このセクションでは、WorldEvalの評価能力をさらに深く掘り下げるための追加実験について詳しく解説します。主な目的は、<span class="keyword">異なる訓練段階にあるポリシー</span>や、<span class="keyword">未知の環境・物体・タスク</span>といった分布シフト条件下でのWorldEvalの性能を検証することです。これにより、WorldEvalが実世界のロボットポリシー評価において、どれほど信頼性が高く、広範な状況に対応できるかを示します。</p>
+</div>
+<div class="bubble-box">
+<p><strong><i class="fas fa-bullseye"></i> このセクションのポイント</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-chart-line"></i> ポリシーの訓練進捗とWorldEval評価の関係性</li>
+<li><i class="fas fa-images"></i> FIDスコアと実世界性能の相関</li>
+<li><i class="fas fa-map-signs"></i> 未知の環境やタスクにおけるWorldEvalの頑健性</li>
+</ul>
+</div>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> WorldEvalのポリシーチェックポイント間での性能</h3>
+<div class="content-box">
+<p>ロボットのポリシー（行動戦略）は、訓練データや訓練時間（ステップ数）によって性能が変化します。ここでは、WorldEvalが、同じポリシーの<span class="highlight">異なる訓練段階（チェックポイント）</span>における性能の違いを捉えられるかを検証します。</p>
+<div class="info-grid">
+<div class="info-card">
+<p><strong><i class="fas fa-tasks"></i> 実験設定</strong></p>
+<p>ある固定されたタスクにおいて、3つの異なるポリシーの、様々な訓練ステップでの評価結果をWorldEvalを用いて収集しました。</p>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-lightbulb"></i> 主な発見</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-arrow-up"></i> 訓練が進むほどタスク成功率が向上。</li>
+<li><i class="fas fa-arrow-down"></i> FIDスコアは訓練が進むほど減少。</li>
+<li><i class="fas fa-link"></i> FIDと実世界タスク成功率に強い相関。</li>
+</ul>
+</div>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-chart-line"></i> スケーリング則の示唆</p>
+<p>訓練が進むにつれてタスク成功率が一貫して向上する結果は、実世界シナリオにおけるポリシー性能に<span class="keyword">明確なスケーリング則</span>が存在することを示唆しています。つまり、訓練を重ねるほど性能が向上するという、望ましい傾向が確認されました。</p>
+<div style="text-align: center; margin-top: 10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:16px;">訓練ステップ  น้อย</span>
+<i class="fas fa-long-arrow-alt-right" style="color: var(--color-primary); font-size: 20px;"></i>
+<span style="font-family: 'Yomogi', cursive; font-size:16px;">訓練ステップ 多い</span>
+<br/>
+<i class="fas fa-robot" style="font-size: 20px; color: var(--color-gray);"></i> <span style="font-family: 'Yomogi', cursive; font-size:16px;">(性能低い)</span>
+<i class="fas fa-long-arrow-alt-right" style="color: var(--color-accent1); font-size: 20px; animation: pulse 1.5s infinite;"></i>
+<i class="fas fa-robot" style="font-size: 20px; color: var(--color-accent1);"></i> <span style="font-family: 'Yomogi', cursive; font-size:16px;">(性能高い)</span>
+</div>
+</div>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-tachometer-alt"></i> FIDスコアと訓練段階</p>
+<p><span class="keyword">Fréchet Inception Distance (FID)</span> スコアは、生成された画像の品質と多様性を評価する指標で、低いほど良いとされます。実験では、訓練ステップが増えるにつれてFIDスコアが減少しました。これは、訓練が進むにつれて、ポリシーが生成する<span class="highlight">潜在的な行動の分布が変化</span>することを示唆しています。</p>
+<p><strong><i class="fas fa-exclamation-triangle"></i> なぜ重要か？</strong></p>
+<ul class="unstyled-list">
+<li><i class="fas fa-video"></i> 行動はビデオ生成における制御信号として機能するため、潜在行動の分布の違いは<span class="highlight">ビデオ品質に大きく影響</span>します。</li>
+<li><i class="fas fa-palette"></i> 特に、十分に訓練されていないポリシーは、よく訓練されたポリシーの潜在行動から逸脱した潜在行動を生成し、ビデオ再構成モデルの性能を低下させます。</li>
+<li><i class="fas fa-cogs"></i> これは、本研究でビデオ生成モデルをファインチューニングする際に、<span class="highlight">最終ポリシーチェックポイントの潜在行動を使用している</span>ため、特に関連性が高いです。</li>
+</ul>
+<div style="text-align: center; margin-top: 10px;">
+<span style="font-family: 'Yomogi', cursive; font-size:16px;">訓練初期 <i class="fas fa-layer-group" style="color: var(--color-secondary);"></i> (FID 高い)</span>
+<span style="font-family: 'Yomogi', cursive; font-size:16px;">→ 訓練後期 <i class="fas fa-layer-group" style="color: var(--color-accent1);"></i> (FID 低い)</span>
+<br/>
+<span style="font-family: 'Yomogi', cursive; font-size:14px;">(潜在行動がバラバラ)</span>
+<span style="font-family: 'Yomogi', cursive; font-size:14px;">→ (潜在行動が安定・高品質)</span>
+</div>
+</div>
+<p>さらに、FIDスコアと実世界のタスク成功率の間には<span class="keyword">強い相関</span>が見られました。これは、FIDが単純なタスクにおけるモデル性能を評価するための<span class="highlight">初期的な指標として機能する可能性</span>を示唆しています。</p>
+<div style="text-align: center; margin: 15px 0;">
+<i class="fas fa-magnet" style="font-size: 24px; color: var(--color-accent2);"></i>
+<p style="font-family: 'Yomogi', cursive; font-size:16px;">FID <i class="fas fa-arrow-down" style="color: var(--color-accent1);"></i> <i class="fas fa-exchange-alt" style="color: var(--color-primary);"></i>  実世界成功率 <i class="fas fa-arrow-up" style="color: var(--color-accent1);"></i></p>
+</div>
+<div class="content-box">
+<p><strong><i class="fas fa-table"></i> 表3: 異なるポリシーと訓練ステップにおける性能比較</strong></p>
+<p>以下の表は、"Bussing table"（テーブル片付け）シナリオにおける3つのタスク（タスクA: 茶色いボウルを置く、タスクB: 緑の皿を置く、タスクC: 茶色いマグカップを置く）に関する、FIDスコアと平均成功率（Succ.）を示しています。</p>
+</div>
+<img alt="Table 3: Performance comparison across different policies and training steps" src="table3.png" style="width: 80%; margin-bottom: 15px;"/>
+<div class="table-wrapper" style="margin-top:0px;">
+<table>
+<thead>
+<tr>
+<th>ポリシー</th>
+<th>訓練ステップ</th>
+<th colspan="2">タスクA (茶色いボウル)</th>
+<th colspan="2">タスクB (緑の皿)</th>
+<th colspan="2">タスクC (茶色いマグ)</th>
+</tr>
+<tr>
+<th></th>
+<th></th>
+<th>FID <i class="fas fa-arrow-down"></i></th>
+<th>成功率 <i class="fas fa-arrow-up"></i></th>
+<th>FID <i class="fas fa-arrow-down"></i></th>
+<th>成功率 <i class="fas fa-arrow-up"></i></th>
+<th>FID <i class="fas fa-arrow-down"></i></th>
+<th>成功率 <i class="fas fa-arrow-up"></i></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td rowspan="3" style="font-family: 'Yomogi', cursive;">ポリシー X</td>
+<td>10k</td>
+<td>0.28</td>
+<td>0.30</td>
+<td>0.35</td>
+<td>0.25</td>
+<td>0.32</td>
+<td>0.28</td>
+</tr>
+<tr>
+<td>50k</td>
+<td>0.15</td>
+<td>0.65</td>
+<td>0.20</td>
+<td>0.58</td>
+<td>0.18</td>
+<td>0.60</td>
+</tr>
+<tr>
+<td>100k</td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.08</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.85</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.12</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.80</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.10</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.82</span></td>
+</tr>
+<tr>
+<td rowspan="3" style="font-family: 'Yomogi', cursive;">ポリシー Y</td>
+<td>10k</td>
+<td>0.30</td>
+<td>0.28</td>
+<td>0.38</td>
+<td>0.22</td>
+<td>0.35</td>
+<td>0.25</td>
+</tr>
+<tr>
+<td>50k</td>
+<td>0.18</td>
+<td>0.60</td>
+<td>0.25</td>
+<td>0.55</td>
+<td>0.22</td>
+<td>0.58</td>
+</tr>
+<tr>
+<td>100k</td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.10</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.82</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.15</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.78</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.13</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.80</span></td>
+</tr>
+<tr>
+<td rowspan="3" style="font-family: 'Yomogi', cursive;">ポリシー Z</td>
+<td>10k</td>
+<td>0.25</td>
+<td>0.35</td>
+<td>0.30</td>
+<td>0.30</td>
+<td>0.28</td>
+<td>0.32</td>
+</tr>
+<tr>
+<td>50k</td>
+<td>0.12</td>
+<td>0.70</td>
+<td>0.18</td>
+<td>0.65</td>
+<td>0.15</td>
+<td>0.68</td>
+</tr>
+<tr>
+<td>100k</td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.06</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.90</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.10</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.88</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.08</span></td>
+<td><span class="highlight" style="background-color: #a7f3d0;">0.89</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-plus"></i> 表3からの洞察</p>
+<p>この表は論文中のTable 3の例示的なものです。実際の数値は論文を参照してください。この表から、一般的に以下の傾向が読み取れます（緑のハイライトは最良の結果を示します）：</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-long-arrow-alt-right"></i> <strong>訓練ステップの増加</strong>: 各ポリシーにおいて、訓練ステップが増加する（例: 10k → 50k → 100k）と、<span class="keyword">FIDスコアは低下</span>し（より良いビデオ品質）、<span class="keyword">成功率（Succ.）は向上</span>する傾向が見られます。</li>
+<li><i class="fas fa-check-circle"></i> <strong>ポリシー間の比較</strong>: 例えば、ポリシーZの100kステップが全体的に最も良い性能を示しているかもしれません（FIDが最も低く、成功率が最も高い）。</li>
+<li><i class="fas fa-hand-point-right"></i> この結果は、WorldEvalがポリシーの訓練進捗に伴う性能向上を定量的に捉えることができること、そしてFIDが成功率と関連していることを裏付けています。</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-globe-americas"></i> 分布シフト下におけるポリシー頑健性の効果的な予測</h3>
+<div class="content-box">
+<p>実世界のロボットは、訓練時には遭遇しなかった新しい環境、新しい物体、新しいタスクに適応できる<span class="keyword">頑健性（ロバストネス）</span>が求められます。このセクションでは、WorldEvalがそのような<span class="highlight">分布シフト（distribution shifts）</span>条件下でのポリシー性能をどれだけ効果的に予測できるかを検証します。</p>
+<div class="glass-card">
+<p><strong><i class="fas fa-puzzle-piece"></i> 「おもちゃを集める」タスクの事例</strong></p>
+<p>本文中でも言及されましたが、「おもちゃを集める (collect toy)」タスクは、<span class="highlight">未知の物体（新しいおもちゃ）</span>と<span class="highlight">未知の指示</span>の両方を含むシナリオの代表例です。以前の発見では、WorldEvalがこのような全く新しいタスクに対しても、</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-video"></i> 堅牢なビデオ再構成能力を維持し、</li>
+<li><i class="fas fa-link"></i> 実世界のテスト結果（real-to-video評価）と強い相関を示す</li>
+</ul>
+             ことが実証されています。
+        </div>
+<p><strong><i class="fas fa-map-marked-alt"></i> 未知の背景（環境）への挑戦</strong></p>
+<p>さらに評価を拡張し、ポリシーネットワークが元々<span class="highlight">実験室環境 <i class="fas fa-flask" style="color: var(--color-accent1);"></i> のみ</span>で収集されたデータで訓練されたにも関わらず、全く異なる設定での性能を評価しました。</p>
+<div class="feature-card-grid">
+<div class="feature-item" style="border: 2px dashed var(--color-primary);">
+<i class="fas fa-building" style="font-size: 30px; color: var(--color-secondary);"></i>
+<p><strong>オフィス <i class="fas fa-briefcase"></i></strong></p>
+</div>
+<div class="feature-item" style="border: 2px dashed var(--color-primary);">
+<i class="fas fa-couch" style="font-size: 30px; color: var(--color-secondary);"></i>
+<p><strong>リビングルーム <i class="fas fa-tv"></i></strong></p>
+</div>
+<div class="feature-item" style="border: 2px dashed var(--color-primary);">
+<i class="fas fa-utensils" style="font-size: 30px; color: var(--color-secondary);"></i>
+<p><strong>キッチン <i class="fas fa-blender"></i></strong></p>
+</div>
+</div>
+<p>これらの新しい環境で、以下の3つのタスクを実施しました：</p>
+<ul class="tag-list">
+<li class="tag">カップを置く <i class="fas fa-coffee"></i></li>
+<li class="tag">ブロックを打つ <i class="fas fa-hammer"></i></li>
+<li class="tag">ブロックを手渡す <i class="fas fa-hands-helping"></i></li>
+</ul>
+<div class="info-grid">
+<div class="info-card">
+<p><strong><i class="fas fa-chart-bar"></i> MMRV (Mean Maximum Rank Violation) の結果</strong></p>
+<p>MMRVは低いほど、WorldEvalのランキングと実世界のランキングが一致していることを示します。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-map-marker-alt"></i> オフィス、リビング、キッチンでのMMRV: <span class="badge yellow">0.047</span></li>
+<li><i class="fas fa-flask"></i> ドメイン内（実験室）環境でのMMRV: <span class="badge blue">0.044</span></li>
+</ul>
+<p>新しい環境でのMMRVは、実験室環境よりわずかに高い（悪い）ものの、その差は小さく、典型的な<span class="keyword">実世界-シミュレーションアプローチよりも大幅に高い</span>性能を示しました。</p>
+</div>
+<div class="info-card">
+<p><strong><i class="fas fa-project-diagram"></i> Pearson \(r\) (ピアソン相関係数) の結果</strong></p>
+<p>ピアソン相関係数 \(r\) は1に近いほど、WorldEval評価と実世界性能の間に強い正の相関があることを示します。</p>
+<p><i class="fas fa-check"></i> 新しい環境でのPearson \(r\): <span class="badge green" style="background-color:var(--color-accent1); color:white;">0.927</span></p>
+<p>この高い値は、WorldEvalの評価が実世界の性能変動を非常によく捉えていることを意味します。</p>
+</div>
+</div>
+<div class="bubble-box">
+<p><strong><i class="fas fa-check-double"></i> 結論：未知への適応性</strong></p>
+<p>これらの結果は総合的に、WorldEvalが<span class="highlight">新しい指示</span>、<span class="highlight">未知の物体操作</span>、そして<span class="highlight">新しい環境</span>といった分布シフトが伴うタスクにおいても、<span class="keyword">堅牢な相関関係と一貫した性能評価を提供できる</span>ことを示しています。これは、WorldEvalが実用的な評価ツールとして非常に有望であることを裏付けています。</p>
+</div>
+</div>
+<div class="content-box">
+<p style="text-align: center; font-family: 'Yomogi', cursive; font-size: 18px; margin-top: 20px;">
+<i class="fas fa-image"></i> 図8: 実世界のロボットポリシーと生成されたビデオポリシーの視覚化
+        </p>
+</div>
+<img alt="Figure 8: Visualization of Real-World Robot Policy and Generated Video Policy" src="Real_WorldEval_policy_success_visualization.jpg" style="margin-bottom: 15px;"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-binoculars"></i> 図8の解説</p>
+<p>この図は、WorldEvalが生成するビデオと、実際のロボットの動きを比較しています。</p>
+<ul class="unstyled-list">
+<li><i class="fas fa-arrow-left" style="color:var(--color-primary);"></i> <strong>左側 (Real World Robot Policy)</strong>: 実際のロボットがタスクを実行している様子を示しています。様々なタスク（"Bussing table", "Collect toy"など）のスナップショットが並んでいます。</li>
+<li><i class="fas fa-arrow-right" style="color:var(--color-secondary);"></i> <strong>右側 (Generated Video Policy)</strong>: WorldEvalによって生成された、対応するタスクのビデオからのスナップショットです。</li>
+</ul>
+<p><i class="fas fa-thumbs-up" style="color:var(--color-accent1);"></i> この図に示されている例は、<span class="keyword">ロボットがタスクを成功裏に完了した場合</span>のものです。実世界のロボットの動きと、WorldEvalが生成したビデオ内のロボットの動きが、視覚的に非常によく一致していることがわかります。特に「Collect toy」のような未知の物体やタスクが含まれる場合でも、WorldEvalが現実の振る舞いを忠実に再現しようとしている様子が見て取れます。</p>
+<p>例えば、「Bussing table」タスクでは、実世界のロボットが物体を掴んで移動させる一連の動作が、生成ビデオでも同様に表現されています。「Pick up paper cup」では、紙コップを掴む動作が両者で比較できます。</p>
+<p>この視覚的な比較は、WorldEvalがポリシーの振る舞いを<span class="highlight">質的にも評価</span>する上で有用であることを示しています。</p>
+</div>
+</div>
+<div class="section-card" id="C_More_on_Experimental_Setup">
+<h2 class="section-title"><i class="fas fa-flask-potion"></i> C More on Experimental Setup</h2>
+<p style="font-family: 'Zen Kurenaido', sans-serif; font-size: 16px; line-height: 1.6;">
+        このセクションCでは、本論文で行われた実験のセットアップに関する<span class="highlight">より詳細な情報</span>を見ていきます。論文の主張を支える実験が、どのような条件下で、どのような設定で行われたのかを理解することは非常に重要です。具体的には、以下の3つの主要なポイントに焦点を当てて解説します。
+    </p>
+<div class="feature-card-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+<div class="feature-item glass-card">
+<i class="fas fa-cogs fa-2x" style="color: var(--color-primary);"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-primary); margin-top:10px;">WAN2.1モデルの学習詳細</h4>
+<p style="font-size: 13px;">動画生成モデルの具体的な学習パラメータや環境について説明します。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-robot fa-2x" style="color: var(--color-secondary);"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-secondary); margin-top:10px;">Robotwinでの評価</h4>
+<p style="font-size: 13px;">シミュレーション環境「Robotwin」での評価方法と、ドメインギャップへの対応策を解説します。</p>
+</div>
+<div class="feature-item glass-card">
+<i class="fas fa-tasks fa-2x" style="color: var(--color-accent1);"></i>
+<h4 style="font-family: 'Yomogi', cursive; color: var(--color-accent1); margin-top:10px;">実験タスクの詳細</h4>
+<p style="font-size: 13px;">評価に使用された5つの具体的なロボット操作タスクの内容を詳しく紹介します。</p>
+</div>
+</div>
+<p style="font-family: 'Zen Kurenaido', sans-serif; font-size: 16px; line-height: 1.6; margin-top: 15px;">
+        これらの詳細を把握することで、WorldEvalの有効性や限界について、より深い洞察を得ることができるでしょう。それでは、各項目を順に見ていきましょう！ ✏️
+    </p>
+<h3 class="subsection-title"><i class="fas fa-cogs"></i> 実装の詳細 (Implementation details)</h3>
+<div class="content-box">
+<p>
+            この部分では、WorldEvalの心臓部とも言える動画生成モデル<span class="keyword">WAN2.1 (140億パラメータ)</span>の学習プロセスについて、具体的な数値を交えながら解説します。
+            このモデルは、ロボットの行動を視覚的にシミュレートするために使われます。
+        </p>
+<div class="framework-box">
+<p class="framework-title"><i class="fas fa-brain"></i> WAN2.1 モデル学習設定</p>
+<ul class="unstyled-list" style="padding-left: 10px; font-family: 'Zen Kurenaido', sans-serif;">
+<li><span class="badge blue">データセット</span> 📚: <span class="highlight">1,400件の実世界ロボット軌跡データ</span> (Robot Trajectories)。これはロボットが実際にタスクを行った際の動きの記録です。</li>
+<li><span class="badge blue">初期学習率</span> 📈: <span class="highlight">1e-4</span> (0.0001)。学習の初期段階でモデルの重みがどれだけ変化するかを制御する値です。</li>
+<li><span class="badge blue">バッチサイズ</span> 📦: <span class="highlight">8</span>。一度に処理するデータサンプルの数。</li>
+<li>
+<span class="badge blue">LoRA設定</span> 🔧:
+                    <div class="definition-box" style="margin-left: 20px; margin-top: 5px; padding: 10px;">
+<p class="definition-title" style="font-size:14px; margin-bottom: 5px;"><i class="fas fa-book-open"></i> LoRA (Low-Rank Adaptation) とは？</p>
+<p style="font-size:13px; margin:0;">大規模言語モデルなどを効率的にファインチューニングする手法の一つ。元のモデルの大部分の重みを固定し、<span class="highlight">低ランクの行列</span>として表現される小さな追加パラメータのみを学習します。これにより、計算コストやメモリ使用量を大幅に削減しつつ、特定のタスクへの適応が可能です。</p>
+</div>
+<ul style="list-style-type: '✏️'; padding-left: 35px; margin-top:5px;">
+<li>Alpha: <span class="highlight">16</span></li>
+<li>Rank: <span class="highlight">16</span></li>
+</ul>
+<span style="font-size:12px; color: var(--color-gray); margin-left: 20px;">これらの値はLoRAの学習の度合いを調整します。</span>
+</li>
+<li><span class="badge blue">学習エポック数</span> 🔄: <span class="highlight">30エポック</span>。データセット全体を30回繰り返して学習したことを意味します。</li>
+<li><span class="badge blue">サンプリング戦略</span> 🌱: 各軌跡データを<span class="highlight">3回サンプリング</span>。これにより、学習データの多様性を増やし、モデルの汎化性能向上を目指します。</li>
+<li><span class="badge blue">学習サンプル構成</span> 🖼️: 1サンプルあたり<span class="highlight">81フレーム</span>、解像度 <span class="highlight">\(480 \times 480\) ピクセル</span>。</li>
+<li><span class="badge blue">学習環境</span> 💻: <span class="highlight">8基のH800 GPU</span>を使用し、<span class="keyword">データ並列処理</span> (Data Parallelism) で学習。
+                    <div class="note-box" style="margin-left:20px; margin-top:5px; padding:10px;">
+<p class="note-title" style="font-size:14px;"><i class="fas fa-info-circle"></i> データ並列処理</p>
+<p style="font-size:13px; margin:0;">複数のGPUに同じモデルのコピーを配置し、それぞれ異なるデータバッチを処理させることで、学習を高速化する手法です。</p>
+</div>
+</li>
+<li><span class="badge blue">学習時間</span> ⏱️: 約<span class="highlight">11時間</span>。</li>
+<li><span class="badge blue">ビデオ生成</span> 🎬: 各ビデオは<span class="highlight">50拡散ステップ</span> (Diffusion Steps) で生成。
+                    <div class="note-box" style="margin-left:20px; margin-top:5px; padding:10px;">
+<p class="note-title" style="font-size:14px;"><i class="fas fa-info-circle"></i> 拡散ステップ</p>
+<p style="font-size:13px; margin:0;">拡散モデルがノイズから徐々にクリアな画像を生成していく際の、反復処理の回数を指します。ステップ数が多いほど高品質な画像が期待できますが、計算時間も増加します。</p>
+</div>
+</li>
+</ul>
+</div>
+<p style="margin-top:15px;">
+            これらの詳細な設定は、モデルの学習結果や性能に大きく影響します。特に、LoRAの採用は、巨大なWAN2.1モデルを現実的なリソースでファインチューニングするための鍵となっています。
+        </p>
+</div>
+<img alt="Figure 9: Visualization of Real-World Robot Policy and Generated Video Policy. Tasks where the model failed." class="content-image" src="Real_WorldEval_policy_failure_visualization.jpg"/>
+<div class="caption-box bubble-box" style="margin-top:5px; margin-bottom:20px; border-color: var(--color-accent2);">
+<p style="font-family: 'Yomogi', cursive; font-size: 15px; color: var(--color-accent2); margin-bottom:5px; text-align:center;">
+<i class="fas fa-image"></i> 図9: 実世界ロボットポリシーと生成ビデオポリシーの失敗例の可視化
+        </p>
+<p style="font-size: 14px; line-height: 1.5;">
+            この図は、WorldEvalの動画生成モデルが、<span class="highlight">実世界のロボットがタスクに失敗した状況</span>をどのように再現するかを示しています。
+            左側（<span style="color:var(--color-secondary); font-weight:bold;">Real-world robot policy</span>）が実際のロボットの動き、右側（<span style="color:var(--color-primary); font-weight:bold;">Generated video policy</span>）がWorldEvalによって生成された動画です。
+            矢印で対応関係を示しますと：
+        </p>
+<div style="display: flex; justify-content: space-around; align-items: center; margin-top: 10px;">
+<div style="text-align: center;">
+<p style="font-family: 'Kaisei Decol', serif; font-size:14px; color:var(--color-secondary);">実世界 <i class="fas fa-robot"></i></p>
+</div>
+<div style="font-size: 24px; color: var(--color-gray);">
+<i class="fas fa-arrow-right"></i><i class="fas fa-arrow-left"></i>
+</div>
+<div style="text-align: center;">
+<p style="font-family: 'Kaisei Decol', serif; font-size:14px; color:var(--color-primary);">生成ビデオ <i class="fas fa-video"></i></p>
+</div>
+</div>
+<p style="font-size: 14px; line-height: 1.5; margin-top:5px;">
+            モデルがタスクに失敗した際の特有の動きや状況（例: 物体を掴み損ねる、意図しない方向にアームが動くなど）が、生成されたビデオでもある程度再現されていることが見て取れます。これは、WorldEvalが単に成功例だけでなく、<span class="highlight">失敗のパターンも学習・評価できる可能性</span>を示唆しています。
+        </p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-desktop"></i> Robotwinでの評価 (Evaluation on Robotwin)</h3>
+<div class="content-box">
+<p>
+            シミュレーション環境と実世界との間には、しばしば<span class="keyword">「ドメインギャップ」</span>と呼ばれる見た目や物理特性の違いが存在します。このギャップは、シミュレーションで上手くいったポリシーが実世界では期待通りに動作しない原因となります。このセクションでは、WorldEvalがこのドメインギャップにどのように対処しているか、特に<span class="highlight">Robotwin</span>というシミュレーションベンチマーク上での評価について説明します。
+        </p>
+<div class="glass-card" style="padding: 15px; margin-bottom:15px;">
+<p class="definition-title" style="font-size:15px;"><i class="fas fa-exclamation-triangle"></i> ドメインギャップへの挑戦</p>
+<p style="font-size:14px;">
+                多くの研究（例: SIMPLER）では、シミュレーション環境のテクスチャを変更するなどして、見た目を実世界に近づけようとします。しかし、WorldEvalでは異なるアプローチを取ります。
+            </p>
+<div class="pipeline" style="margin-top:10px;">
+<div class="pipeline-step" style="background-color: rgba(255, 243, 205, 0.5); border-color: var(--color-accent3);">
+<strong style="color:var(--color-accent3);"><i class="fas fa-eye"></i> 1. Sim-to-Real ビジュアルモデルの活用</strong><br/>
+                    シミュレーション画像をより実世界の見た目に近づけるための視覚モデルを利用します。
+                </div>
+<div class="pipeline-step" style="background-color: rgba(212, 237, 218, 0.5); border-color: var(--color-accent1);">
+<strong style="color:var(--color-accent1);"><i class="fas fa-magic"></i> 2. MidJourney API の統合</strong><br/>
+                    これが非常に効果的な手法とされています。シミュレーションベンチマーク (Robotwin) から現在の観測画像を取得後、<span class="keyword">MidJourney API</span> を呼び出します。
+                    MidJourneyは、その画像を<span class="highlight">より現実世界に近い表現に変換</span>します。
+                    <div style="text-align:center; margin:10px 0;">
+<span style="font-family:'Yomogi', cursive; font-size:13px;">シミュレーション画像 <i class="fas fa-gamepad"></i></span>
+<i class="fas fa-long-arrow-alt-right" style="margin:0 10px; color:var(--color-primary);"></i>
+<span style="font-family:'Yomogi', cursive; font-size:13px;">MidJourney API <i class="fas fa-paint-brush" style="color:var(--color-accent2);"></i></span>
+<i class="fas fa-long-arrow-alt-right" style="margin:0 10px; color:var(--color-primary);"></i>
+<span style="font-family:'Yomogi', cursive; font-size:13px;">リアル風画像 <i class="fas fa-camera-retro"></i></span>
+</div>
+</div>
+<div class="pipeline-step" style="background-color: rgba(207, 226, 255, 0.5); border-color: var(--color-primary);">
+<strong style="color:var(--color-primary);"><i class="fas fa-brain"></i> 3. ポリシーネットワークへの入力</strong><br/>
+                    変換されたリアル風の画像がポリシーネットワークに入力され、次の一連のアクションが生成されます。
+                </div>
+</div>
+<p style="font-size:14px; margin-top:10px;">
+                このプロセスにより、シミュレーション画像を直接使うよりも、実世界でのロボットの振る舞いに近いポリシーの評価が期待できます。
+            </p>
+</div>
+</div>
+<img alt="Figure 10: WorldEval-generated policy networks trained on data collected at different frequencies." class="content-image" src="WorldEval_data_collection_frequency.jpg"/>
+<div class="caption-box bubble-box" style="margin-top:5px; margin-bottom:20px; border-color: var(--color-accent1);">
+<p style="font-family: 'Yomogi', cursive; font-size: 15px; color: var(--color-accent1); margin-bottom:5px; text-align:center;">
+<i class="fas fa-chart-line"></i> 図10: 異なるデータ収集頻度で学習されたWorldEval生成ポリシーネットワーク
+        </p>
+<p style="font-size: 14px; line-height: 1.5;">
+            この図10は、WorldEvalが生成するポリシーネットワークの品質が、<span class="highlight">学習データの収集頻度によってどのように影響を受けるか</span>を示しています。
+            例えば、同じタスクのデータでも、<span class="badge orange">低頻度（例: 10Hz）</span>で収集されたデータで学習したポリシーと、<span class="badge green">高頻度（例: 50Hz）</span>で収集されたデータで学習したポリシーとでは、生成される動作の滑らかさなどに違いが現れる可能性があります。
+            この図を通じて、WorldEvalがそのような<span class="keyword">データ特性の違いを捉え、評価に反映できるか</span>を検証しています。高頻度データで学習したポリシーは、よりスムーズで連続的な動作を生成する傾向が示唆されています (本文Appendix D参照)。
+        </p>
+</div>
+<h3 class="subsection-title"><i class="fas fa-tasks"></i> タスクの詳細説明 (More description on tasks)</h3>
+<div class="content-box">
+<p>
+            WorldEvalの評価能力を検証するために、研究者たちは5つの異なる実験タスクを設計しました。これらのタスクは、それぞれ異なるスキルや認識能力をロボットに要求します。各タスクについて、その内容、特徴、そしてロボットへの指示（自然言語）を見ていきましょう。
+        </p>
+<div class="info-grid">
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="color: var(--color-accent2); border-left-color: var(--color-accent2); font-size:17px; margin-top:0;">
+<i class="fas fa-concierge-bell"></i> Bussing Table (テーブル片付け)
+                </h4>
+<p><strong class="badge purple">内容</strong>: ロボットがテーブル上の再利用可能なアイテムをトレイに分別し、ゴミをゴミ箱に捨てます。</p>
+<p><strong class="badge purple">シーン</strong>: <span class="highlight">緑の皿、茶色のマグカップ、緑のマグカップ、茶色のボウル、使用済み紙コップ、青い紙ゴミ</span>など、様々な物体がテーブル上に配置されます。</p>
+<p><strong class="badge purple">特徴</strong>: <span class="keyword">$\pi_0$</span> や <span class="keyword">DexVLA</span> といった既存研究から派生した<span class="highlight">挑戦的なタスク</span>です。</p>
+<p><strong class="badge purple">指示</strong>: <span style="font-family: 'Yomogi', cursive;">「テーブルを片付けて。」 ("Clean the table.")</span></p>
+<p><strong class="badge purple">データ</strong>: <span class="highlight">100軌跡</span>のデータを使用。</p>
+<p><strong class="badge purple">評価時</strong>: 物体の位置はテーブル上で<span class="highlight">ランダム化</span>され、多様なテスト条件を保証します。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-utensils fa-2x" style="color:var(--color-accent2); margin-right:5px;"></i>
+<i class="fas fa-trash-alt fa-2x" style="color:var(--color-accent2);"></i>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="color: var(--color-accent1); border-left-color: var(--color-accent1); font-size:17px; margin-top:0;">
+<i class="fas fa-teddy-bear"></i> Collect Toy (おもちゃ集め)
+                </h4>
+<p><strong class="badge green">内容</strong>: ロボットが<span class="highlight">これまで見たことのないぬいぐるみ</span>を識別し、指定されたエリア（左または右のトレイ）に集めます。</p>
+<p><strong class="badge green">特徴</strong>: ファインチューニングや事前学習のどちらの段階でも<span class="highlight">遭遇したことのない、完全に新しいタスク</span>です。テーブルトップのシーン設定もポリシーにとって<span class="keyword">ドメイン外 (out-of-domain)</span> です。</p>
+<p><strong class="badge green">指示</strong>: <span style="font-family: 'Yomogi', cursive;">「おもちゃを右/左のトレイに集めて。」 ("Collect the toy to the right/left tray.")</span></p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-splotch fa-2x" style="color:var(--color-accent1); margin-right:5px;"></i>
+<i class="fas fa-question-circle fa-2x" style="color:var(--color-accent1);"></i>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="color: var(--color-primary); border-left-color: var(--color-primary); font-size:17px; margin-top:0;">
+<i class="fas fa-mug-saucer"></i> Place Cup (カップ配置)
+                </h4>
+<p><strong class="badge blue">内容</strong>: ロボットの前にランダムな位置に置かれた<span class="highlight">青い空のカップ</span>と<span class="highlight">カップマット</span>があります。ロボットはカップをマットの上に置く必要があります。</p>
+<p><strong class="badge blue">指示</strong>: <span style="font-family: 'Yomogi', cursive;">「青い空のカップをカップマットに置いて。」 ("Place the empty blue cup to the cup mat.")</span></p>
+<p><strong class="badge blue">データ</strong>: <span class="highlight">50軌跡</span>のデータを使用。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-coffee fa-2x" style="color:var(--color-primary); margin-right:5px;"></i>
+<i class="fas fa-dot-circle fa-2x" style="color:var(--color-primary);"></i>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="color: var(--color-secondary); border-left-color: var(--color-secondary); font-size:17px; margin-top:0;">
+<i class="fas fa-handshake"></i> Handover Block (ブロック手渡し)
+                </h4>
+<p><strong class="badge orange">内容</strong>: ロボットは左腕を使って<span class="highlight">赤い長方形のブロック</span>を掴み、右腕に渡し、右腕がそのブロックを<span class="highlight">青いマット</span>の上に置きます。</p>
+<p><strong class="badge orange">指示</strong>: <span style="font-family: 'Yomogi', cursive;">「赤いブロックを右腕に渡して青いマットの上に置いて。」 ("Pass the red block to the right arm to place it on the blue mat.")</span></p>
+<p><strong class="badge orange">特徴</strong>: <span class="highlight">中程度の難易度</span>のタスクで、協調的な<span class="keyword">両腕操作 (bi-arm manipulation)</span> と、手渡しや配置の際にブロックが倒れないようにするための<span class="highlight">精密な向き制御</span>が必要です。</p>
+<p><strong class="badge orange">データ</strong>: <span class="highlight">50軌跡</span>のデータを使用。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-hand-holding-medical fa-2x" style="color:var(--color-secondary); margin-right:5px;"></i>
+<i class="fas fa-cubes fa-2x" style="color:var(--color-secondary);"></i>
+</div>
+</div>
+<div class="info-card glass-card">
+<h4 class="subsection-title" style="color: var(--color-accent3); border-left-color: var(--color-accent3); font-size:17px; margin-top:0;">
+<i class="fas fa-gavel"></i> Strike Block (ブロック叩き)
+                </h4>
+<p><strong class="badge yellow" style="color:var(--color-dark);">内容</strong>: ロボットは<span class="highlight">ハンマー</span>を拾い上げ、目の前に置かれた<span class="highlight">赤いブロック</span>を叩くよう指示されます。</p>
+<p><strong class="badge yellow" style="color:var(--color-dark);">指示</strong>: <span style="font-family: 'Yomogi', cursive;">「ハンマーを拾って、赤いブロックを叩いて。」 ("Pick up the hammer, then strike the red block.")</span></p>
+<p><strong class="badge yellow" style="color:var(--color-dark);">特徴</strong>: このタスクは、赤いブロックが比較的小さいため、ポリシーの<span class="highlight">視野内の小さな物体を特定し、操作する能力</span>をテストします。</p>
+<p><strong class="badge yellow" style="color:var(--color-dark);">データ</strong>: <span class="highlight">50軌跡</span>のデータを使用。</p>
+<div style="text-align:center; margin-top:10px;">
+<i class="fas fa-hammer fa-2x" style="color:var(--color-accent3); margin-right:5px;"></i>
+<i class="fas fa-cube fa-2x" style="color:var(--color-accent3);"></i>
+</div>
+</div>
+</div>
+<p style="margin-top:15px;">
+            これらのタスクは、単純な物体操作から、新規物体への汎化、両腕協調、精密な制御まで、幅広いロボットの能力を評価できるように設計されています。特に「Collect Toy」タスクは、モデルの<span class="highlight">未知の状況への適応能力</span>を試す上で重要です。📝
+        </p>
+</div>
+<div class="note-box" style="margin-top: 20px;">
+<p class="note-title"><i class="fas fa-lightbulb"></i> まとめ</p>
+<p>
+            この「C More on Experimental Setup」セクションでは、WorldEvalの核となる動画生成モデルの学習設定、シミュレーション環境での評価戦略、そして評価に用いられた5つの具体的なタスクについて詳細に解説しました。これらの情報は、論文の結果を理解し、WorldEvalフレームワークの信頼性や適用範囲を考察する上で不可欠な基盤となります。
+            特に、LoRAを用いた効率的なファインチューニング、MidJourney APIによるドメインギャップの緩和、そして多様なスキルを要求するタスク設計は、WorldEvalが目指す「スケーラブルで信頼性の高い実世界ロボットポリシー評価」を実現するための重要な要素です。
+        </p>
+</div>
+</div>
+<div class="section-card" id="D_More_Visualization">
+<h2 class="section-title"><i class="fas fa-images"></i> D More Visualization</h2>
+<p>このセクションでは、WorldEvalによって生成されたビデオと実世界のロボットの振る舞いを、より詳細な視覚的比較を通じて掘り下げていきます。具体的には、ロボットがタスクを成功させた場合と失敗した場合のそれぞれのシナリオにおける、<span class="keyword">実世界のロボットの動作映像</span>と<span class="keyword">WorldEvalが生成した対応するビデオ</span>を並べて比較します。さらに、学習データ収集時の<span class="highlight">サンプリング頻度</span>（例：1秒間に何回データを取るか）の違いが、WorldEvalによって生成されるビデオの品質にどのような影響を与えるのかについても分析します。これらの視覚的な検証を通じて、WorldEvalの評価能力や特性、そしてその限界についてより深い理解を得ることを目指します。</p>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-tasks"></i> 成功事例と失敗事例の視覚化 🖼️</h3>
+<p>ロボットの行動ポリシーを評価する上で、単に成功率の数値を見るだけでなく、実際にどのような動きで成功し、どのような動きで失敗するのかを視覚的に確認することは非常に重要です。WorldEvalが、これら実世界での成功・失敗のシナリオを、生成ビデオの中でどれだけ忠実に、あるいは特徴を捉えて再現できるかを見ていきましょう。</p>
+<div class="content-box">
+<p>論文中の<span class="keyword">図8</span>は、ロボットがいくつかの異なるタスクを<span class="highlight">成功裏に完了した場合</span>の、実世界のロボットの映像（左側）とWorldEvalによって生成されたビデオ（右側）を比較して示しています。この図は、ユーザーが提供した画像の中では `Real_vs_WorldEval_policy_visualization.jpg` の上半分「Success Cases」に該当します。</p>
+<img alt="図8: 成功事例の視覚化 (論文図5の成功例部分)" src="Real_vs_WorldEval_policy_visualization.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-search-plus"></i> 図8の観察ポイント 🔍</p>
+<ul class="unstyled-list">
+<li><span class="badge blue">実世界 vs. WorldEval</span>: 各タスクについて、左側に実際のロボットアームの連続写真、右側にWorldEvalが生成したビデオからの連続フレームが並べられています。これにより、両者の動きを直接比較できます。</li>
+<li><span class="badge green">成功タスクの例</span>:
+                    <ul>
+<li><span class="highlight">Bussing table (テーブル片付け)</span>: 物体をトレイに集めるタスク。</li>
+<li><span class="highlight">Place cup (カップ配置)</span>: カップを特定の位置に置くタスク。</li>
+<li><span class="highlight">Handover block (ブロック手渡し)</span>: 一方のアームからもう一方のアームへブロックを渡すタスク。</li>
+</ul>
+                    これらのタスクが成功した際のキーフレームが示されています。
+                </li>
+<li><span class="highlight">再現性</span>: WorldEvalは、これらの成功した行動シーケンスを、実世界のロボットの動きにかなり近い形で再現しようとしていることが見て取れます。特に、アームの全体的な軌道や物体に対する操作の主要な流れが、生成ビデオ内でも類似している点に注目してください。これにより、WorldEvalがポリシーの「意図した正しい振る舞い」をある程度捉えられていることがわかります。</li>
+</ul>
+</div>
+</div>
+<div class="content-box" style="margin-top: 30px;">
+<p>一方で、論文中の<span class="keyword">図9</span>は、ロボットがタスクに<span class="highlight">失敗した場合</span>の、実世界のロボットの映像（左側）とWorldEvalによる生成ビデオ（右側）を比較したものです。この図は、ユーザーが提供した画像 `Real_WorldEval_policy_failure_visualization.jpg` に対応します。</p>
+<img alt="図9: 失敗事例の視覚化" src="Real_WorldEval_policy_failure_visualization.jpg"/>
+<div class="note-box">
+<p class="note-title"><i class="fas fa-exclamation-triangle"></i> 図9の観察ポイント ⚠️</p>
+<ul class="unstyled-list">
+<li><span class="badge orange">多様な失敗パターン</span>: 「Bussing table」、「Collect toy（おもちゃ収集）」、「Pick up paper cup（紙コップ拾い）」、「Handover block」、「Place cup」、「Strike block（ブロック叩き）」など、様々なタスクにおける失敗の様子が多数記録されています。</li>
+<li><span class="highlight">失敗挙動の再現</span>: WorldEvalは、失敗に至るまでの挙動もある程度捉えようと試みています。実世界での失敗（例：物体を落とす、目標ではない場所に物を置く、アームが衝突しそうになるなど）が、生成ビデオでも何らかの形で（時には不自然な動きやアーティファクトを伴いつつも）表現されています。</li>
+<li><span class="highlight">WorldEvalの評価能力</span>: これらの失敗例を通じて、WorldEvalがポリシーの限界や問題点をどの程度可視化できるかが示唆されます。成功例ほど忠実な再現は難しい場合もありますが、ポリシーが「何かおかしい」振る舞いをする兆候を捉える上で役立つ可能性があります。</li>
+</ul>
+</div>
+</div>
+<div class="arrow-connector"></div>
+<h3 class="subsection-title"><i class="fas fa-wave-square"></i> WorldEvalとデータ収集頻度の関係 📊</h3>
+<p>ロボット学習では、デモンストレーションデータ（お手本データ）を収集する際の<span class="keyword">サンプリング周波数</span>（1秒あたり何回データを記録するか）が、学習されるポリシーの質に影響を与える可能性があります。このセクションでは、このデータ収集頻度の違いが、WorldEvalで生成されるビデオの品質にどのように反映されるかを分析しています。</p>
+<div class="content-box">
+<p>論文の<span class="keyword">図10</span>は、異なるデータ収集頻度、具体的には<span class="highlight">10 Hz</span>（ヘルツ：1秒間に10回）と<span class="highlight">50 Hz</span>（1秒間に50回）で収集されたデータを使って学習された2つの異なるポリシーネットワークから、WorldEvalがビデオを生成した結果を比較しています。この図は、ユーザーが提供した画像 `WorldEval_data_collection_frequency.jpg` に対応します。</p>
+<img alt="図10: 異なるデータ収集頻度でのWorldEval生成ビデオ" src="WorldEval_data_collection_frequency.jpg"/>
+<div class="glass-card" style="margin-top:20px;">
+<div class="note-box" style="background-color: rgba(255, 248, 225, 0.5); border-left-color: var(--color-accent3);">
+<p class="note-title" style="color: var(--color-accent3);"><i class="fas fa-cogs"></i> 実験設定のポイント ⚙️</p>
+<ul class="unstyled-list">
+<li><span class="badge yellow">データセットの違い</span>:
+                    <ul>
+<li><i class="fas fa-film"></i> <strong>上段 (1st row)</strong>: <span class="keyword">10 Hz</span> で収集されたデータに基づいて学習したポリシーのビデオ。</li>
+<li><i class="fas fa-film"></i> <strong>下段 (2nd row)</strong>: <span class="keyword">50 Hz</span> で収集されたデータに基づいて学習したポリシーのビデオ。</li>
+<li>図では、原文と上下が逆転しており、上段が50Hz、下段が10Hzの結果を示しています。原文の記述 "In Figure 10, the first row displays data collected at $10 \mathrm { { H z } }$ , while the second row shows data collected at $50 \mathrm { { H z } }$" と画像のラベルが逆になっている点に注意してください。画像ラベル (frequency:50Hz, frequency:10Hz) が正しいと仮定して解説します。</li>
+</ul>
+</li>
+<li><span class="badge purple">ポリシーネットワークの学習</span>: これら2つの異なる周波数のデータセット上で、それぞれ別々のポリシーネットワークが学習されました。重要なのは、各データセットに含まれる<span class="highlight">軌道（trajectory）の総数は同じ</span>であるという点です。つまり、データ点数の総量は異なりますが、タスクの試行回数は同じです。</li>
+<li><span class="badge green">WorldEvalモデル</span>: 評価には、<span class="highlight">単一のWorldEvalモデル</span>（つまり、ビデオ生成モデル自体は同じもの）が使用されました。これにより、純粋にポリシーネットワークが学習したデータ収集頻度の違いから生じる特性差が、生成ビデオにどのように反映されるかを比較できます。</li>
+</ul>
+</div>
+</div>
+<div class="framework-box" style="margin-top: 30px;">
+<p class="framework-title">💡 結果と考察</p>
+<p>この実験の結果、WorldEvalはデータ収集頻度の違いによって生じるポリシーの特性差を、生成ビデオを通じて<span class="highlight">効果的に捉える</span>ことができると示されました。</p>
+<div class="info-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+<div class="info-card">
+<p style="text-align: center; font-weight: bold; color: var(--color-accent1);"><i class="fas fa-rocket"></i> 50Hzデータで学習したポリシー (図10 上段)</p>
+<ul>
+<li><strong>生成されるアクション</strong>: より<span class="keyword">スムーズ</span>（滑らか）✨ であり、動きが<span class="highlight">断片化しにくい</span>（途切れ途切れになりにくい）📉 傾向が見られました。</li>
+<li><strong>生成されるビデオ</strong>: 結果として、ロボットの動きがより<span class="keyword">ゆっくり</span>🐌 と見え、全体として<span class="keyword">流動的</span>（スムーズに連続して動く）💧 なビデオが生成されました。これは、高頻度で収集されたデータが、より細かく連続的な動作情報をポリシーに提供するためと考えられます。</li>
+</ul>
+</div>
+<div class="info-card">
+<p style="text-align: center; font-weight: bold; color: var(--color-secondary);"><i class="fas fa-feather-alt"></i> 10Hzデータで学習したポリシー (図10 下段)</p>
+<ul>
+<li><strong>生成されるアクション</strong>: 50Hzの場合と比較して、アクションがより<span class="keyword">区分的</span>（カクカクした動き）になる可能性があります。これは、データ収集の間隔が広いため、その間の詳細な動きが欠落していることに起因するかもしれません。</li>
+<li><strong>生成されるビデオ</strong>: ビデオの動きも、50Hzの場合に比べて<span class="highlight">ぎこちなさ</span><span class="keyword"></span>が目立つかもしれません。</li>
+</ul>
+</div>
+</div>
+<div class="bubble-box" style="margin-top:20px;">
+<p>この結果が示す重要な点は、WorldEvalが単に表面的な映像を生成するだけでなく、ポリシーネットワークから抽出される<span class="keyword">潜在アクション</span>（latent actions）を<span class="highlight">正確に解釈</span>し、それを視覚的な違いとしてビデオに反映できるということです。</p>
+<p>📌 <span class="keyword">潜在アクション</span>とは、ポリシーネットワークが内部的に保持している、観測情報（画像や言語指示）から次に行うべき行動を表現した特徴量のことです。この潜在アクションが、ビデオ生成モデルの入力（Policy2Vecの一部）として使われます。</p>
+<p>したがって、異なるデータ収集頻度で学習されたポリシーは、異なる特性を持つ潜在アクションを生成し、その違いがWorldEvalによるビデオ生成の質（滑らかさ、流動性など）に現れるのです。これは、WorldEvalがポリシーの内部的な違いを可視化する能力を持つことをさらに裏付けています。🚀</p>
+</div>
+</div>
+</div>
+<div class="note-box" style="margin-top:25px;">
+<p class="note-title"><i class="fas fa-lightbulb"></i> まとめ</p>
+<p>このセクションの視覚的な分析を通して、以下の点が明らかになりました：</p>
+<ul class="unstyled-list">
+<li>✅ WorldEvalは、実世界でのロボットの成功・失敗事例を、生成ビデオにおいてある程度再現できる。</li>
+<li>✅ データ収集頻度の違いといった、ポリシーの学習条件に起因する特性の違いも、WorldEvalは生成ビデオの質の違いとして捉えることができる。</li>
+<li>✅ これらの結果は、WorldEvalがポリシーの潜在アクションを解釈し、その特性を視覚化する能力を持っていることを示唆している。</li>
+</ul>
+<p>これらの視覚的な証拠は、WorldEvalがロボットポリシーの評価ツールとして、その振る舞いの詳細や特性を理解する上で有用であることを補強するものです。📝</p>
+</div>
+</div>
+</div>
+</body>
+</html>
